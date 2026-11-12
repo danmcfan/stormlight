@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { tuning } from './config';
 import { ThirdPersonCamera } from './camera/thirdPersonCamera';
 import { DEFAULT_RULES, noIntent, type CombatRules, type FighterEvent, type HitOutcome } from './combat/fighter';
@@ -28,6 +27,9 @@ import { Hud } from './ui/hud';
 import { buildBattlefield, type Battlefield } from './world/battlefield';
 import { Environment } from './world/environment';
 import type { Models } from './render/assets';
+import { autoQuality, look, QUALITY, type Quality } from './render/look';
+import { PostFX } from './render/post';
+import { stylizeScene } from './render/stylize';
 
 export const SIM_DT = 1 / 60;
 
@@ -88,6 +90,9 @@ export class Game {
   private fighters: Combatant[] = [];
   private duelFoes: Combatant[] = [];
   private env: Environment;
+  private post: PostFX;
+  private time = 0;
+  private stylizeTimer = 0;
   // Right HUD column: frame timing on top, tuning panel below it.
   readonly perf = new PerfMonitor(document.getElementById('hud-right')!);
   private debug = new DebugTools(document.getElementById('hud-right')!);
@@ -97,6 +102,13 @@ export class Game {
   private hitboxes: HitboxView;
   private field: Battlefield;
   private walkToggle = false;
+  /**
+   * Match shot: the camera stands where the style reference
+   * (art/source/plateau-noon) was painted. Toggle with P or the tuning panel.
+   */
+  matchShot = false;
+  /** The live look values (render/look.ts), for the tuning panel and look-dev scripts. */
+  readonly look = look;
   private hitStop = 0;
   private tmp = new THREE.Vector3();
   private cap: Capsule = { bottom: new THREE.Vector3(), top: new THREE.Vector3(), radius: 0 };
@@ -104,24 +116,17 @@ export class Game {
   private playerStats = { maxHp: 160, maxStamina: 100, maxPoise: 70, staminaRegen: 42, damageScale: 1, shardplate: true };
 
   constructor(canvas: HTMLCanvasElement, readonly physics: Physics, models: Models) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    // Phones have 3x screens and a fraction of a desktop GPU: cap the pixel ratio.
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchFirst() ? 1.5 : 2));
+    // Antialiasing happens in the post chain's MSAA target (high quality).
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
-
-    // Soft reflections so metal Plate isn't pitch black away from the sun.
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.35;
-    pmrem.dispose();
+    // Neutral keeps the painting's hues (ACES pushes oranges toward red).
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    look.quality = autoQuality();
 
     this.input = new Input(canvas);
     this.debug.addModeButtons(() => this.startHorde(), () => this.startDuel());
     this.env = new Environment(this.scene);
-    if (isTouchFirst()) this.env.sun.shadow.mapSize.set(1024, 1024);
     this.field = buildBattlefield(this.scene, physics);
 
     this.player = new Combatant(physics, {
@@ -161,6 +166,10 @@ export class Game {
     }
 
     this.scene.add(this.playerTrail.mesh, this.sparks.points, this.eyeBurn.points);
+    // HDR so they cross the bloom threshold: Stormlight trails, sparks and motes glow.
+    (this.playerTrail.mesh.material as THREE.MeshBasicMaterial).color.setScalar(2.6);
+    (this.sparks.points.material as THREE.PointsMaterial).color.setScalar(2.4);
+    for (const e of this.enemies) if (e.ai.aggressive) (e.trail.mesh.material as THREE.MeshBasicMaterial).color.setScalar(1.6);
     this.duelFoes = this.enemies.map((e) => e.c);
     this.horde = new HordeMode({
       physics, scene: this.scene, rules: this.rules, field: this.field, player: this.player, movement: enemyMovement,
@@ -189,7 +198,28 @@ export class Game {
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
 
-    this.resize();
+    // Reflections of the painted sky and warm ground, so metal Plate picks up
+    // blue from above and orange from the rock.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const envScene = new THREE.Scene();
+    envScene.add(this.env.sky.clone());
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ color: '#c98f60' }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -3;
+    envScene.add(ground);
+    this.scene.environment = pmrem.fromScene(envScene, 0.06, 0.1, 1000).texture;
+    this.scene.environmentIntensity = 0.45;
+    pmrem.dispose();
+
+    this.post = new PostFX(this.renderer, this.scene, this.cam.camera);
+    this.post.brushAllowed = !isTouchFirst();
+    stylizeScene(this.scene);
+    this.debug.addLook({
+      setQuality: (q) => this.setQuality(q),
+      matchShot: () => this.setMatchShot(!this.matchShot),
+      brushAllowed: this.post.brushAllowed,
+    });
+    this.setQuality(look.quality);
     window.addEventListener('resize', () => this.resize());
     // iOS reports the new size a beat after rotating.
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
@@ -198,12 +228,27 @@ export class Game {
     physics.world.step();
   }
 
+  /** low / medium / high: pixel ratio, shadow map, MSAA and bloom. See render/look.ts. */
+  setQuality(q: Quality): void {
+    look.quality = q;
+    const p = QUALITY[q];
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, p.pixelRatio));
+    const sh = this.env.sun.shadow;
+    if (sh.mapSize.x !== p.shadowMap) {
+      sh.mapSize.set(p.shadowMap, p.shadowMap);
+      sh.map?.dispose();
+      sh.map = null;
+    }
+    this.resize();
+  }
+
   private resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);
     this.eyeBurn.setViewportHeight(h * this.renderer.getPixelRatio(), tuning.camera.fov);
     this.cam.camera.aspect = w / h;
     this.cam.camera.updateProjectionMatrix();
+    this.post?.setSize();
   }
 
   // ---------------------------------------------------------------------------
@@ -219,6 +264,7 @@ export class Game {
     if (inp.consumePress('KeyF')) this.perf.toggle();
     if (inp.consumePress('KeyM')) this.sfx.muted = !this.sfx.muted;
     if (inp.consumePress('KeyN')) { if (this.mode === 'horde') this.startDuel(); else this.startHorde(); }
+    if (inp.consumePress('KeyP')) this.setMatchShot(!this.matchShot);
     this.sfx.volume = tuning.combat.volume;
     this.rules.parryWindow = tuning.combat.parryWindow;
     this.playerStats.damageScale = tuning.combat.playerDamage;
@@ -562,7 +608,9 @@ export class Game {
     const pr = this.player.body.renderPos;
     this.lockOn.update(dt, pr);
     this.cam.update(dt, pr, this.lockOn.focus(this.tmp));
-    this.env.follow(pr);
+    this.time += dt;
+    this.env.update(this.time);
+    this.env.follow(pr, this.cam.camera.position);
     this.hud.update(dt, this.player, this.lockOn.target);
     if (this.mode === 'horde') {
       this.hordeHud.update(dt, this.horde.stats);
@@ -573,10 +621,30 @@ export class Game {
       if (fresh) this.sfx.warn(0.55);
     }
 
-    this.renderer.render(this.scene, this.cam.camera);
+    if (this.matchShot) this.poseMatchShot();
+    // Pick up any materials created since (e.g. models swapped at runtime).
+    if ((this.stylizeTimer += dt) > 1) { this.stylizeTimer = 0; stylizeScene(this.scene); }
+    this.post.render(dt);
 
     this.perf.record(rawDt * 1000, simMs + performance.now() - t0);
     this.showDebug(locked);
+  }
+
+  setMatchShot(on: boolean): void {
+    this.matchShot = on;
+    // The painting has nobody in it: hide the fighters while matching.
+    for (const c of [this.player, ...this.enemies.map((e) => e.c)]) c.model.root.visible = !on;
+  }
+
+  /** Shoulder height at the near end of the bridge, looking across the chasm at the chrysalis. */
+  private poseMatchShot(): void {
+    const cam = this.cam.camera;
+    const b = this.field.bridgeStart;
+    // bridgeStart is the bridge's end, 3.5 m back from the rim: stand at the rim.
+    cam.position.set(b.x, b.y + 2.4, b.z + 2.8);
+    cam.lookAt(b.x + 0.4, b.y - 9, b.z + 26);
+    if (cam.fov !== 58) { cam.fov = 58; cam.updateProjectionMatrix(); }
+    this.env.follow(this.tmp.set(b.x, 0, b.z + 14), cam.position);
   }
 
   private trailFn = (t: BladeTrail, c: Combatant, dt: number) => this.updateTrail(t, c, dt);

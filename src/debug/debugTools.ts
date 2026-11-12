@@ -1,5 +1,13 @@
 import GUI from 'lil-gui';
 import { defaultTuning, tuning } from '../config';
+import { defaultLook, look, type Quality } from '../render/look';
+
+export interface LookHooks {
+  setQuality: (q: Quality) => void;
+  matchShot: () => void;
+  /** Brushstroke filter is desktop-only. */
+  brushAllowed: boolean;
+}
 
 export interface DebugInfo {
   state: string;
@@ -132,6 +140,73 @@ export class DebugTools {
     const b = f.add({ duel }, 'duel').name('◀ Back to the duel');
     // Put them first in the folder.
     f.$children.prepend(a.domElement, b.domElement);
+  }
+
+  /** Look folder: quality, match shot and the main light / colour / post values. */
+  addLook(h: LookHooks): void {
+    const f = this.gui.addFolder('Look');
+    f.add(look, 'quality', ['low', 'medium', 'high']).onChange((q: Quality) => h.setQuality(q)).listen();
+    f.add({ m: h.matchShot }, 'm').name('Match shot (P)');
+    if (h.brushAllowed) {
+      f.add(look, 'brushstrokes').name('brushstrokes (desktop)');
+      f.add(look, 'brushRadius', 1, 6, 1).name('brush radius');
+    }
+    const sun = f.addFolder('Sun & sky light');
+    sun.addColor(look, 'sunColor').name('sun colour');
+    sun.add(look, 'sunIntensity', 0, 8, 0.05).name('sun intensity');
+    sun.add(look, 'sunElevation', 5, 90, 1).name('sun elevation°');
+    sun.add(look, 'sunAzimuth', -180, 180, 1).name('sun azimuth°');
+    sun.addColor(look, 'skyLight').name('sky fill');
+    sun.addColor(look, 'groundLight').name('ground bounce');
+    sun.add(look, 'ambient', 0, 3, 0.05).name('fill intensity');
+    const sh = f.addFolder('Shading');
+    sh.add(look, 'rampSteps', 1, 8, 1).name('ramp steps');
+    sh.add(look, 'rampSoftness', 0, 1, 0.01).name('ramp softness');
+    sh.add(look, 'rampLift', 0, 3, 0.05).name('ramp lift');
+    sh.addColor(look, 'shadowColor').name('shadow hue');
+    sh.add(look, 'shadowHue', 0, 1, 0.01).name('shadow hue amount');
+    sh.addColor(look, 'highlightColor').name('highlight hue');
+    sh.add(look, 'highlightWarmth', 0, 1, 0.01).name('highlight warmth');
+    sh.addColor(look, 'rimColor').name('rim colour');
+    sh.add(look, 'rimStrength', 0, 1, 0.01).name('rim strength');
+    sh.add(look, 'rimPower', 0.5, 8, 0.1).name('rim power');
+    sh.add(look, 'maxLit', 0.5, 3, 0.05).name('max lit (no bloom)');
+    sh.add(look, 'glowBoost', 0, 8, 0.1).name('glow boost');
+    const at = f.addFolder('Atmosphere & sky');
+    at.addColor(look, 'hazeColor').name('haze colour');
+    at.add(look, 'hazeDensity', 0, 0.02, 0.0001).name('haze density');
+    at.add(look, 'hazeMax', 0, 1, 0.01).name('haze max');
+    at.addColor(look, 'chasmColor').name('chasm colour');
+    at.add(look, 'chasmFog', 0, 1, 0.01).name('chasm fog');
+    at.add(look, 'chasmDepth', 2, 80, 1).name('chasm depth (m)');
+    at.addColor(look, 'skyZenith').name('sky zenith');
+    at.addColor(look, 'skyHorizon').name('sky horizon');
+    at.add(look, 'cloudCover', 0, 1, 0.01).name('cloud cover');
+    at.addColor(look, 'stormColor').name('highstorm colour');
+    at.add(look, 'stormHeight', 0, 0.25, 0.005).name('highstorm height');
+    const pp = f.addFolder('Bloom & grade');
+    pp.add(look, 'bloomStrength', 0, 3, 0.05).name('bloom strength');
+    pp.add(look, 'bloomRadius', 0, 1, 0.01).name('bloom radius');
+    pp.add(look, 'bloomThreshold', 0, 4, 0.05).name('bloom threshold');
+    pp.add(look, 'exposure', 0.2, 3, 0.01);
+    pp.add(look, 'saturation', 0, 2, 0.01);
+    pp.add(look, 'contrast', 0.5, 1.5, 0.01);
+    pp.addColor(look, 'gradeShadows').name('grade shadows');
+    pp.addColor(look, 'gradeHighlights').name('grade highlights');
+    pp.add(look, 'gradeAmount', 0, 1, 0.01).name('grade amount');
+    pp.add(look, 'vignette', 0, 1, 0.01);
+    for (const sub of [sun, sh, at, pp]) sub.close();
+    f.add({ copy: () => this.copyText(JSON.stringify(look, null, 2)) }, 'copy').name('Copy look JSON');
+    f.add({ reset: () => {
+      const q = look.quality;
+      Object.assign(look, structuredClone(defaultLook), { quality: q });
+      f.controllersRecursive().forEach((c) => c.updateDisplay());
+    } }, 'reset').name('Reset look');
+    f.close();
+  }
+
+  private async copyText(text: string): Promise<void> {
+    try { await navigator.clipboard.writeText(text); } catch { console.log(text); }
   }
 
   toggle(): void {

@@ -3,7 +3,7 @@ import { mulberry32 } from '../core/math';
 
 const bridgeRng = mulberry32(7);
 
-const rockMat = new THREE.MeshStandardMaterial({ color: '#7e6b58', roughness: 0.92, flatShading: true });
+const rockMat = new THREE.MeshStandardMaterial({ color: '#a8927a', roughness: 0.92, flatShading: true });
 
 /** Lumpy flat-shaded boulder. */
 export function makeRock(seed: number, size: number, squash = 0.7): THREE.Mesh {
@@ -39,7 +39,7 @@ export function makeChrysalis(): THREE.Mesh {
     p.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: '#8d8270', roughness: 0.75, flatShading: true }));
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: '#8f897d', roughness: 0.75, flatShading: true }));
   m.scale.set(4.2, 5.2, 3.6);
   m.position.y = 2.4;
   m.rotation.z = 0.12;
@@ -54,12 +54,12 @@ export function makeRockbuds(points: THREE.Vector3[], seed: number): THREE.Group
   const g = new THREE.Group();
   const shell = new THREE.InstancedMesh(
     new THREE.SphereGeometry(0.35, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: '#6d6650', roughness: 1, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: '#8c8a80', roughness: 1, flatShading: true }),
     points.length,
   );
   const vines = new THREE.InstancedMesh(
     new THREE.ConeGeometry(0.22, 0.55, 5),
-    new THREE.MeshStandardMaterial({ color: '#5f8a3e', roughness: 0.9, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: '#7f9a55', roughness: 0.9, flatShading: true }),
     points.length,
   );
   const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
@@ -79,8 +79,8 @@ export function makeRockbuds(points: THREE.Vector3[], seed: number): THREE.Group
 /** A Sadeas-style wooden bridge: plank deck, cross beams, no rails. */
 export function makeBridge(length: number, width = 3.2): THREE.Group {
   const g = new THREE.Group();
-  const wood = new THREE.MeshStandardMaterial({ color: '#6b4a2e', roughness: 0.9, flatShading: true });
-  const dark = new THREE.MeshStandardMaterial({ color: '#4c3320', roughness: 0.95, flatShading: true });
+  const wood = new THREE.MeshStandardMaterial({ color: '#7d6a55', roughness: 0.9, flatShading: true });
+  const dark = new THREE.MeshStandardMaterial({ color: '#5a4a3b', roughness: 0.95, flatShading: true });
   const planks = Math.round(length / 0.45);
   for (let i = 0; i < planks; i++) {
     const p = new THREE.Mesh(new THREE.BoxGeometry(width * (0.96 + bridgeRng() * 0.06), 0.12, 0.4), wood);

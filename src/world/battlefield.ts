@@ -9,6 +9,8 @@ export interface Battlefield {
   spawnHeading: number;
   /** Just off the bridge on the assault plateau: where you return after falling. */
   landing: THREE.Vector3;
+  /** Staging-side end of the bridge deck: the match shot stands near here. */
+  bridgeStart: THREE.Vector3;
   /** Where Parshendi stand, with the heading they face. */
   enemySpots: { pos: THREE.Vector3; heading: number; role: 'warrior' | 'duelist' }[];
   /** The assault plateau (rim queries for horde arrivals and ledge falls). */
@@ -127,6 +129,7 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
     spawn: new THREE.Vector3(0, 0.5, stagingZ + stagingEdge - 6),
     spawnHeading: 0,
     landing: new THREE.Vector3(0, 0.3, -mainEdge + 5),
+    bridgeStart: new THREE.Vector3(0, 0, bridgeZ - bridgeLen / 2),
     enemySpots,
     main,
     bridgeFar: new THREE.Vector3(0, 0.3, -mainEdge - gap - 2),
