@@ -16,7 +16,7 @@ from lib import deg, link
 TAU = math.tau
 FRONT = math.pi / 2      # loft angle facing +Z (forward)
 BACK = -math.pi / 2
-TRIM_R = 0.011           # raised enamel bands: thick enough to read at game distance
+TRIM_R = 0.0085          # enamel bands: half-width (a 1.7 cm band, flat on the surface)
 
 # --- Small linear-algebra helpers (game space, numpy) ------------------------------
 
@@ -187,26 +187,41 @@ class Loft:
         return self
 
 
-def tube(piece, mat, pts, r=0.008, sides=4, closed=False):
-    """A round bar along a polyline (raised enamel trim, ridges)."""
+def tube(piece, mat, pts, r=0.008, sides=4, closed=False, nrm=None, flat=None):
+    """A bar along a polyline (raised enamel trim, ridges).
+
+    With surface normals `nrm` (one per point) and `flat` (height / width), the
+    cross-section is a flat band lying on the surface: half-width r, half-height
+    r * flat (the enamel inlay look) instead of a round bar.
+    """
     pts = [np.asarray(p, float) for p in pts]
     n = len(pts)
     verts, faces = [], []
     prev_u = None
+    band = nrm is not None and flat is not None
     for i, p in enumerate(pts):
         if closed:
             d = pts[(i + 1) % n] - pts[i - 1]
         else:
             d = pts[min(i + 1, n - 1)] - pts[max(i - 1, 0)]
         d = d / (np.linalg.norm(d) or 1)
-        ref = prev_u if prev_u is not None else (np.array([0, 1, 0]) if abs(d[1]) < 0.9 else np.array([1, 0, 0]))
+        if band:
+            ref = np.asarray(nrm[i], float)
+        else:
+            ref = prev_u if prev_u is not None else (np.array([0, 1, 0]) if abs(d[1]) < 0.9 else np.array([1, 0, 0]))
         u = ref - d * np.dot(ref, d)
         u /= np.linalg.norm(u) or 1
         prev_u = u
         v = np.cross(d, u)
-        for k in range(sides):
-            a = TAU * k / sides
-            verts.append(p + r * (math.cos(a) * u + math.sin(a) * v))
+        if band:
+            h = r * flat
+            for a, b in ((1, 1), (1, -1), (-1, -1), (-1, 1)):
+                verts.append(p + a * h * u + b * r * v)
+        else:
+            for k in range(sides):
+                a = TAU * k / sides
+                verts.append(p + r * (math.cos(a) * u + math.sin(a) * v))
+    sides = 4 if band else sides
     segs = n if closed else n - 1
     for i in range(segs):
         for k in range(sides):
@@ -221,34 +236,65 @@ def tube(piece, mat, pts, r=0.008, sides=4, closed=False):
     piece.add(verts, faces, mat)
 
 
-def ring(piece, mat, loft, t, r=0.008, off=0.0, th0=0.0, th1=TAU, n=None):
+FLAT = 0.45   # enamel band height / width
+
+
+def ring(piece, mat, loft, t, r=0.008, off=0.0, th0=0.0, th1=TAU, n=None, flat=FLAT):
     closed = abs(th1 - th0 - TAU) < 1e-6
     if n is None:  # about one segment per 6 cm of length
         probe = [loft.point(t, th) for th in np.linspace(th0, th1, 17)]
         n = max(10, int(sum(np.linalg.norm(b - a) for a, b in zip(probe, probe[1:])) / 0.06))
     ths = np.linspace(th0, th1, n, endpoint=not closed)
-    tube(piece, mat, [loft.surf(t, th, off) for th in ths], r=r, closed=closed)
+    tube(piece, mat, [loft.surf(t, th, off) for th in ths], r=r, closed=closed,
+         nrm=[loft.normal(t, th) for th in ths] if flat else None, flat=flat)
 
 
-def path(piece, mat, loft, tths, r=0.008, off=0.0, n=8):
-    """Trim along a path through (t, th) points, sampled smoothly on the surface."""
+def sample_path(loft, tths, n=8, off=0.0):
+    """Points and surface normals along a smooth path through (t, th) points."""
     arr = np.array(tths, float)
-    pts = []
+    arr[:, 1] = np.unwrap(arr[:, 1])
+    pts, nrm = [], []
     for k in range(n):
         u = k / (n - 1) * (len(arr) - 1)
         t, th = catmull(arr, u)
         pts.append(loft.surf(t, th, off))
-    tube(piece, mat, pts, r=r)
+        nrm.append(loft.normal(t, th))
+    return pts, nrm
+
+
+def path(piece, mat, loft, tths, r=0.008, off=0.0, n=8, flat=FLAT):
+    """Trim along a path through (t, th) points, sampled smoothly on the surface."""
+    pts, nrm = sample_path(loft, tths, n, off)
+    tube(piece, mat, pts, r=r, nrm=nrm if flat else None, flat=flat)
+
+
+def offset_line(pts, nrm, d):
+    """A polyline beside another on the surface, d to its right (seen from outside)."""
+    out = []
+    for i, (p, nv) in enumerate(zip(pts, nrm)):
+        tan = pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]
+        side = np.cross(tan, nv)
+        side /= np.linalg.norm(side) or 1
+        out.append(p + side * d)
+    return out
 
 
 def patch(piece, mat, loft, t0, t1, th0, th1, off=0.0, thick=0.012, nt=6, nth=8, flare=None):
-    """A solid curved plate lying on (off the surface of) a loft region."""
+    """A solid curved plate lying on (off the surface of) a loft region.
+
+    t0/t1 may be functions of v (0..1 across the angle range) and th0/th1
+    functions of u (0..1 along t), for curved or shield-shaped outlines.
+    """
+    F = lambda x: x if callable(x) else (lambda _w: x)  # noqa: E731
+    T0, T1, TH0, TH1 = F(t0), F(t1), F(th0), F(th1)
     outer, inner = [], []
     for i in range(nt + 1):
-        t = t0 + (t1 - t0) * i / nt
-        extra = flare(i / nt) if flare else 0.0
+        uu = i / nt
+        extra = flare(uu) if flare else 0.0
         for j in range(nth + 1):
-            th = th0 + (th1 - th0) * j / nth
+            vv = j / nth
+            th = TH0(uu) + (TH1(uu) - TH0(uu)) * vv
+            t = T0(vv) + (T1(vv) - T0(vv)) * uu
             p, nrm = loft.point(t, th), loft.normal(t, th)
             outer.append(p + nrm * (off + extra + thick))
             inner.append(p + nrm * (off + extra))
@@ -335,7 +381,7 @@ def leaf(piece, mat, w, h, thick, frame, nu=2, nv=4, bulge=0.012):
             v = i / nv
             for j in range(nu + 1):
                 u = j / nu * 2 - 1
-                z = sgn * thick / 2 + bulge * (1 - u * u) * (1 - 0.5 * v)
+                z = sgn * thick / 2 + bulge * (1 - abs(u)) * (1 - 0.5 * v)
                 grid.append(frame((u * hw(v) * w, -v * h, z)))
     W, N = nu + 1, (nu + 1) * (nv + 1)
     faces = []
@@ -455,3 +501,38 @@ def add_part(piece, part, r=0.009, off=0.002, face_mat=None):
         piece.add(V, fs, m)
     for Q, N in part.trim:
         tube(piece, "trim", Q + N * off, r=r)
+
+
+def th_for(loft, t, coord, face):
+    """Angle on loft section t whose point has local x (face 'front'/'back') or local z
+    (face 'left'/'right', the +x / -x side) equal to coord."""
+    rng = {"front": (0.0, math.pi), "back": (math.pi, TAU), "left": (-math.pi / 2, math.pi / 2),
+           "right": (math.pi / 2, 1.5 * math.pi)}[face]
+    k = 0 if face in ("front", "back") else 2
+    ths = np.linspace(rng[0], rng[1], 97)
+    vals = np.array([loft.local(t, th)[k] for th in ths])
+    i = int(np.argmin(np.abs(vals - coord)))
+    return float(ths[i])
+
+
+def proj(loft, pts, face="front", origin=(0, 0, 0)):
+    """(t, th) on a loft for points given in a reference view, world metres: front/back views
+    give (x, y), side views give (z, y). origin: the piece origin in world space (x, y, z)."""
+    ox, oy, oz = origin
+    out = []
+    for a, y in pts:
+        t = t_at(loft, y - oy)
+        out.append((t, th_for(loft, t, a - (ox if face in ("front", "back") else oz), face)))
+    return out
+
+
+def ref_path(piece, mat, loft, pts, face="front", origin=(0, 0, 0), r=None, n=None, mirror=True, **kw):
+    """Trim along a path read off a reference view (world metres), mirrored for the other side."""
+    r = TRIM_R if r is None else r
+    sides = (1, -1) if mirror else (1,)
+    for sgn in sides:
+        q = [(sgn * a if face in ("front", "back") else a, y) for a, y in pts]
+        tths = proj(loft, q, face, origin)
+        if face in ("left", "right") and sgn < 0:
+            tths = proj(loft, q, "right" if face == "left" else "left", origin)
+        path(piece, mat, loft, tths, r=r, n=n or max(8, 4 * len(pts)), **kw)

@@ -168,17 +168,19 @@ export class HumanoidModel {
    * bronze colours don't touch other fighters. Returns the dark plate material.
    */
   private buildModelledPlate(model: THREE.Object3D, enemy: boolean): THREE.Material {
-    // Satin rather than mirror metal: the references paint the Plate as a matt slate blue-grey.
+    // Satin rather than mirror metal: the references paint the Plate as a matt slate blue-grey,
+    // with deep indigo enamel and a dark brown-black padded layer showing at the joints.
     const shade = { metalness: 0.4, flatShading: false };
     const mats: Record<string, THREE.MeshStandardMaterial> = {
-      plate: this.mat(enemy ? '#6e5a47' : '#7a8796', { ...shade, roughness: 0.4 }),
-      plate_dark: this.mat(enemy ? '#3b2d25' : '#4d5865', { ...shade, roughness: 0.5 }),
-      // Raised enamel bands: sapphire on the player's Plate, dull gold on the enemy's.
-      trim: this.mat(enemy ? '#a8803f' : '#2d55c8', {
-        metalness: 0.3, roughness: 0.4, flatShading: false,
-        emissive: new THREE.Color(enemy ? '#2a1a08' : '#16348f'), emissiveIntensity: 0.6,
+      plate: this.mat(enemy ? '#6e5a47' : '#6c7b89', { ...shade, roughness: 0.42 }),
+      plate_dark: this.mat(enemy ? '#2a1d16' : '#2b2724', { metalness: 0.05, roughness: 0.85, flatShading: false }),
+      // Enamel bands: deep sapphire-indigo on the player's Plate, dull gold on the enemy's.
+      trim: this.mat(enemy ? '#a8803f' : '#36438c', {
+        metalness: 0.25, roughness: 0.38, flatShading: false,
+        emissive: new THREE.Color(enemy ? '#2a1a08' : '#0b1233'), emissiveIntensity: 0.5,
       }),
-      glow: this.mat('#d8f2ff', { emissive: new THREE.Color('#9fdcff'), emissiveIntensity: 2.2, flatShading: false }),
+      // Stormlight: the visor line and the chest sapphire.
+      glow: this.mat('#a9ccff', { emissive: new THREE.Color('#5aa2ff'), emissiveIntensity: 2.2, flatShading: false }),
     };
     const piece = (name: string, parent: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Object3D => {
       const src = model.getObjectByName(name);

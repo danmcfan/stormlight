@@ -52,127 +52,153 @@ from skeleton import (FAULD_BACK_Z, FAULD_FRONT_Z, FAULD_Y, HELM_Y, HIP_Y, LEG_X
 
 from plate_geom import *  # noqa: E402,F401,F403
 from plate_geom import MATS, TRIM_R, FRONT, BACK, TAU  # noqa: E402
-from trellis_part import Part, similarity  # noqa: E402
 
 # --- The pieces ---------------------------------------------------------------------
 # Sizes in metres, measured off the front reference scaled to the game height
 # (helm top 2.37 m): the Plate is 1.7 m across the arms, 1.5 m across the
 # pauldrons, its legs 0.34 m thick.
 
+HELM_O = (0.0, WAIST_Y + HELM_Y, 0.0)     # helm joint, world (2.0 m)
+CHEST_O = (0.0, WAIST_Y, 0.0)              # torso pieces' origin (the waist)
+
+
+def rivet(p, centre, nrm, r=0.009):
+    disc(p, "plate", centre, nrm, r, r * 0.9, seg=6)
+
+
 def build_helm(enemy_crest=False):
-    """Rounded great helm with a faceplate, one eye slit and a centre ridge. Origin: helm joint."""
+    """Great helm (helm sheet + plate-helm-34): round, full crown with a flat rib front to back
+    edged in trim; the trim splits at the brow and frames the faceplate down to the cheeks. The
+    faceplate stands proud of the shell, faceted with a centre ridge and a V chin; the curved eye
+    slit (dark recess, a thin glowing line inside) sits between its top edge and the brow.
+    Origin: helm joint (world 2.0 m)."""
     p = Piece("helm")
-    cz = 0.09   # the head sits forward of the spine line, like the side reference
+    cz = 0.08
     L = Loft([
-        dict(y=-0.09, rx=0.125, rf=0.15, rb=0.15, cz=cz),
-        dict(y=0.04, rx=0.142, rf=0.17, rb=0.165, cz=cz, p=2.2),
-        dict(y=0.17, rx=0.15, rf=0.178, rb=0.172, cz=cz, p=2.2),
-        dict(y=0.26, rx=0.138, rf=0.162, rb=0.165, cz=cz),
-        dict(y=0.325, rx=0.11, rf=0.125, rb=0.135, cz=cz),
-        dict(y=0.37, rx=0.06, rf=0.07, rb=0.075, cz=cz),
-        dict(y=0.385, rx=0.01, rf=0.01, rb=0.01, cz=cz),
-    ]).mesh(p, "plate", seg=24, sub=3)
-    # Faceplate: a raised, slightly pointed visor over the front.
+        dict(y=-0.10, rx=0.148, rf=0.15, rb=0.145, cz=cz),
+        dict(y=0.02, rx=0.152, rf=0.165, rb=0.16, cz=cz, p=2.2),
+        dict(y=0.10, rx=0.15, rf=0.172, rb=0.165, cz=cz, p=2.3),
+        dict(y=0.20, rx=0.15, rf=0.188, rb=0.162, cz=cz, p=2.3),
+        dict(y=0.28, rx=0.142, rf=0.178, rb=0.15, cz=cz, p=2.15),
+        dict(y=0.335, rx=0.118, rf=0.142, rb=0.118, cz=cz),
+        dict(y=0.37, rx=0.078, rf=0.092, rb=0.078, cz=cz),
+        dict(y=0.385, rx=0.025, rf=0.025, rb=0.025, cz=cz),
+    ]).mesh(p, "plate", seg=26, sub=2)
+    # Faceplate: front-only loft, a forward wedge at the chin, faceted (p < 2).
     face = Loft([
-        dict(y=-0.09, rx=0.128, rf=0.17, rb=0.0, p=1.5, cz=cz),
-        dict(y=0.06, rx=0.145, rf=0.2, rb=0.0, p=1.45, cz=cz),
-        dict(y=0.19, rx=0.152, rf=0.215, rb=0.0, p=1.6, cz=cz),
-        dict(y=0.29, rx=0.12, rf=0.14, rb=0.0, p=2.0, cz=cz),
+        dict(y=-0.04, rx=0.13, rf=0.168, rb=0.0, p=1.5, cz=cz),
+        dict(y=0.06, rx=0.142, rf=0.18, rb=0.0, p=1.55, cz=cz),
+        dict(y=0.15, rx=0.148, rf=0.186, rb=0.0, p=1.75, cz=cz),
+        dict(y=0.23, rx=0.142, rf=0.176, rb=0.0, p=2.0, cz=cz),
     ])
-    patch(p, "plate", face, 0.0, 3.0, deg(18), deg(162), off=-0.006, thick=0.012, nt=8, nth=10)
-    # Eye slit: a dark recess with the glowing slit inside it (a slight downward curve).
-    t_slit = t_at(face, 0.18)
-    patch(p, "plate_dark", face, t_slit - 0.2, t_slit + 0.16, FRONT - deg(42), FRONT + deg(42),
-          off=0.006, thick=0.003, nt=2, nth=10)
-    patch(p, "glow", face, t_slit - 0.09, t_slit + 0.07, FRONT - deg(36), FRONT + deg(36),
-          off=0.0085, thick=0.002, nt=1, nth=10)
-    # Centre ridge down the faceplate and over the crown to the back.
-    path(p, "plate", face, [(t_slit - 0.35, FRONT), (1.0, FRONT), (0.05, FRONT)], r=0.01, off=0.006, n=10)
-    crown = [L.surf(t, FRONT) for t in np.linspace(3.2, 5.9, 7)] + [L.surf(t, BACK) for t in np.linspace(5.9, 1.0, 10)]
-    tube(p, "plate", crown, r=0.014)
-    # Enamel lines framing the faceplate: from the crown, out round the slit, down the cheeks.
-    for s in (1, -1):
-        path(p, "trim", face, [(3.0, FRONT + s * deg(9)), (2.75, FRONT + s * deg(30)),
-                               (2.1, FRONT + s * deg(60)), (1.0, FRONT + s * deg(70)), (0.05, FRONT + s * deg(66))],
-             r=0.009, off=0.006, n=18)
-    # Cheek plates' back edge (side reference): a trim curve from the temple down behind the face.
-    for s in (1, -1):
-        side = 0.0 if s > 0 else math.pi
-        ypath(p, "trim", L, [(0.3, FRONT - s * deg(35)), (0.22, side + s * deg(40)), (0.16, side + s * deg(5)),
-                             (0.13, side - s * deg(20)), (0.05, side - s * deg(30)), (-0.06, side - s * deg(20))],
-              r=0.008, n=18)
+    TH = deg(64)
+    dip = lambda v: 1 - (2 * v - 1) ** 2          # noqa: E731  1 at the centre, 0 at the ends
+    vee = lambda v: abs(2 * v - 1)                 # noqa: E731
+    top = lambda v: t_at(face, 0.19 - 0.016 * dip(v))             # noqa: E731  slit's lower edge
+    chin = lambda v: t_at(face, 0.02 + 0.075 * vee(v))            # noqa: E731  V chin
+    patch(p, "plate", face, chin, top, FRONT - TH, FRONT + TH, off=0.0, thick=0.014, nt=7, nth=12)
+    # Eye slit: a dark recess on the shell between the faceplate and the brow, narrowing at the ends,
+    # with a thin glowing line deep inside.
+    lo = lambda v: t_at(L, 0.188 - 0.016 * dip(v))                # noqa: E731
+    hi = lambda v: t_at(L, 0.188 - 0.016 * dip(v) + 0.036 * dip(v) ** 0.6 + 0.002)  # noqa: E731
+    patch(p, "plate_dark", L, lo, hi, FRONT - deg(46), FRONT + deg(46), off=0.004, thick=0.003, nt=2, nth=12)
+    glo = lambda v: t_at(L, 0.199 - 0.016 * dip(v))               # noqa: E731
+    ghi = lambda v: t_at(L, 0.199 - 0.016 * dip(v) + 0.006 * dip(v) ** 0.6 + 0.001)  # noqa: E731
+    patch(p, "glow", L, glo, ghi, FRONT - deg(32), FRONT + deg(32), off=0.0075, thick=0.001, nt=1, nth=10)
+    # Centre ridge down the faceplate, from under the slit to the chin point.
+    path(p, "plate", face, [(t_at(face, 0.165), FRONT), (t_at(face, 0.09), FRONT), (t_at(face, 0.025), FRONT)],
+         r=0.008, off=0.012, n=6, flat=None)
+    # Crown rib: a flat raised band from the nape over the top to the brow, trim along both edges
+    # that splits at the brow and frames the faceplate down to the chin (helm sheet, measured).
+    top_t = L.n - 1.0
+    rib = [(t_at(L, y), BACK) for y in (0.0, 0.12, 0.24, 0.32, 0.36)] + [(top_t, FRONT + TAU)] + \
+          [(t_at(L, y), FRONT + TAU) for y in (0.36, 0.32, 0.29)]
+    rp, rn = sample_path(L, rib, 22, 0.0)
+    tube(p, "plate", [q + nv * 0.004 for q, nv in zip(rp, rn)], r=0.02, nrm=rn, flat=0.3)
+    back_n = 15     # rib samples up to the crown top
+    oy = HELM_O[1]
+    for sgn in (1, -1):
+        edge = offset_line(rp[:back_n], rn[:back_n], -sgn * 0.025)
+        en = rn[:back_n]
+        front = [(0.024, 2.365), (0.027, 2.325), (0.034, 2.305), (0.047, 2.285), (0.067, 2.265), (0.094, 2.245)]
+        side = [(0.12, 2.236), (0.06, 2.225), (0.04, 2.205), (0.04, 2.185), (0.05, 2.165), (0.09, 2.15),
+                (0.145, 2.13)]
+        chin = [(0.09, 2.105), (0.078, 2.085), (0.07, 2.065), (0.066, 2.045)]
+        tths = proj(L, [(sgn * x, y) for x, y in front], "front", HELM_O) + \
+            proj(L, side, "left" if sgn > 0 else "right", HELM_O) + \
+            proj(L, [(sgn * x, y) for x, y in chin], "front", HELM_O)
+        fp, fn = sample_path(L, tths, 40, 0.003)
+        tube(p, "trim", [q + nv * 0.003 for q, nv in zip(edge, en)] + fp, r=0.0075, nrm=list(en) + fn, flat=0.45)
+        # Rivets: the visor pivot and three along the cheek plate's lower edge (side view).
+        for z, y, r in ((0.01, 2.245, 0.012), (-0.01, 2.085, 0.009), (-0.06, 2.085, 0.009), (-0.11, 2.09, 0.009)):
+            t = t_at(L, y - oy)
+            th = th_for(L, t, z, "left" if sgn > 0 else "right")
+            rivet(p, L.surf(t, th, 0.002), L.normal(t, th), r)
     if enemy_crest:
         c = Piece("helm_crest")
-        for s in (1, -1):
-            tube(c, "plate", [L.surf(t, th, 0.0) + np.array([0, dy, 0]) for t, th, dy in (
-                (4.0, FRONT + s * 0.5, 0.0), (4.6, s * 0.9 + (0 if s > 0 else math.pi), 0.03),
-                (4.3, BACK + s * 0.6, 0.06), (3.2, BACK + s * 0.45, 0.10))], r=0.022)
+        for sgn in (1, -1):
+            tube(c, "plate", [L.surf(t_at(L, y), th, 0.0) + np.array([0, dy, 0]) for y, th, dy in (
+                (0.28, FRONT + sgn * 0.5, 0.0), (0.35, sgn * 0.9 + (0 if sgn > 0 else math.pi), 0.03),
+                (0.3, BACK + sgn * 0.6, 0.06), (0.17, BACK + sgn * 0.45, 0.10))], r=0.022)
         return p, c
     return p, None
 
 
 def build_gorget():
-    """High flared collar with a V opening at the front. Origin: the waist."""
+    """High flared collar, open in a V at the front over the dark padded neck. Origin: the waist."""
     p = Piece("gorget")
     L = Loft([
         dict(y=0.70, rx=0.34, rf=0.32, rb=0.28, cz=0.03),
         dict(y=0.86, rx=0.30, rf=0.285, rb=0.26, cz=0.04),
-        dict(y=0.96, rx=0.255, rf=0.255, rb=0.235, cz=0.05),
-        dict(y=1.04, rx=0.222, rf=0.232, rb=0.215, cz=0.05),
-        dict(y=1.10, rx=0.214, rf=0.226, rb=0.21, cz=0.05),
-        dict(y=1.13, rx=0.222, rf=0.236, rb=0.218, cz=0.05),
+        dict(y=0.95, rx=0.25, rf=0.255, rb=0.235, cz=0.05),
+        dict(y=1.02, rx=0.222, rf=0.235, rb=0.218, cz=0.05),
+        dict(y=1.06, rx=0.226, rf=0.238, rb=0.222, cz=0.05),
+        dict(y=1.085, rx=0.24, rf=0.25, rb=0.235, cz=0.05),
     ])
-    t_rim = t_at(L, 1.13)
-    t_v = t_at(L, 0.86)
+    t_rim = t_at(L, 1.085)
+    t_v = t_at(L, 0.85)
 
     def top(th):
         d = abs(((th - FRONT + math.pi) % TAU) - math.pi)
-        f = 0.5 * (1 + math.cos(math.pi * d / 0.75)) if d < 0.75 else 0.0
-        return t_rim + (t_v - t_rim) * f
-    rim = shell(p, L, top, 0.0, thick=0.02, nth=40, nu=5)
+        f = 0.5 * (1 + math.cos(math.pi * d / 0.62)) if d < 0.62 else 0.0
+        return t_rim + (t_v - t_rim) * f ** 0.8
+    rim = shell(p, L, top, 0.0, thick=0.018, nth=40, nu=5)
     tube(p, "trim", rim, r=TRIM_R, closed=True)
-    # A second band just below the rim, following its V (helm reference).
-    inner = []
-    for j in range(40):
-        th = TAU * j / 40
-        inner.append(L.surf(top(th) - 0.35, th, 0.002))
-    tube(p, "trim", inner, r=TRIM_R * 0.8, closed=True)
-    # Dark padded neck inside the collar, under the helm.
-    Loft([dict(y=0.72, rx=0.15, rf=0.16, rb=0.15, cz=0.05), dict(y=0.98, rx=0.13, rf=0.14, rb=0.13, cz=0.06)]
+    # Dark padded neck inside the collar, under the helm (shows in the V).
+    Loft([dict(y=0.72, rx=0.16, rf=0.17, rb=0.15, cz=0.06), dict(y=0.98, rx=0.14, rf=0.15, rb=0.13, cz=0.07)]
          ).mesh(p, "plate_dark", seg=14, sub=1)
     return p
 
 
 def build_breastplate():
-    """Barrel chest with the V of trim to the sapphire, a raised centre line. Origin: the waist."""
+    """Barrel chest: hex sapphire at the sternum, trim V from the collar to it, an arc under the
+    chest, two lines each side down the abdomen, a shallow V lower edge; back: the yoke arc and
+    lines down to the belt (front/back references, world metres). Origin: the waist."""
     p = Piece("breastplate")
     L = Loft([
         dict(y=0.16, rx=0.3, rf=0.27, rb=0.25, cz=0.03, p=2.3),
-        dict(y=0.32, rx=0.32, rf=0.31, rb=0.27, cz=0.03, p=2.4),
+        dict(y=0.32, rx=0.33, rf=0.31, rb=0.27, cz=0.03, p=2.4),
         dict(y=0.48, rx=0.37, rf=0.35, rb=0.29, cz=0.03, p=2.5),
-        dict(y=0.62, rx=0.395, rf=0.36, rb=0.30, cz=0.03, p=2.5),
-        dict(y=0.74, rx=0.385, rf=0.335, rb=0.29, cz=0.03, p=2.4),
+        dict(y=0.62, rx=0.385, rf=0.36, rb=0.30, cz=0.03, p=2.5),
+        dict(y=0.74, rx=0.375, rf=0.335, rb=0.29, cz=0.03, p=2.4),
         dict(y=0.84, rx=0.33, rf=0.285, rb=0.26, cz=0.03),
         dict(y=0.90, rx=0.22, rf=0.2, rb=0.2, cz=0.04),
     ]).mesh(p, "plate", seg=28, sub=2)
-    # Sapphire high on the chest, in a hexagonal setting.
-    t_gem = t_at(L, 0.69)
-    hexgem(p, L.surf(t_gem, FRONT, -0.01), L.normal(t_gem, FRONT), 0.05, 0.068, 0.03)
-    # Raised centre line from the gem down to the belt.
-    ypath(p, "plate", L, [(0.6, FRONT), (0.4, FRONT), (0.17, FRONT)], r=0.011, n=10)
-    for s in (1, -1):
-        # The V from the collar's sides down to the gem.
-        ypath(p, "trim", L, [(0.86, FRONT + s * deg(50)), (0.8, FRONT + s * deg(30)), (0.72, FRONT + s * deg(9))], n=14)
-        # Under the chest: a shallow V from under the pauldrons to the centre line.
-        ypath(p, "trim", L, [(0.57, FRONT + s * deg(2)), (0.6, FRONT + s * deg(30)), (0.63, FRONT + s * deg(60)),
-                             (0.62, FRONT + s * deg(88))], n=18)
-        # Two lines down the abdomen, splaying toward the belt.
-        ypath(p, "trim", L, [(0.56, FRONT + s * deg(14)), (0.38, FRONT + s * deg(19)), (0.18, FRONT + s * deg(25))], n=12)
-        ypath(p, "trim", L, [(0.6, FRONT + s * deg(62)), (0.4, FRONT + s * deg(55)), (0.18, FRONT + s * deg(50))], n=12)
-        # Back: yoke curve and the lines down to the waist (back reference).
-        ypath(p, "trim", L, [(0.8, BACK + s * deg(70)), (0.62, BACK + s * deg(35)), (0.58, BACK)], n=16)
-        ypath(p, "trim", L, [(0.6, BACK + s * deg(22)), (0.4, BACK + s * deg(25)), (0.18, BACK + s * deg(28))], n=12)
-    yring(p, "trim", L, 0.19)
+    t_gem = t_at(L, 0.7)
+    hexgem(p, L.surf(t_gem, FRONT, -0.012), L.normal(t_gem, FRONT), 0.05, 0.08, 0.032)
+    O = CHEST_O
+    # Raised centre line from under the gem to the lower edge.
+    ref_path(p, "plate", L, [(0.0, 1.635), (0.0, 1.5), (0.0, 1.37)], "front", O, r=0.008, mirror=False, flat=None)
+    ref_path(p, "trim", L, [(0.235, 1.99), (0.12, 1.905), (0.05, 1.845)], "front", O)
+    ref_path(p, "trim", L, [(0.0, 1.655), (0.1, 1.625), (0.2, 1.588), (0.28, 1.535), (0.345, 1.475), (0.375, 1.43)],
+             "front", O)
+    ref_path(p, "trim", L, [(0.2, 1.585), (0.18, 1.47), (0.13, 1.32)], "front", O)
+    ref_path(p, "trim", L, [(0.3, 1.52), (0.3, 1.43), (0.27, 1.355)], "front", O)
+    ref_path(p, "trim", L, [(0.0, 1.29), (0.15, 1.31), (0.3, 1.355), (0.37, 1.39)], "front", O)
+    # Back: yoke V under the collar, the arch over the shoulder blades, two lines down.
+    ref_path(p, "trim", L, [(0.0, 1.97), (0.12, 2.0), (0.22, 2.03)], "back", O)
+    ref_path(p, "trim", L, [(0.0, 1.615), (0.12, 1.6), (0.25, 1.55), (0.35, 1.49), (0.38, 1.45)], "back", O)
+    ref_path(p, "trim", L, [(0.19, 1.575), (0.18, 1.46), (0.16, 1.37)], "back", O)
     return p
 
 
@@ -418,11 +444,16 @@ def build_boot(s):
 # --- Assemble -----------------------------------------------------------------------
 
 reset_scene()
-MATS.update({
-    "plate": material("plate", (0.17, 0.21, 0.26), metallic=0.6, roughness=0.42),
-    "plate_dark": material("plate_dark", (0.06, 0.065, 0.075), metallic=0.3, roughness=0.6),
-    "trim": material("trim", (0.03, 0.05, 0.36), metallic=0.1, roughness=0.45),
-    "glow": material("glow", (0.69, 0.89, 1.0), roughness=0.3, emission=(0.35, 0.72, 1.0), strength=4.0),
+def lin(h):
+    c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    return tuple(v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in c)
+
+
+MATS.update({   # the game's colours (humanoid.ts buildModelledPlate), linear
+    "plate": material("plate", lin("#6c7b89"), metallic=0.55, roughness=0.42),
+    "plate_dark": material("plate_dark", lin("#2b2724"), metallic=0.05, roughness=0.85),
+    "trim": material("trim", lin("#36438c"), metallic=0.25, roughness=0.38),
+    "glow": material("glow", lin("#a9ccff"), roughness=0.3, emission=lin("#5aa2ff"), strength=2.2),
 })
 
 pieces = []
