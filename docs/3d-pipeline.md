@@ -76,10 +76,16 @@ Blender itself to inspect or hand-edit it.
   gives each fighter its own colours (the enemy's bronze) and hit flash.
 - **Avoid big flat metal faces.** Under the game's sun, a flat metallic face
   mirrors it as a white patch; give plates some curvature.
-- **Scripted geometry helpers** in `build_shardplate.py`: `Loft` (stacked
-  superellipse sections, smooth between key sections), `ring`/`path` (raised
-  trim tubes on a loft's surface), `patch` (a solid plate lying on a loft
-  region), `leaf`, `disc`, `ellipsoid`.
+- **Scripted geometry helpers** in `plate_geom.py`: `Loft` (stacked
+  superellipse sections, smooth between key sections), `ring`/`path` (enamel
+  trim: flat bands on a loft's surface), `patch` (a solid plate lying on a
+  loft region; its bounds can be functions, for curved or shield outlines),
+  `proj` / `ref_path` (trim through points read off a reference view in world
+  metres, mirrored), `leaf`, `disc` (domed boss or flat rondel), `ellipsoid`.
+- **Image-to-3D** (`trellis_part.py`, tried in round 2): Trellis meshes of the
+  part sheets have good shapes but, cut to a game budget, they come out lumpy
+  and their trim (traced from the texture) breaks up; the helm and gauntlet
+  scored and looked worse than the scripted pieces. Use them to measure.
 - **Materials:** Principled BSDF only (exports to glTF PBR). Glow is emission:
   Stormlight blue `(0.5, 0.82, 1.0)`.
 - **Storage:** GLBs and renders are Git LFS (`.gitattributes`); the Pages
@@ -92,7 +98,7 @@ Blender itself to inspect or hand-edit it.
 | Model | Script | Reference | Notes |
 |---|---|---|---|
 | `shardblade.glb` | `build_shardblade.py` | `art/source/shardblade-side/nb21-v1` | Traced outline (shrunk by the bevel width so the finished silhouette matches), chamfered edges, two-hand grip, glowing sapphire, diamond boss at the hooks, etched fuller with abstract glyph strokes. 2.5 m overall. Side IoU 0.955 (was 0.897) |
-| `shardplate.glb` | `build_shardplate.py` | `art/source/shardplate-front` (primary), `shardplate-side-back`, `shardplate-helm` (`nb21-v1`) | 24 rigid pieces sized from the front reference's measured silhouette: the stocky build (1.7 m across the arms, 0.34 m thick legs). Helm with glowing slit and centre ridge, high flared collar with a V front, barrel breastplate with hex sapphire and trim V, belt, leaf-plate fauld front/back, tassets hung from the belt, pauldrons with upright horn, disc bosses and two lames, couters + flared vambraces, heavy gauntlets, big knee cops, thick greaves, broad sabatons; enemy-only `helm_crest`. ~26.1k triangles. IoU front 0.876, side 0.888, back 0.884, helm 0.922 / 0.911 (were 0.59 / 0.60 / 0.62 for the body) |
+| `shardplate.glb` | `build_shardplate.py` (helpers in `plate_geom.py`) | `art/source/shardplate-front` (primary), `shardplate-side-back`, `shardplate-helm` (`nb21-v1`); part sheets `art/source/plate-*` | 24 rigid pieces, sized from the target table below; trim paths placed from reference coordinates (`proj` / `ref_path`). Helm: round crown with a flush rib edged in trim that frames the faceplate to a V chin, S-curve cheek trim and rivets, faceted faceplate with a ridge, a dark eye slit (straight top, V bottom) with a thin glowing line. Wide flared collar open in a V over the dark padding. Barrel chest with a faceted sapphire, the reference's chest arc, abdomen and back trims. Belt with a V front, shield tassets, five rows of long ridged fauld leaves. Pauldrons: upright domes, arched flange (the "horn"), flat rondels, two curved lames. Vambraces, high elbow cop and disc, gauntlets with knuckles, three-plate fingers and a thumb closed round the grip (`GRIP_Y`, the game's `PLATE_HAND`). Knee cops with trim, greaves with a calf, sabatons with instep lames, rivets, toe cap, heel cup. Enemy-only `helm_crest`. ~24.9k triangles. IoU front 0.905, side 0.900, back 0.905, helm 0.965 / 0.966 (round 1: 0.876 / 0.888 / 0.884, 0.922 / 0.911) |
 
 Per-model reference data (target sizes measured off the references) lives in
 `docs/models/`: read `docs/models/shardplate.md` before changing the Plate.

@@ -513,9 +513,15 @@ def build_boot(s):
         dict(y=0.32, rx=0.12, rf=0.06, rb=0.045, p=2.3),
         dict(y=0.345, rx=0.05, rf=0.03, rb=0.03),
     ], to_foot).mesh(p, "plate", seg=16, sub=2)
-    for t in (2.5, 3.2):
-        path(p, "plate_dark", foot, [(t, deg(-6)), (t, deg(90)), (t, deg(186))], r=0.007, n=8, flat=None)
-    ring(p, "plate_dark", foot, 1.2, r=0.01, th0=deg(-10), th1=deg(190), n=16, flat=None)
+    # Two instep lames over the top of the foot, each stepping onto the next, riveted at the ends.
+    for t0, t1 in ((1.9, 2.55), (2.5, 3.15)):
+        patch(p, "plate", foot, t0, t1, deg(-4), deg(184), off=0.0, thick=0.012, nt=2, nth=8)
+        for th in (deg(4), deg(176)):
+            tt = (t0 + t1) / 2
+            rivet(p, foot.surf(tt, th, 0.012), foot.normal(tt, th), 0.009)
+    path(p, "plate_dark", foot, [(3.6, deg(-6)), (3.6, deg(90)), (3.6, deg(186))], r=0.006, n=8, flat=None)
+    # Dark strap over the heel, under the ankle lame.
+    ring(p, "plate_dark", foot, 0.45, r=0.012, th0=deg(-20), th1=deg(200), n=12, flat=None)
     # Heel cup.
     ellipsoid(p, "plate", to_foot((0.0, -0.13, 0.02)), (0.11, 0.06, 0.07), seg=10, rings=4)
     return p
