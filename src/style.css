@@ -1,44 +1,188 @@
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1117; }
-body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #e8eef5; }
-#game { display: block; width: 100vw; height: 100vh; }
+/* ==========================================================================
+   Stormlight UI theme
+   Dark Shardplate steel panels, thin brass rules, and stormlight-blue gems.
+   ========================================================================== */
+:root {
+  --ink: #0a0f17;
+  --panel: rgba(12, 17, 26, 0.84);
+  --panel-edge: rgba(201, 169, 106, 0.38);
+  --brass: #cfb27a;
+  --brass-dim: rgba(207, 178, 122, 0.55);
+  --storm: #a8e0ff;
+  --storm-glow: rgba(140, 210, 255, 0.6);
+  --text: #e6edf5;
+  --muted: #94a3b5;
+  --good: #4ade80;
+  --warn: #facc15;
+  --bad: #f87171;
+  --serif: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+  --gutter: 14px;
+  --col-width: 248px;
+}
 
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); }
+body { font-family: var(--sans); color: var(--text); }
+#game { display: block; width: 100vw; height: 100vh; }
+.hidden { display: none !important; }
+
+/* --- Gem motif: a small glowing diamond ---------------------------------- */
+.gem, .ornament i, .cta i, .loading i, .panel::before, .panel::after {
+  width: 7px; height: 7px; transform: rotate(45deg);
+  background: var(--storm);
+  box-shadow: 0 0 8px var(--storm-glow), 0 0 2px #fff;
+}
+
+/* --- Panels ------------------------------------------------------------- */
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 27, 40, 0.88), var(--panel));
+  border: 1px solid var(--panel-edge);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), 0 6px 22px rgba(0, 0, 0, 0.35);
+  padding: 9px 12px 11px;
+  pointer-events: none;
+}
+/* Gems set into the two top corners of every panel. */
+.panel::before, .panel::after { content: ''; position: absolute; top: -4px; }
+.panel::before { left: -4px; }
+.panel::after { right: -4px; }
+
+.panel-title {
+  margin: 0 0 7px; padding-bottom: 5px;
+  font: 600 10.5px/1 var(--serif); letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--brass);
+  border-bottom: 1px solid rgba(207, 178, 122, 0.22);
+}
+
+/* --- HUD layout: two columns that stack their panels --------------------- */
+.hud-col {
+  position: fixed; top: var(--gutter); bottom: var(--gutter);
+  width: var(--col-width); max-width: calc(50vw - var(--gutter) * 1.5);
+  display: flex; flex-direction: column; gap: 12px;
+  pointer-events: none; z-index: 40;
+}
+.hud-left { left: var(--gutter); }
+.hud-right { right: var(--gutter); }
+/* Commands sit at the bottom-left, pushed down by an auto margin. */
+.hud-left .hint { margin-top: auto; }
+
+/* --- Debug readout ------------------------------------------------------- */
+.debug-text { margin: 0; font: 11.5px/1.5 var(--mono); color: var(--text); white-space: pre; }
+.debug-text .k { color: var(--muted); }
+
+/* --- Commands ------------------------------------------------------------ */
+.hint dl {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center;
+  margin: 0; font-size: 12px;
+}
+.hint dt { display: flex; gap: 3px; }
+.hint dd { margin: 0; color: var(--muted); }
+.hint .sep { margin-top: 5px; }
+kbd {
+  display: inline-block; min-width: 18px; padding: 1px 5px; text-align: center;
+  font: 600 10.5px/16px var(--sans); color: var(--storm);
+  background: rgba(168, 224, 255, 0.07);
+  border: 1px solid rgba(168, 224, 255, 0.28); border-bottom-width: 2px; border-radius: 3px;
+}
+
+/* --- Frame timing monitor ------------------------------------------------ */
+.perf-label { margin-bottom: 6px; font: 11px/1.45 var(--mono); color: var(--muted); white-space: nowrap; }
+.perf-label b { color: var(--text); font-size: 14px; }
+.perf-label .warn { color: var(--warn); }
+.perf-label .bad { color: var(--bad); }
+.perf canvas { display: block; width: 100%; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.06); }
+
+/* --- Tuning panel (lil-gui), themed to match ---------------------------- */
+.hud-right .lil-gui.lil-root {
+  --background-color: transparent;
+  --title-background-color: transparent;
+  --title-text-color: var(--brass);
+  --text-color: var(--text);
+  --widget-color: rgba(255, 255, 255, 0.07);
+  --hover-color: rgba(168, 224, 255, 0.14);
+  --focus-color: rgba(168, 224, 255, 0.22);
+  --number-color: var(--storm);
+  --string-color: var(--storm);
+  --font-family: var(--sans);
+  --font-size: 11.5px;
+  --input-font-size: 11.5px;
+  --widget-height: 19px;
+  --name-width: 48%;
+  width: 100% !important;
+  background: linear-gradient(180deg, rgba(20, 27, 40, 0.9), rgba(12, 17, 26, 0.88)) !important;
+  /* The panel shrinks to fit the column; only its contents scroll, so the
+     corner gems (which sit outside the border) aren't clipped. */
+  min-height: 0; flex: 0 1 auto;
+  display: flex; flex-direction: column;
+  overflow: visible;
+  pointer-events: auto;
+  padding: 4px 6px 8px;
+}
+.hud-right .lil-gui.lil-root > .lil-children {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: rgba(207, 178, 122, 0.4) transparent;
+}
+.hud-right .lil-gui.lil-root > .lil-title {
+  font: 600 10.5px/1 var(--serif); letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 6px 6px 8px; border-bottom: 1px solid rgba(207, 178, 122, 0.22);
+}
+.hud-right .lil-gui .lil-gui > .lil-title {
+  font: 600 10px/1 var(--serif); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--brass); opacity: 0.8; border: none; margin-top: 4px;
+}
+.hud-right .lil-gui .lil-gui > .lil-children { border-left: 1px solid rgba(207, 178, 122, 0.18); margin-left: 4px; }
+.hud-right .lil-gui .lil-controller.lil-function .lil-name {
+  font: 600 10px/1 var(--serif); letter-spacing: 0.12em; text-transform: uppercase; color: var(--storm);
+  text-align: center; border: 1px solid rgba(168, 224, 255, 0.3); border-radius: 2px;
+}
+
+/* --- Title screen -------------------------------------------------------- */
 .splash {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(10,16,24,0.35), rgba(10,16,24,0.75));
+  position: fixed; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 46%, rgba(8, 12, 20, 0.55), rgba(8, 12, 20, 0.0) 70%),
+    linear-gradient(180deg, rgba(8, 12, 20, 0.55), rgba(8, 12, 20, 0.35) 45%, rgba(8, 12, 20, 0.75));
   cursor: pointer; user-select: none;
 }
-.splash.hidden { display: none; }
-.splash-inner { text-align: center; }
-.splash h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: 0.08em; font-size: 44px; margin: 0 0 6px; text-shadow: 0 2px 12px #000; }
-.splash .sub { margin: 0 0 28px; opacity: 0.75; }
-.splash .cta { display: inline-block; padding: 10px 22px; border: 1px solid #9fd8ff; color: #cdeeff; border-radius: 3px; letter-spacing: 0.06em; box-shadow: 0 0 18px rgba(130,200,255,0.35); }
-
-.loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #0d1117; color: #9fd8ff; letter-spacing: 0.1em; }
-.loading.hidden { display: none; }
-
-.hint {
-  position: fixed; left: 16px; bottom: 16px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6;
-  background: rgba(8,12,18,0.55); border-radius: 4px; pointer-events: none;
+.splash-inner { text-align: center; padding: 0 var(--gutter); }
+.ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
+.ornament span { width: 90px; height: 1px; background: linear-gradient(90deg, transparent, var(--brass)); }
+.ornament span:last-child { transform: scaleX(-1); }
+.ornament i { width: 10px; height: 10px; }
+.splash h1 {
+  margin: 0; font: 600 clamp(30px, 6vw, 58px)/1.05 var(--serif); letter-spacing: 0.08em;
+  color: #f3ecdf; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85), 0 0 30px rgba(140, 210, 255, 0.15);
 }
-.hint b { color: #9fd8ff; font-weight: 600; }
-.hint.hidden { display: none; }
-
-.debug {
-  position: fixed; left: 16px; top: 16px; margin: 0; padding: 8px 10px; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
-  background: rgba(8,12,18,0.7); border-radius: 4px; pointer-events: none; white-space: pre;
+.splash .sub {
+  margin: 12px 0 34px; font: 500 12px/1 var(--serif); letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--brass);
 }
-.debug.hidden { display: none; }
-
-.perf {
-  position: fixed; top: 12px; right: 12px; z-index: 1001; padding: 6px 8px 8px; pointer-events: none;
-  background: rgba(8,12,18,0.72); border-radius: 4px; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; color: #cbd5e1;
+.cta {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 12px 26px; font: 600 14px/1 var(--serif); letter-spacing: 0.18em; text-transform: uppercase;
+  color: #e8f7ff; background: rgba(12, 20, 32, 0.6);
+  border: 1px solid rgba(168, 224, 255, 0.55); border-radius: 2px;
+  box-shadow: 0 0 22px rgba(140, 210, 255, 0.28), inset 0 0 14px rgba(140, 210, 255, 0.12);
+  animation: breathe 3.2s ease-in-out infinite;
 }
-.perf.hidden { display: none; }
-.perf-label { margin-bottom: 4px; white-space: nowrap; }
-.perf-label b { color: #e8eef5; font-size: 13px; }
-.perf-label .warn { color: #facc15; }
-.perf-label .bad { color: #f87171; }
-.perf canvas { display: block; background: rgba(255,255,255,0.04); }
-/* Keep the tuning panel clear of the monitor. */
-.lil-gui.autoPlace { top: 118px !important; max-height: calc(100% - 130px) !important; }
+.splash:hover .cta { box-shadow: 0 0 30px rgba(140, 210, 255, 0.5), inset 0 0 18px rgba(140, 210, 255, 0.2); }
+.cta-hint { margin: 12px 0 0; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.motto { margin: 38px 0 0; font: italic 500 13px/1 var(--serif); letter-spacing: 0.12em; color: rgba(230, 237, 245, 0.55); }
+@keyframes breathe { 50% { box-shadow: 0 0 34px rgba(140, 210, 255, 0.45), inset 0 0 18px rgba(140, 210, 255, 0.2); } }
+
+/* --- Loading -------------------------------------------------------------- */
+.loading {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; gap: 14px;
+  background: var(--ink); color: var(--brass); font: 500 13px/1 var(--serif); letter-spacing: 0.22em; text-transform: uppercase;
+}
+.loading i { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; box-shadow: 0 0 2px var(--storm-glow); } }
+
+/* --- Small screens: drop the commands card, keep it on the title screen. -- */
+@media (max-height: 560px), (max-width: 720px) {
+  .hud-left .hint { display: none; }
+}

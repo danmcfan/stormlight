@@ -10,10 +10,10 @@
  */
 const SAMPLES = 180; // ~3 s at 60 fps
 const GRAPH_MAX_MS = 50;
-const W = 180, H = 56;
+const W = 222, H = 52;
 
 export class PerfMonitor {
-  private el: HTMLDivElement;
+  private el: HTMLElement;
   private label: HTMLDivElement;
   private ctx: CanvasRenderingContext2D;
   private frames = new Float32Array(SAMPLES);
@@ -24,19 +24,22 @@ export class PerfMonitor {
   private skipNext = false;
   visible = true;
 
-  constructor() {
-    this.el = document.createElement('div');
-    this.el.className = 'perf';
+  constructor(parent: HTMLElement) {
+    this.el = document.createElement('section');
+    this.el.className = 'panel perf';
+    const title = document.createElement('h2');
+    title.className = 'panel-title';
+    title.textContent = 'Frame timing';
     this.label = document.createElement('div');
     this.label.className = 'perf-label';
     const canvas = document.createElement('canvas');
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = W * dpr; canvas.height = H * dpr;
-    canvas.style.width = `${W}px`; canvas.style.height = `${H}px`;
+    canvas.style.height = `${H}px`;
     this.ctx = canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr);
-    this.el.append(this.label, canvas);
-    document.body.appendChild(this.el);
+    this.el.append(title, this.label, canvas);
+    parent.appendChild(this.el);
     // Coming back to a hidden tab produces one huge bogus frame; ignore it.
     document.addEventListener('visibilitychange', () => { this.skipNext = true; });
   }

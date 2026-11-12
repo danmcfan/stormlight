@@ -4,31 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shattered Plains — Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <canvas id="game"></canvas>
 
+    <!-- Title screen: shown whenever the mouse is not captured. -->
     <div id="splash" class="splash">
       <div class="splash-inner">
+        <div class="ornament" aria-hidden="true"><span></span><i></i><span></span></div>
         <h1>The Shattered Plains</h1>
-        <p class="sub">Milestone 1 — movement, camera &amp; lock-on</p>
-        <p class="cta">Click to take up the Blade</p>
+        <p class="sub">Milestone 1 &nbsp;·&nbsp; Movement, camera &amp; lock-on</p>
+        <div class="cta"><i aria-hidden="true"></i>Take up the Blade<i aria-hidden="true"></i></div>
+        <p class="cta-hint">Click to begin</p>
+        <p class="motto">Journey before destination</p>
       </div>
     </div>
 
-    <div id="loading" class="loading">Infusing gems…</div>
+    <div id="loading" class="loading"><i aria-hidden="true"></i><span>Infusing spheres…</span></div>
 
-    <div id="hint" class="hint">
-      <div><b>WASD</b> move</div>
-      <div><b>Shift</b> sprint &nbsp;·&nbsp; <b>C</b> walk toggle</div>
-      <div><b>Mouse</b> look &nbsp;·&nbsp; <b>Scroll</b> zoom</div>
-      <div><b>Q</b> / <b>Middle mouse</b> lock on</div>
-      <div><b>Flick mouse</b> while locked: switch target</div>
-      <div><b>`</b> debug &amp; tuning &nbsp;·&nbsp; <b>F</b> FPS graph &nbsp;·&nbsp; <b>H</b> hide help &nbsp;·&nbsp; <b>Esc</b> free mouse</div>
+    <!-- HUD columns: panels stack inside these, so they never overlap. -->
+    <div id="hud-left" class="hud-col hud-left">
+      <section id="debug" class="panel hidden">
+        <h2 class="panel-title">Debug</h2>
+        <pre id="debug-text" class="debug-text"></pre>
+      </section>
+      <section id="hint" class="panel hint">
+        <h2 class="panel-title">Commands</h2>
+        <dl>
+          <dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Move</dd>
+          <dt><kbd>Shift</kbd></dt><dd>Sprint</dd>
+          <dt><kbd>C</kbd></dt><dd>Walk toggle</dd>
+          <dt><kbd>Mouse</kbd></dt><dd>Look · scroll to zoom</dd>
+          <dt><kbd>Q</kbd><kbd>MMB</kbd></dt><dd>Lock on</dd>
+          <dt><kbd>Flick</kbd></dt><dd>Switch target</dd>
+          <dt class="sep"><kbd>`</kbd></dt><dd class="sep">Debug &amp; tuning</dd>
+          <dt><kbd>F</kbd></dt><dd>Frame timing</dd>
+          <dt><kbd>H</kbd></dt><dd>Hide commands</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Release mouse</dd>
+        </dl>
+      </section>
     </div>
+    <div id="hud-right" class="hud-col hud-right"></div>
 
-    <pre id="debug" class="debug hidden"></pre>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

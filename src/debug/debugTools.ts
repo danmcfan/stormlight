@@ -15,11 +15,14 @@ export interface DebugInfo {
 export class DebugTools {
   private gui: GUI;
   private el: HTMLElement;
+  private text: HTMLElement;
   visible = false;
 
-  constructor() {
+  constructor(container: HTMLElement) {
     this.el = document.getElementById('debug')!;
-    this.gui = new GUI({ title: 'Tuning' });
+    this.text = document.getElementById('debug-text')!;
+    this.gui = new GUI({ title: 'Tuning', container });
+    this.gui.domElement.classList.add('panel');
     const mv = this.gui.addFolder('Movement');
     mv.add(tuning.movement, 'walkSpeed', 0.5, 5, 0.1);
     mv.add(tuning.movement, 'jogSpeed', 2, 9, 0.1);
@@ -72,12 +75,14 @@ export class DebugTools {
   show(info: DebugInfo): void {
     if (!this.visible) return;
     const f = (n: number, d = 2) => n.toFixed(d).padStart(7);
-    this.el.textContent =
-      `state      ${info.state}${info.walkToggle ? ' (walk)' : ''}\n` +
-      `speed      ${f(info.speed)} m/s\n` +
-      `pos        ${f(info.pos.x, 1)}${f(info.pos.y, 1)}${f(info.pos.z, 1)}\n` +
-      `facing     ${f(info.facingDeg, 0)}°\n` +
-      `grounded   ${info.grounded}\n` +
-      `lock       ${info.lock}`;
+    const row = (k: string, v: string) => `<span class="k">${k.padEnd(9)}</span>${v}`;
+    this.text.innerHTML = [
+      row('state', `${info.state}${info.walkToggle ? ' (walk)' : ''}`),
+      row('speed', `${f(info.speed)} m/s`),
+      row('pos', `${f(info.pos.x, 1)}${f(info.pos.y, 1)}${f(info.pos.z, 1)}`),
+      row('facing', `${f(info.facingDeg, 0)}°`),
+      row('grounded', String(info.grounded)),
+      row('lock', info.lock),
+    ].join('\n');
   }
 }

@@ -24,8 +24,9 @@ export class Game {
   readonly enemies: Parshendi[] = [];
   readonly lockOn: LockOnSystem;
   private env: Environment;
-  private debug = new DebugTools();
-  readonly perf = new PerfMonitor();
+  // Right HUD column: frame timing on top, tuning panel below it.
+  readonly perf = new PerfMonitor(document.getElementById('hud-right')!);
+  private debug = new DebugTools(document.getElementById('hud-right')!);
   private walkToggle = false;
   private tmp = new THREE.Vector3();
 
