@@ -65,8 +65,9 @@ def to_local(x, y):
 reset_scene()
 steel = material("Shardblade steel", (0.86, 0.89, 0.93), metallic=1.0, roughness=0.16)
 grip_mat = material("Shardblade grip", (0.42, 0.45, 0.5), metallic=1.0, roughness=0.35)
-gem_mat = material("Sapphire", (0.1, 0.25, 0.85), roughness=0.05, emission=(0.45, 0.75, 1.0), strength=3.0)
-etch_mat = material("Etched glow", (0.6, 0.85, 1.0), roughness=0.3, emission=(0.5, 0.82, 1.0), strength=0.7)
+gem_mat = material("Sapphire", (0.03, 0.1, 0.6), roughness=0.08, emission=(0.15, 0.4, 1.0), strength=0.6)
+# Engraved: darker steel in the cuts, a faint Stormlight glow.
+etch_mat = material("Etched glow", (0.2, 0.24, 0.3), metallic=0.6, roughness=0.5, emission=(0.35, 0.6, 0.9), strength=0.18)
 
 # --- Blade: the traced outline, extruded thin with chamfered edges --------------
 curve = bpy.data.curves.new("blade_outline", "CURVE")
@@ -96,14 +97,14 @@ parts = [blade]
 # --- Grip: a round two-hand grip over the flat silhouette ------------------------
 pommel_x = x_min + grip_h * 2.2
 z0, z1 = to_local(pommel_x, 0)[0], to_local(guard_x, 0)[0]
-bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=grip_r * 0.95, depth=z1 - z0, location=(0, 0, (z0 + z1) / 2))
+# A smooth grip tapering toward the pommel, with a collar at each end.
+bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=grip_r * 0.82, radius2=grip_r * 0.98, depth=z1 - z0,
+                                location=(0, 0, (z0 + z1) / 2))
 grip = bpy.context.active_object
 grip.name = "Grip"
 grip.data.materials.append(grip_mat)
-# Raised rings along the grip for hands to read against.
-for i in range(4):
-    z = z0 + (z1 - z0) * (i + 0.5) / 4
-    bpy.ops.mesh.primitive_torus_add(major_radius=grip_r * 0.95, minor_radius=grip_r * 0.16, location=(0, 0, z),
+for z, rr in ((z0 + 0.012, 1.05), (z1 - 0.01, 1.1)):
+    bpy.ops.mesh.primitive_torus_add(major_radius=grip_r * rr, minor_radius=grip_r * 0.28, location=(0, 0, z),
                                      major_segments=16, minor_segments=6)
     ring = bpy.context.active_object
     ring.data.materials.append(grip_mat)
@@ -119,6 +120,22 @@ gem.scale = (1.15, 0.9, 1.0)
 gem.data.materials.append(gem_mat)
 apply_transforms(gem)
 parts.append(gem)
+# Pommel setting: a flattened steel bulb round the cabochon (it shows on both faces), and a
+# pointed cap beyond it.
+gz0 = to_local(gem_x, 0)[0]
+bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=6, radius=grip_r * 1.7, location=(0, 0, gz0))
+setting = bpy.context.active_object
+setting.scale = (0.55, 1.0, 1.15)
+setting.data.materials.append(grip_mat)
+apply_transforms(setting)
+parts.append(setting)
+bpy.ops.mesh.primitive_cone_add(vertices=8, radius1=grip_r * 1.0, radius2=0.0, depth=grip_r * 1.6,
+                                location=(0, 0, gz0 - grip_r * 2.3))
+cap = bpy.context.active_object
+cap.rotation_euler = (deg(180), 0, 0)
+cap.data.materials.append(grip_mat)
+apply_transforms(cap)
+parts.append(cap)
 
 # --- Etched fuller: two converging lines and abstract glyph strokes (both faces) --
 # Like the reference's engraved band of symbols, but not readable text.
@@ -169,11 +186,11 @@ parts.append(etch)
 # Diamond boss on each face where the crescent hooks meet (reference guard).
 gz = to_local(guard_x + 18, 0)[0]
 for side in (1, -1):
-    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.05, radius2=0.0, depth=0.012,
-                                    location=(side * (face_x + 0.005), 0, gz))
+    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.06, radius2=0.0, depth=0.014,
+                                    location=(side * (face_x + 0.005), 0, gz + 0.03))
     boss = bpy.context.active_object
     boss.rotation_euler = (0, deg(90) * side, 0)
-    boss.scale = (0.55, 1.0, 1.0)
+    boss.scale = (1.7, 0.55, 1.0)       # a langet: a long diamond pointing up the blade
     boss.data.materials.append(steel)
     apply_transforms(boss)
     parts.append(boss)

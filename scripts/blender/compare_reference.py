@@ -96,6 +96,8 @@ PLATE_LOOK = {
     "plate": dict(color=srgb("#8a939c"), metallic=0.55, roughness=0.42),
     "plate_dark": dict(color=srgb("#2b2724"), metallic=0.05, roughness=0.85),
     "trim": dict(color=srgb("#36438c"), metallic=0.25, roughness=0.38, emission=srgb("#0b1233"), strength=0.5),
+    "Shardblade steel": dict(color=(0.6, 0.64, 0.7), metallic=0.85, roughness=0.3),
+    "Shardblade grip": dict(color=(0.3, 0.32, 0.36), metallic=0.85, roughness=0.4),
     "glow": dict(color=srgb("#a9ccff"), metallic=0.0, roughness=0.3, emission=srgb("#5aa2ff"), strength=2.2),
 }
 
