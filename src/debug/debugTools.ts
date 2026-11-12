@@ -71,6 +71,12 @@ export class DebugTools {
     lock.add(tuning.lockOn, 'breakRange', 5, 60, 1);
     lock.add(tuning.lockOn, 'switchThreshold', 5, 200, 1).name('flick threshold (px)');
     lock.add(tuning.lockOn, 'switchCooldown', 0, 1, 0.05);
+    const touch = this.gui.addFolder('Touch');
+    touch.add(tuning.touch, 'lookSensitivity', 0.001, 0.02, 0.0002).name('look sensitivity');
+    touch.add(tuning.touch, 'pitchScale', 0.2, 1.5, 0.05).name('vertical look ×');
+    touch.add(tuning.touch, 'stickRadius', 30, 110, 1).name('stick radius (px)');
+    touch.add(tuning.touch, 'sprintPush', 1.05, 2, 0.05).name('sprint push');
+    touch.close();
     this.gui.add({ copy: () => this.copyJson() }, 'copy').name('Copy tuning JSON');
     this.gui.add({ reset: () => this.reset() }, 'reset').name('Reset to defaults');
     this.gui.hide();

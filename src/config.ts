@@ -67,6 +67,16 @@ export const tuning = {
     switchThreshold: 55,
     switchCooldown: 0.3,
   },
+  touch: {
+    /** Radians of camera turn per CSS pixel of look drag (separate from mouse). */
+    lookSensitivity: 0.0062,
+    /** Vertical look relative to horizontal. */
+    pitchScale: 0.75,
+    /** Joystick throw in CSS pixels for a full push. */
+    stickRadius: 58,
+    /** Push past this fraction of the ring to sprint. */
+    sprintPush: 1.3,
+  },
 };
 
 export type Tuning = typeof tuning;

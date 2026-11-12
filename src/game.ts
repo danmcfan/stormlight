@@ -6,6 +6,7 @@ import { DEFAULT_RULES, noIntent, type CombatRules, type FighterEvent, type HitO
 import { sweptBladeHits, type Capsule } from './combat/hits';
 import { LockOnSystem } from './combat/lockOnSystem';
 import { parshendiMoveset, shardbearerMoveset, type Move } from './combat/moves';
+import { isTouchFirst } from './core/device';
 import { Input } from './core/input';
 import { angleDiff, headingOf } from './core/math';
 import { Physics } from './core/physics';
@@ -77,7 +78,8 @@ export class Game {
 
   constructor(canvas: HTMLCanvasElement, readonly physics: Physics, models: Models) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Phones have 3x screens and a fraction of a desktop GPU: cap the pixel ratio.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchFirst() ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -91,6 +93,7 @@ export class Game {
 
     this.input = new Input(canvas);
     this.env = new Environment(this.scene);
+    if (isTouchFirst()) this.env.sun.shadow.mapSize.set(1024, 1024);
     this.field = buildBattlefield(this.scene, physics);
 
     this.player = new Combatant(physics, {
@@ -144,6 +147,9 @@ export class Game {
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    // iOS reports the new size a beat after rotating.
+    window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
+    window.visualViewport?.addEventListener('resize', () => this.resize());
     // Make sure static colliders are in the query pipeline before the first camera ray.
     physics.world.step();
   }
@@ -188,7 +194,7 @@ export class Game {
 
   private stepPlayer(dt: number): void {
     const inp = this.input;
-    const live = inp.pointerLocked || this.allowInputWithoutLock;
+    const live = inp.live || this.allowInputWithoutLock;
     const light = inp.consumePress('Mouse0');
     const heavy = inp.consumePress('Mouse2');
     const axes = inp.moveAxes();
