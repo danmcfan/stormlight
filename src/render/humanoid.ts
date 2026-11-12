@@ -6,21 +6,21 @@ import { clamp, damp } from '../core/math';
  * Shared skeleton (body space, metres, +Z forward, +X = left):
  *   hips at y 1.0 (±0.25 apart), legs 0.40 + 0.53 (high knees under the stocky Plate)
  *   torso pivots at the waist (y 1.08); shoulders at (±0.42, +0.62) from it
- *   arms 0.40 + 0.36 (+ hand)
+ *   arms 0.35 + 0.36 (+ hand; the elbow sits high under the big pauldrons)
  * Matches the pivots in combat/bladePose.ts so the weapon sits in the hand.
  */
 const HIP_Y = 1.0;
 const WAIST_Y = 1.08;
 const SHOULDER = new THREE.Vector3(0.42, 0.62, 0);
-const UPPER_ARM = 0.4;
+const UPPER_ARM = 0.35;
 const LOWER_ARM = 0.36;
-const HAND = 0.06;
+const HAND = 0.08;
 /**
  * The modelled Shardplate gauntlet closes its fingers round the grip this far
  * below the wrist (build_shardplate.py GRIP_Y), so the arm IK puts the grip
  * there instead of at the palm.
  */
-const PLATE_HAND = 0.23;
+const PLATE_HAND = 0.21;
 const THIGH = 0.4;
 const SHIN = 0.53;
 const HELM_Y = 0.92;

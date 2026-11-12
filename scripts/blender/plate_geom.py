@@ -330,8 +330,9 @@ def slab(piece, mat, outline, thick, frame):
     piece.add(verts, faces, mat)
 
 
-def disc(piece, mat, centre, normal, r, thick, seg=12, rim=None):
-    """A round boss (pauldron disc, couter): cylinder facing `normal`, domed top."""
+def disc(piece, mat, centre, normal, r, thick, seg=12, rim=None, rondel=False):
+    """A round boss (pauldron disc, couter): cylinder facing `normal`, domed top; or with
+    rondel=True a flat disc with a raised rim round a shallow recess."""
     nrm = np.asarray(normal, float)
     nrm /= np.linalg.norm(nrm)
     ref = np.array([0, 1, 0]) if abs(nrm[1]) < 0.9 else np.array([1, 0, 0])
@@ -340,6 +341,9 @@ def disc(piece, mat, centre, normal, r, thick, seg=12, rim=None):
     v = np.cross(nrm, u)
     c = np.asarray(centre, float)
     rings = [(-thick * 0.5, r), (thick * 0.5, r), (thick * 0.8, r * 0.75), (thick, 0.0)]
+    if rondel:
+        rings = [(-thick * 0.5, r), (thick * 0.45, r), (thick * 0.5, r * 0.9), (thick * 0.1, r * 0.78),
+                 (thick * 0.15, r * 0.5), (thick * 0.25, 0.0)]
     verts, faces = [], []
     for h, rr in rings:
         for k in range(seg):
@@ -537,4 +541,4 @@ def ref_path(piece, mat, loft, pts, face="front", origin=(0, 0, 0), r=None, n=No
         tths = proj(loft, q, face, origin)
         if face in ("left", "right") and sgn < 0:
             tths = proj(loft, q, "right" if face == "left" else "left", origin)
-        path(piece, mat, loft, tths, r=r, n=n or max(8, 4 * len(pts)), **kw)
+        path(piece, mat, loft, tths, r=r, n=n or max(8, 3 * len(pts)), **kw)

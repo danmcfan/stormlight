@@ -63,7 +63,7 @@ SRC = ROOT / "art/source"
 
 # Reference pose (read off the front reference): arms hang out from the body,
 # feet apart. Only the pose for the comparison; the model is unchanged.
-POSE = dict(arm=deg(37), elbow=deg(-29), leg=deg(5))
+POSE = dict(arm=deg(45), elbow=deg(-37), leg=deg(5))
 
 # view: reference image, crop (x0, x1) or None, camera side, pieces shown, fit axis
 VIEWS = {
@@ -92,10 +92,12 @@ def srgb(h):
 
 
 # In-game colours (humanoid.ts buildModelledPlate) so the render reads like the game.
+# Reference colours (the drawings' slate plate and deep indigo enamel), so the sheets compare
+# like with like; the game's own colours are tuned for its painterly lighting (humanoid.ts).
 PLATE_LOOK = {
-    "plate": dict(color=srgb("#8a939c"), metallic=0.55, roughness=0.42),
+    "plate": dict(color=srgb("#6e8293"), metallic=0.45, roughness=0.45),
     "plate_dark": dict(color=srgb("#2b2724"), metallic=0.05, roughness=0.85),
-    "trim": dict(color=srgb("#36438c"), metallic=0.25, roughness=0.38, emission=srgb("#0b1233"), strength=0.5),
+    "trim": dict(color=srgb("#3b4ba6"), metallic=0.2, roughness=0.4),
     "Shardblade steel": dict(color=(0.6, 0.64, 0.7), metallic=0.85, roughness=0.3),
     "Shardblade grip": dict(color=(0.3, 0.32, 0.36), metallic=0.85, roughness=0.4),
     "glow": dict(color=srgb("#a9ccff"), metallic=0.0, roughness=0.3, emission=srgb("#5aa2ff"), strength=2.2),
@@ -181,9 +183,9 @@ def setup_render(samples):
     s.world = world
     world.use_nodes = True
     world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.62, 0.64, 0.68, 1)
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.9
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.6
     # Even, frontal-ish light like the references' flat illustration lighting.
-    for name, loc, energy in (("key", (2.5, -5, 5), 600), ("fill", (-4, -3, 2), 300), ("top", (0, 2, 7), 250)):
+    for name, loc, energy in (("key", (2.5, -5, 5), 420), ("fill", (-4, -3, 2), 200), ("top", (0, 2, 7), 170)):
         light = bpy.data.lights.new(name, "AREA")
         light.energy = energy
         light.size = 4
