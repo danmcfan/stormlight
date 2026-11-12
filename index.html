@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shattered Plains — Prototype</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="splash" class="splash">
+      <div class="splash-inner">
+        <h1>The Shattered Plains</h1>
+        <p class="sub">Milestone 1 — movement, camera &amp; lock-on</p>
+        <p class="cta">Click to take up the Blade</p>
+      </div>
+    </div>
+
+    <div id="loading" class="loading">Infusing gems…</div>
+
+    <div id="hint" class="hint">
+      <div><b>WASD</b> move</div>
+      <div><b>Shift</b> sprint &nbsp;·&nbsp; <b>C</b> walk toggle</div>
+      <div><b>Mouse</b> look &nbsp;·&nbsp; <b>Scroll</b> zoom</div>
+      <div><b>Q</b> / <b>Middle mouse</b> lock on</div>
+      <div><b>Flick mouse</b> while locked: switch target</div>
+      <div><b>`</b> debug &amp; tuning &nbsp;·&nbsp; <b>H</b> hide help &nbsp;·&nbsp; <b>Esc</b> free mouse</div>
+    </div>
+
+    <pre id="debug" class="debug hidden"></pre>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
