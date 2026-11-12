@@ -99,4 +99,4 @@ Kept comparisons in `art/renders/look-dev/`:
 - `00-before-vs-ref.jpg`: before the art pass
 - `09-final-vs-ref.jpg`: after step 1
 - `08-brushstrokes-vs-ref.jpg`: with the brushstroke filter
-- `10-gameplay-desktop.png`, `11-gameplay-iphone.png`: in play
+- `10-gameplay-desktop.png`, `11-gameplay-iphone.png`, `12-gameplay-horde.png`: in play
