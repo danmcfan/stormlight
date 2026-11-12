@@ -11,9 +11,14 @@ export interface Models {
    * scripts/blender/build_shardplate.py and HumanoidModel.
    */
   shardplate: THREE.Object3D;
+  /** Plains props: rockbuds, chrysalis, bridge (scripts/blender/build_plains_props.py). */
+  plainsProps: THREE.Object3D;
+  /** Terrain detail map (scripts/gen/make_terrain_textures.py): R top cracks, G cliff, B crem. */
+  terrainDetail: THREE.Texture;
 }
 
 const url = (file: string) => `${import.meta.env.BASE_URL}models/${file}`;
+const textureUrl = (file: string) => `${import.meta.env.BASE_URL}textures/${file}`;
 
 async function load(loader: GLTFLoader, file: string): Promise<THREE.Object3D> {
   const gltf = await loader.loadAsync(url(file));
@@ -28,6 +33,9 @@ async function load(loader: GLTFLoader, file: string): Promise<THREE.Object3D> {
 
 export async function loadModels(): Promise<Models> {
   const loader = new GLTFLoader();
-  const [shardblade, shardplate] = await Promise.all([load(loader, 'shardblade.glb'), load(loader, 'shardplate.glb')]);
-  return { shardblade, shardplate };
+  const [shardblade, shardplate, plainsProps, terrainDetail] = await Promise.all([
+    load(loader, 'shardblade.glb'), load(loader, 'shardplate.glb'), load(loader, 'plains-props.glb'),
+    new THREE.TextureLoader().loadAsync(textureUrl('terrain-detail.jpg')),
+  ]);
+  return { shardblade, shardplate, plainsProps, terrainDetail };
 }

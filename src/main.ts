@@ -4,6 +4,7 @@ import { loadModels } from './render/assets';
 import { Game, SIM_DT } from './game';
 import { isTouchFirst } from './core/device';
 import { TouchControls } from './ui/touchControls';
+import { setTerrainDebug } from './world/terrainMaterial';
 
 /**
  * Touch devices: no pointer lock. The title screen becomes "tap to begin",
@@ -149,7 +150,7 @@ async function boot(): Promise<void> {
   };
   requestAnimationFrame(frame);
 
-  if (import.meta.env.DEV) Object.assign(window as object, { game, tuning });
+  if (import.meta.env.DEV) Object.assign(window as object, { game, tuning, setTerrainDebug });
 }
 
 boot().catch((err) => {

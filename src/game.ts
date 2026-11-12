@@ -127,7 +127,7 @@ export class Game {
     this.input = new Input(canvas);
     this.debug.addModeButtons(() => this.startHorde(), () => this.startDuel());
     this.env = new Environment(this.scene);
-    this.field = buildBattlefield(this.scene, physics);
+    this.field = buildBattlefield(this.scene, physics, models);
 
     this.player = new Combatant(physics, {
       name: 'Shardbearer', team: 'player', kind: 'plate', scale: 1, weaponModel: models.shardblade, plateModel: models.shardplate,
@@ -650,7 +650,7 @@ export class Game {
     const b = this.field.bridgeStart;
     // bridgeStart is the bridge's end, 3.5 m back from the rim: stand at the rim.
     cam.position.set(b.x, b.y + 2.4, b.z + 2.8);
-    cam.lookAt(b.x + 0.4, b.y - 9, b.z + 26);
+    cam.lookAt(b.x + 0.4, b.y - 7, b.z + 26); // horizon ~14% from the top, as painted
     if (cam.fov !== 58) { cam.fov = 58; cam.updateProjectionMatrix(); }
     this.env.follow(this.tmp.set(b.x, 0, b.z + 14), cam.position);
   }
