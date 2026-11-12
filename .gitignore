@@ -2,3 +2,6 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# Third-party reference images: local only until cleared for the public repo
+art/references/
