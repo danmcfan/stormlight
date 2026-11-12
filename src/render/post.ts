@@ -85,10 +85,14 @@ const FinalShader = {
       c = sRGBTransferOETF(vec4(c, 1.0)).rgb;
       // Grade in display space, where the painting's values live.
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-      c = mix(vec3(l), c, uSaturation);
+      // How coloured the pixel already is: neutral greys (steel Plate, cloud)
+      // stay neutral; coloured light and shade get the boost and the split tone.
+      float mx = max(c.r, max(c.g, c.b));
+      float chroma = smoothstep(0.03, 0.18, mx > 0.0 ? (mx - min(c.r, min(c.g, c.b))) / mx : 0.0);
+      c = mix(vec3(l), c, mix(1.0, uSaturation, chroma));
       c = (c - 0.5) * uContrast + 0.5;
       float hw = smoothstep(0.35, 1.0, l), sw = 1.0 - smoothstep(0.0, 0.6, l);
-      c += (uShadows - 0.5) * uGrade * sw + (uHighlights - 0.5) * uGrade * hw;
+      c += (uShadows - 0.5) * uGrade * sw * chroma + (uHighlights - 0.5) * uGrade * hw;
       vec2 d = vUv - 0.5;
       c *= 1.0 - uVignette * dot(d, d) * 2.0;
       gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
@@ -154,7 +158,12 @@ export class PostFX {
     }
     this.bloom.enabled = q.bloom && look.bloomStrength > 0;
     this.bloom.strength = look.bloomStrength;
-    this.bloom.radius = look.bloomRadius;
+    // Tight halo: drive the per-mip weights ourselves (pass radius 0 uses them
+    // as given). Each wider mip gets bloomRadius times the previous one, so
+    // small glows (gem, visor slit) keep a soft halo instead of a glowing ball.
+    this.bloom.radius = 0;
+    const f = this.bloom.compositeMaterial.uniforms.bloomFactors.value as number[];
+    for (let i = 0; i < f.length; i++) f[i] = Math.pow(look.bloomRadius, i);
     this.bloom.threshold = look.bloomThreshold;
 
     const u = this.final.uniforms;

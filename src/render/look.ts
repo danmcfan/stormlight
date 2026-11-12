@@ -45,7 +45,7 @@ export const defaultLook = {
   /** Brightest a lit (non-glowing) surface may get, so only glows bloom. */
   maxLit: 1.1,
   /** Extra HDR for strong emissives (Stormlight, gems, visor, etched line). */
-  glowBoost: 2.5,
+  glowBoost: 1.2,
 
   // --- Atmosphere ------------------------------------------------------------
   hazeColor: '#c9dbea',
@@ -69,15 +69,18 @@ export const defaultLook = {
   stormHeight: 0.085,
 
   // --- Post --------------------------------------------------------------------
-  bloomStrength: 0.6,
-  bloomRadius: 0.35,
+  bloomStrength: 0.7,
+  /** Halo falloff: weight of each wider bloom mip relative to the last (0 = tightest). */
+  bloomRadius: 0,
   /** Linear HDR luminance above which pixels bloom (above maxLit). */
   bloomThreshold: 1.3,
   exposure: 1.2,
   saturation: 1.12,
   contrast: 1.04,
-  /** Split toning: shadows toward cool blue, highlights toward warm cream. */
-  gradeShadows: '#3b5fa8',
+  /** Split toning: highlights toward warm cream (shadows: see below). */
+  // Neutral: cool shade is done per material in the shader (which knows
+  // metal from stone); a blue push here turned grey steel navy.
+  gradeShadows: '#808080',
   gradeHighlights: '#ffd7a0',
   gradeAmount: 0.18,
   vignette: 0.1,

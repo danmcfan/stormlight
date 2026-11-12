@@ -115,13 +115,19 @@ const OPAQUE = /* glsl */`
   // Shade shifts hue toward blue at the same brightness; light warms.
   vec3 coolTint = uShadowColor / max( stylLum( uShadowColor ), 1e-3 );
   vec3 warmTint = uHighlightColor / max( stylLum( uHighlightColor ), 1e-3 );
-  // Metal already carries the sky's blue in its reflections: tint it less.
-  float tintAmt = 1.0 - 0.75 * metalnessFactor;
-  base *= mix( vec3( 1.0 ), coolTint, uShadowHue * ( 1.0 - lit ) * tintAmt );
-  base *= mix( vec3( 1.0 ), warmTint, uHighlightWarmth * lit );
+  // Steel stays steel in shade: on metal, the shaded light (blue sky fill
+  // and sky reflections) is pulled back to the albedo's own hue at the same
+  // brightness, and the cool shift is mostly skipped. Stone, sand and wood
+  // still shade toward blue.
+  float metalK = saturate( metalnessFactor * 2.5 );
+  // Mostly neutral: linear chroma reads about twice as strong in dark display tones.
+  vec3 albedoHue = mix( vec3( 1.0 ), diffuseColor.rgb / max( stylLum( diffuseColor.rgb ), 1e-3 ), 0.15 );
+  base = mix( base, stylLum( base ) * albedoHue, metalK * ( 1.0 - lit ) );
+  base *= mix( vec3( 1.0 ), coolTint, uShadowHue * ( 1.0 - lit ) * ( 1.0 - metalK ) );
+  base *= mix( vec3( 1.0 ), warmTint, uHighlightWarmth * lit * ( 1.0 - metalK ) );
   // Rim light from the sky on silhouettes.
   float rim = pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );
-  base += rim * uRimStrength * uRimColor * ( 0.35 + diffuseColor.rgb ) * ( 0.5 + 0.5 * lit );
+  base += rim * uRimStrength * mix( uRimColor, vec3( stylLum( uRimColor ) ), metalK ) * ( 0.35 + diffuseColor.rgb ) * ( 0.5 + 0.5 * lit );
   // Keep lit surfaces under the bloom threshold: only glows bloom.
   float bl = stylLum( base );
   if ( bl > uMaxLit ) base *= uMaxLit / bl;
