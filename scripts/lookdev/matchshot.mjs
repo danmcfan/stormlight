@@ -37,7 +37,7 @@ await page.evaluate(([q, o]) => {
 }, [quality, overrides]);
 await page.waitForTimeout(2500);
 const png = `${dir}/${name}.png`;
-await page.locator('#game').screenshot({ path: png });
+await page.locator('#game').screenshot({ path: png, timeout: 300000 });
 await browser.close();
 execFileSync('convert', [ref, '-resize', 'x768', png, '-resize', 'x768', '+append', '-quality', '88', `${dir}/${name}-vs-ref.jpg`]);
 console.log(`${dir}/${name}-vs-ref.jpg`);

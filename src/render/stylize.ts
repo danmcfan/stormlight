@@ -115,7 +115,9 @@ const OPAQUE = /* glsl */`
   // Shade shifts hue toward blue at the same brightness; light warms.
   vec3 coolTint = uShadowColor / max( stylLum( uShadowColor ), 1e-3 );
   vec3 warmTint = uHighlightColor / max( stylLum( uHighlightColor ), 1e-3 );
-  base *= mix( vec3( 1.0 ), coolTint, uShadowHue * ( 1.0 - lit ) );
+  // Metal already carries the sky's blue in its reflections: tint it less.
+  float tintAmt = 1.0 - 0.75 * metalnessFactor;
+  base *= mix( vec3( 1.0 ), coolTint, uShadowHue * ( 1.0 - lit ) * tintAmt );
   base *= mix( vec3( 1.0 ), warmTint, uHighlightWarmth * lit );
   // Rim light from the sky on silhouettes.
   float rim = pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );

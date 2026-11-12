@@ -65,12 +65,12 @@ export const defaultLook = {
   skyHorizon: '#a9cdee',
   cloudColor: '#f6f4ee',
   cloudCover: 0.5,
-  stormColor: '#3d4a63',
-  stormHeight: 0.07,
+  stormColor: '#34405a',
+  stormHeight: 0.085,
 
   // --- Post --------------------------------------------------------------------
-  bloomStrength: 0.9,
-  bloomRadius: 0.55,
+  bloomStrength: 0.6,
+  bloomRadius: 0.35,
   /** Linear HDR luminance above which pixels bloom (above maxLit). */
   bloomThreshold: 1.3,
   exposure: 1.2,

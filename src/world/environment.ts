@@ -61,8 +61,8 @@ void main() {
   float arc = smoothstep(1.45, 0.5, abs(az + 0.35));
   float top = uStormHeight * arc * (0.55 + 0.6 * fbm(vec2(az * 7.0, 3.0) + uTime * 0.002));
   float wall = smoothstep(top, top - 0.012, h) * step(-0.2, h) * step(0.002, top);
-  vec3 storm = mix(uStorm, uHaze, 0.3);
-  storm = mix(storm, mix(uStorm, uCloud, 0.45), smoothstep(top - 0.03, top, h)); // lit crown
+  vec3 storm = mix(uStorm, uHaze, 0.15 * smoothstep(top, 0.0, h)); // hazier at its foot
+  storm = mix(storm, mix(uStorm, uCloud, 0.35), smoothstep(top - 0.01, top, h)); // lit crown
   c = mix(c, storm, wall * 0.92);
 
   // Below the horizon (only seen past distant plateaus): chasm haze.

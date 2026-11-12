@@ -167,7 +167,7 @@ export class Game {
 
     this.scene.add(this.playerTrail.mesh, this.sparks.points, this.eyeBurn.points);
     // HDR so they cross the bloom threshold: Stormlight trails, sparks and motes glow.
-    (this.playerTrail.mesh.material as THREE.MeshBasicMaterial).color.setScalar(2.6);
+    (this.playerTrail.mesh.material as THREE.MeshBasicMaterial).color.setScalar(2.0);
     (this.sparks.points.material as THREE.PointsMaterial).color.setScalar(2.4);
     for (const e of this.enemies) if (e.ai.aggressive) (e.trail.mesh.material as THREE.MeshBasicMaterial).color.setScalar(1.6);
     this.duelFoes = this.enemies.map((e) => e.c);
@@ -198,17 +198,23 @@ export class Game {
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
 
-    // Reflections of the painted sky and warm ground, so metal Plate picks up
-    // blue from above and orange from the rock.
+    // Reflections: a soft, greyer version of the sky over warm rock, so steel
+    // Plate reads grey with a cool top and warm underside (the painted sky
+    // itself is too saturated to reflect).
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     const envScene = new THREE.Scene();
-    envScene.add(this.env.sky.clone());
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ color: '#c98f60' }));
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -3;
-    envScene.add(ground);
-    this.scene.environment = pmrem.fromScene(envScene, 0.06, 0.1, 1000).texture;
-    this.scene.environmentIntensity = 0.45;
+    envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `varying vec3 vP; void main(){
+        float h = normalize(vP).y;
+        vec3 sky = mix(vec3(0.62, 0.66, 0.72), vec3(0.42, 0.5, 0.62), clamp(h, 0.0, 1.0));
+        vec3 ground = vec3(0.55, 0.36, 0.22);
+        gl_FragColor = vec4(mix(ground, sky, smoothstep(-0.08, 0.05, h)), 1.0);
+      }`,
+    })));
+    this.scene.environment = pmrem.fromScene(envScene, 0.04, 0.1, 100).texture;
+    this.scene.environmentIntensity = 0.35;
     pmrem.dispose();
 
     this.post = new PostFX(this.renderer, this.scene, this.cam.camera);

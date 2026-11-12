@@ -11,6 +11,8 @@ export interface PlateauOptions {
   /** How jagged the outline is, as a fraction of radius. */
   roughness?: number;
   depth?: number;
+  /** Metres per mesh row down the cliff (rock bands are coloured per row). Coarser for distant plateaus. */
+  rowHeight?: number;
 }
 
 // Style reference palette: sandstone orange and cream bands, sun-bleached
@@ -46,7 +48,7 @@ export class Plateau {
       if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
     }
     const depth = o.depth ?? 120;
-    const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, steps: Math.round(depth / 2) });
+    const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, steps: Math.round(depth / (o.rowHeight ?? 2)) });
     // Shape (x, y) → world (x, z); extrusion runs downward from y = 0.
     geo.rotateX(Math.PI / 2);
     geo.computeVertexNormals();

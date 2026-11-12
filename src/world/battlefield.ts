@@ -102,7 +102,7 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
     const d = 115 + rng() * 140;
     const x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (Math.abs(x) < 40 && z < -40) continue; // keep the staging approach open
-    const p = new Plateau({ x, z, y: -4 + rng() * 10, radius: 22 + rng() * 26, seed: 500 + i });
+    const p = new Plateau({ x, z, y: -4 + rng() * 10, radius: 22 + rng() * 26, seed: 500 + i, rowHeight: 4 });
     p.mesh.castShadow = false;
     scene.add(p.mesh);
   }
