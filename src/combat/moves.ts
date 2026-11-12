@@ -58,6 +58,8 @@ export interface Move {
   twoHanded?: boolean;
   /** Heavy charge: hold the button to pause at `holdAt` for up to `max` frames. */
   charge?: { holdAt: number; max: number; damageMult: number; lungeMult: number };
+  /** A shove: no blade hit; the game knocks back whoever is in front at the active frames. */
+  shove?: boolean;
   keys: BladeKey[];
 }
 
@@ -79,6 +81,8 @@ export interface WeaponDef {
 export interface Moveset {
   light: Record<Stance, string>;
   heavy: Record<Stance, string>;
+  /** Optional shove move (Shardbearers only). */
+  shove?: string;
   guard: Record<Stance, Pose>;
   block: Pose;
   weapon: WeaponDef;
@@ -197,6 +201,22 @@ export const moves: Record<string, Move> = {
     ],
   },
 
+  // Shardbearer shove: a shoulder-led barge with the Blade held across the
+  // body. No cut; it knocks warriors back (and off ledges). Crowd control.
+  plate_shove: {
+    id: 'plate_shove', name: 'Plate shove', kind: 'light', shove: true,
+    windup: 9, active: 6, recovery: 22,
+    damage: 0, poiseDamage: 0, staminaCost: 16, guardDamage: 0, knockback: 0, hitStop: 3,
+    chainOpen: 18, dodgeCancel: 15, track: 7,
+    lunge: [[3, 15, 1.3]], hyperArmor: [0, 15], parryable: false,
+    keys: [
+      { f: 0, yaw: -35, pitch: -25, reach: 0.55 },
+      { f: 9, yaw: 30, pitch: 35, reach: 0.3, twist: 35 },
+      { f: 15, yaw: 10, pitch: 30, reach: 0.4, twist: 10 },
+      { f: 37, yaw: -35, pitch: -25, reach: 0.55 },
+    ],
+  },
+
   // ---------------------------------------------------------------------------
   // Parshendi warform with an axe: long, readable telegraphs.
   // ---------------------------------------------------------------------------
@@ -247,6 +267,7 @@ export const moves: Record<string, Move> = {
 export const shardbearerMoveset: Moveset = {
   light: { wind: 'wind_l1', stone: 'stone_l1' },
   heavy: { wind: 'wind_h', stone: 'stone_h' },
+  shove: 'plate_shove',
   guard: {
     wind: { yaw: -35, pitch: -25, reach: 0.55, twist: 0 },
     stone: { yaw: -10, pitch: 40, reach: 0.42, twist: 0 },

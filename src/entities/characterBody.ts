@@ -71,6 +71,16 @@ export class CharacterBody {
     this.vy = 0;
   }
 
+  /** Scripted move (e.g. climbing over a ledge): no collision, keeps interpolation. */
+  slideTo(p: THREE.Vector3): void {
+    this.prevPos.copy(this.pos);
+    const c = { x: p.x, y: p.y + this.centerY, z: p.z };
+    this.body.setNextKinematicTranslation(c);
+    this.pos.copy(p);
+    this.vy = 0;
+    this.grounded = false;
+  }
+
   /** Dead bodies shouldn't block anyone. */
   setSolid(solid: boolean): void {
     this.collider.setEnabled(solid);

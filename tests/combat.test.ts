@@ -213,3 +213,33 @@ describe('fighter', () => {
     });
   });
 });
+
+describe('shove (horde crowd control)', () => {
+  it('a Shardbearer shoves on the shove intent; a moveset without one ignores it', () => {
+    const f = make();
+    f.tick(press({ shove: true }));
+    expect(f.state).toBe('attack');
+    expect(f.move?.shove).toBe(true);
+    const w = new Fighter({ ...stats, shardplate: false }, parshendiMoveset);
+    w.tick(press({ shove: true }));
+    expect(w.state).toBe('free');
+  });
+  it('a shove can follow a light attack', () => {
+    const f = make();
+    f.tick(press({ light: true }));
+    run(f, 3);
+    f.tick(press({ shove: true }));
+    run(f, moves.wind_l1.chainOpen);
+    expect(f.move?.id).toBe('plate_shove');
+  });
+  it('being shoved staggers without damage; a fall kills', () => {
+    const w = new Fighter({ ...stats, shardplate: false }, parshendiMoveset);
+    expect(w.receiveShove(40)).toBe(true);
+    expect(w.state).toBe('stagger');
+    expect(w.hp).toBe(stats.maxHp);
+    run(w, 40);
+    expect(w.state).toBe('free');
+    w.kill();
+    expect(w.alive).toBe(false);
+  });
+});

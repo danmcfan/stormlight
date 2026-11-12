@@ -12,9 +12,11 @@ export interface Intent {
   dodge: boolean;
   block: boolean;
   switchStance: boolean;
+  /** Plate shove (crowd control); only movesets with a `shove` move use it. */
+  shove?: boolean;
 }
 
-export const noIntent: Intent = { light: false, heavy: false, heavyHeld: false, dodge: false, block: false, switchStance: false };
+export const noIntent: Intent = { light: false, heavy: false, heavyHeld: false, dodge: false, block: false, switchStance: false, shove: false };
 
 export interface FighterStats {
   maxHp: number;
@@ -70,6 +72,8 @@ export type FighterEvent =
 
 export type HitOutcome = 'ignored' | 'hit' | 'block' | 'parry' | 'guardBreak' | 'kill';
 
+type Action = 'light' | 'heavy' | 'dodge' | 'shove';
+
 const SWITCH_FRAMES = 14;
 const STAMINA_REGEN_DELAY = 36;
 const POISE_RESET_DELAY = 120;
@@ -90,7 +94,7 @@ export class Fighter {
   poise: number;
   chargeFrames = 0;
   private charging = false;
-  private buffer: { action: 'light' | 'heavy' | 'dodge'; ttl: number } | null = null;
+  private buffer: { action: Action; ttl: number } | null = null;
   private stunFrames = 0;
   private regenDelay = 0;
   private sincePoiseHit = 999;
@@ -167,6 +171,7 @@ export class Fighter {
     if (intent.light) this.buffer = { action: 'light', ttl: this.rules.inputBuffer };
     else if (intent.heavy) this.buffer = { action: 'heavy', ttl: this.rules.inputBuffer };
     else if (intent.dodge) this.buffer = { action: 'dodge', ttl: this.rules.inputBuffer };
+    else if (intent.shove && this.moveset.shove) this.buffer = { action: 'shove', ttl: this.rules.inputBuffer };
 
     switch (this.state) {
       case 'free':
@@ -195,7 +200,9 @@ export class Fighter {
           if (b.action === 'dodge' && this.frame >= m.dodgeCancel) {
             if (this.tryAction('dodge', events)) this.buffer = null;
           } else if (b.action !== 'dodge' && this.frame >= m.chainOpen) {
-            const next = b.action === 'light' ? m.chain : (m.kind === 'light' ? this.moveset.heavy[this.stance] : undefined);
+            const next = b.action === 'light' ? m.chain
+              : b.action === 'shove' ? (m.shove ? undefined : this.moveset.shove)
+              : (m.kind === 'light' && !m.shove ? this.moveset.heavy[this.stance] : undefined);
             if (next && this.startAttack(next, b.action === 'heavy', events)) this.buffer = null;
           }
         }
@@ -251,7 +258,7 @@ export class Fighter {
     if (s !== 'attack') { this.move = null; this.charging = false; this.chargeFrames = 0; }
   }
 
-  private tryAction(a: 'light' | 'heavy' | 'dodge', events: FighterEvent[]): boolean {
+  private tryAction(a: Action, events: FighterEvent[]): boolean {
     if (a === 'dodge') {
       if (this.stamina <= 0) return false;
       this.spend(this.rules.dodgeStamina);
@@ -259,7 +266,8 @@ export class Fighter {
       events.push({ type: 'dodgeStart' });
       return true;
     }
-    const id = a === 'light' ? this.moveset.light[this.stance] : this.moveset.heavy[this.stance];
+    const id = a === 'light' ? this.moveset.light[this.stance] : a === 'shove' ? this.moveset.shove : this.moveset.heavy[this.stance];
+    if (!id) return false;
     return this.startAttack(id, a === 'heavy', events);
   }
 
@@ -337,6 +345,24 @@ export class Fighter {
       this.stunFrames = move.kind === 'heavy' ? this.rules.hitstunHeavy : this.rules.hitstunLight;
     }
     return 'hit';
+  }
+
+  /**
+   * Knocked off balance by a shove: no damage, but a stagger long enough to
+   * be shoved again or cut down. Returns false if it didn't land.
+   */
+  receiveShove(frames: number): boolean {
+    if (!this.alive || this.invulnerable()) return false;
+    this.enter('stagger');
+    this.stunFrames = frames;
+    return true;
+  }
+
+  /** Dies outright (a fall into the chasm). */
+  kill(): void {
+    if (!this.alive) return;
+    this.hp = 0;
+    this.enter('dead');
   }
 
   private checkDeath(): boolean {

@@ -34,7 +34,7 @@ export class LockOnSystem {
   private cooldown = 0;
   private pulse = 0;
 
-  constructor(scene: THREE.Scene, private enemies: Combatant[]) {
+  constructor(scene: THREE.Scene, public enemies: readonly Combatant[]) {
     scene.add(this.reticle);
   }
 
