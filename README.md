@@ -5,7 +5,7 @@ deliberately rough: the goal is to get the *feel* right first.
 
 ## Play it
 
-**https://danmcfan.github.io/stormlight/**. Every push to `main` deploys automatically
+**https://stormlight.dannyobrien.dev**. Every push to `main` deploys automatically
 (see `.github/workflows/deploy.yml`).
 
 ## Run it locally
@@ -32,6 +32,32 @@ Open the printed URL (usually http://localhost:5173) and click to take control.
 | M | Mute |
 | H | Hide the commands card |
 | Esc | Release the mouse |
+
+### On a phone or tablet
+
+The game is fully playable by touch (built and tested for iPhone Safari in
+landscape). Tap the title screen to begin; there is no pointer lock on touch.
+
+| Touch | Action |
+|---|---|
+| Left thumb, anywhere on the left | Floating joystick: small push walks, full push runs, push past the ring to sprint |
+| Right thumb, drag on empty screen | Look · pinch with two fingers to zoom |
+| **Strike** (big button) | Light attack (tap again to combo) |
+| **Heavy** | Heavy attack (hold to charge) |
+| **Dodge** | Dodge (brief invulnerability) |
+| **Block** | Block while held · raise it just before a hit to parry |
+| **Lock** | Tap to lock on / release · swipe across it to switch target |
+| **Stance** | Switch Windstance / Stonestance |
+| Top-right icons | Pause · frame timing · debug & tuning panel · mute |
+
+Move, look and a button all work at the same time. Touch look sensitivity and
+the joystick size are in the tuning panel under **Touch**.
+
+**Add to Home Screen (iPhone):** open the site in Safari, tap **Share →
+Add to Home Screen**. Launched from the icon it runs full screen with no
+browser bars, edge to edge under the Dynamic Island. Turn the phone sideways
+to play; a hint appears in portrait. If there is no sound, check the ring/silent
+switch: iOS mutes web audio in silent mode.
 
 A Parshendi Shardbearer waits just past the bridge: Plate against Plate is a
 long fight. Ordinary Parshendi die to a single Shardblade stroke, through any
@@ -78,6 +104,7 @@ src/
   render/humanoid.ts     box-built rig with arm IK and procedural animation
   fx/                    blade trails, sparks, synthesized sound
   ui/hud.ts              health / stamina / stance / target bars
+  ui/touchControls.ts    on-screen joystick, look drag and action buttons
   camera/                third-person camera
   world/                 plateau generation, props, lighting
 tests/                   vitest unit tests (`npm test`)
