@@ -6,3 +6,7 @@ dist
 .venv-blender/
 __pycache__/
 *.pyc
+
+# In-game shot tiles (scripts/ingame_shots.cjs); only the contact sheets are kept
+art/renders/ingame/*.png
+!art/renders/ingame/sheet*.png
