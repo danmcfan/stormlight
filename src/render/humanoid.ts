@@ -15,6 +15,9 @@ const SHOULDER = new THREE.Vector3(0.42, 0.62, 0);
 const UPPER_ARM = 0.4;
 const LOWER_ARM = 0.36;
 const HAND = 0.06;
+const THIGH = 0.47;
+const SHIN = 0.46;
+const HELM_Y = 0.92;
 
 export type HumanoidKind = 'plate' | 'parshendi';
 
@@ -65,13 +68,21 @@ export class HumanoidModel {
   private tangent = new THREE.Vector3(0, -1, 0);
   private twist = 0;
   private twoHanded = 0;
+  /** Fauld plates that swing aside when a leg strides through them. */
+  private fauldFront: THREE.Object3D | null = null;
+  private fauldBack: THREE.Object3D | null = null;
   onFootfall: ((speed: number) => void) | null = null;
 
   /**
    * @param weaponModel  a modelled weapon (from public/models) to use instead
    *                     of the placeholder boxes; cloned per instance
+   * @param plateModel   modelled Shardplate pieces (shardplate.glb) to use
+   *                     instead of the box-built Plate; cloned per instance
    */
-  constructor(readonly kind: HumanoidKind, readonly scale = 1, variant = 0, private weaponModel?: THREE.Object3D) {
+  constructor(
+    readonly kind: HumanoidKind, readonly scale = 1, variant = 0,
+    private weaponModel?: THREE.Object3D, private plateModel?: THREE.Object3D,
+  ) {
     this.root.add(this.body);
     this.root.scale.setScalar(scale);
     this.torso.position.y = WAIST_Y;
@@ -80,7 +91,11 @@ export class HumanoidModel {
     if (kind === 'plate') this.buildPlate(variant); else this.buildParshendi(variant);
     if (kind === 'plate') { this.tipLocal = new THREE.Vector3(0, 1.95, 0); this.baseLocal = new THREE.Vector3(0, 0.3, 0); }
     else { this.tipLocal = new THREE.Vector3(0, 1.28, 0.3); this.baseLocal = new THREE.Vector3(0, 0.85, 0.05); }
-    this.root.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    this.root.traverse((o) => {
+      if (!(o as THREE.Mesh).isMesh) return;
+      o.castShadow = !o.userData.noShadow;
+      o.receiveShadow = true;
+    });
   }
 
   // --- Construction -------------------------------------------------------------
@@ -127,14 +142,87 @@ export class HumanoidModel {
     this.torso.add(this.armL.upper, this.armR.upper);
   }
 
+  private emptyLimb(upperLen: number): Limb {
+    const upper = new THREE.Group();
+    const lower = new THREE.Group();
+    lower.position.y = -upperLen;
+    upper.add(lower);
+    return { upper, lower };
+  }
+
+  /**
+   * Modelled Plate: each rigid piece of shardplate.glb rides on the group for
+   * its bone, so the procedural animation drives it unchanged. Materials are
+   * per instance (by glTF material name) so the hit flash and the enemy's
+   * bronze colours don't touch other fighters. Returns the dark plate material.
+   */
+  private buildModelledPlate(model: THREE.Object3D, enemy: boolean): THREE.Material {
+    const shade = { metalness: 0.65, flatShading: false };
+    const mats: Record<string, THREE.MeshStandardMaterial> = {
+      plate: this.mat(enemy ? '#6e5a47' : '#7a8796', { ...shade, roughness: 0.4 }),
+      plate_dark: this.mat(enemy ? '#3b2d25' : '#4d5865', { ...shade, roughness: 0.5 }),
+      // Raised enamel bands: sapphire on the player's Plate, dull gold on the enemy's.
+      trim: this.mat(enemy ? '#a8803f' : '#2d55c8', {
+        metalness: 0.3, roughness: 0.4, flatShading: false,
+        emissive: new THREE.Color(enemy ? '#2a1a08' : '#16348f'), emissiveIntensity: 0.6,
+      }),
+      glow: this.mat('#d8f2ff', { emissive: new THREE.Color('#9fdcff'), emissiveIntensity: 2.2, flatShading: false }),
+    };
+    const piece = (name: string, parent: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Object3D => {
+      const src = model.getObjectByName(name);
+      if (!src) throw new Error(`shardplate.glb has no piece "${name}"`);
+      const o = src.clone(true);
+      o.position.set(x, y, z);
+      o.traverse((c) => {
+        const m = c as THREE.Mesh;
+        if (!m.isMesh) return;
+        const name = (m.material as THREE.Material).name;
+        m.material = mats[name] ?? mats.plate;
+        if (name === 'glow') m.userData.noShadow = true;
+      });
+      parent.add(o);
+      return o;
+    };
+
+    this.legL = this.emptyLimb(THIGH);
+    this.legR = this.emptyLimb(THIGH);
+    this.armL = this.emptyLimb(UPPER_ARM);
+    this.armR = this.emptyLimb(UPPER_ARM);
+    for (const [s, side, leg, arm] of [[1, 'l', this.legL, this.armL], [-1, 'r', this.legR, this.armR]] as const) {
+      leg.upper.position.set(s * 0.17, HIP_Y, 0);
+      arm.upper.position.set(s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
+      this.body.add(leg.upper);
+      this.torso.add(arm.upper);
+      piece(`thigh_${side}`, leg.upper);
+      piece(`shin_${side}`, leg.lower);
+      piece(`boot_${side}`, leg.lower, 0, -SHIN);
+      piece(`pauldron_${side}`, this.torso, s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
+      piece(`upperarm_${side}`, arm.upper);
+      piece(`forearm_${side}`, arm.lower);
+      piece(`gauntlet_${side}`, arm.lower, 0, -LOWER_ARM);
+    }
+    piece('belt', this.body, 0, WAIST_Y);
+    this.fauldFront = piece('fauld_front', this.body, 0, HIP_Y, 0.17);
+    this.fauldBack = piece('fauld_back', this.body, 0, HIP_Y, -0.15);
+    for (const name of ['abdomen', 'breastplate', 'gorget']) piece(name, this.torso);
+    const helm = new THREE.Group();
+    helm.position.y = HELM_Y;
+    this.torso.add(helm);
+    piece('helm', helm);
+    if (enemy) piece('helm_crest', helm);
+    return mats.plate_dark;
+  }
+
   private buildPlate(variant: number): void {
     // Variant 1: a Parshendi Shardbearer's Plate, darker and bronze-toned.
     const enemy = variant === 1;
+    if (this.plateModel) {
+      this.buildShardblade(this.buildModelledPlate(this.plateModel, enemy));
+      return;
+    }
     const plate = this.mat(enemy ? '#6e5a47' : '#7a8796', { metalness: 0.65, roughness: 0.42 });
     const dark = this.mat(enemy ? '#3b2d25' : '#4d5865', { metalness: 0.6, roughness: 0.5 });
     const glow = this.mat('#d8f2ff', { emissive: new THREE.Color('#9fdcff'), emissiveIntensity: 2.2, flatShading: false });
-    const steel = this.mat('#c9d4de', { metalness: 0.95, roughness: 0.18 });
-    const etch = this.mat('#bfe8ff', { emissive: new THREE.Color('#7fd0ff'), emissiveIntensity: 0.9 });
 
     this.addLegs(plate, dark, dark, 0.25);
     this.body.add(this.box(0.56, 0.22, 0.36, dark, 0, 1.03, 0));
@@ -150,10 +238,10 @@ export class HumanoidModel {
       t.add(p);
     }
     const helm = new THREE.Group();
-    helm.position.y = 0.92;
+    helm.position.y = HELM_Y;
     helm.add(this.box(0.3, 0.34, 0.34, plate, 0, 0.17));
     const visor = this.box(0.24, 0.035, 0.02, glow, 0, 0.2, 0.175);
-    visor.castShadow = false;
+    visor.userData.noShadow = true;
     helm.add(visor, this.box(0.06, 0.1, 0.3, dark, 0, 0.38));
     if (enemy) {
       // Carapace-like ridges sweeping back from the helm.
@@ -165,13 +253,18 @@ export class HumanoidModel {
     }
     t.add(helm);
     this.addArms(plate, dark, dark, 0.19);
+    this.buildShardblade(dark);
+  }
 
-    // Shardblade: grip at the origin, blade along +Y, wide axis along Z.
+  /** Shardblade: grip at the origin, blade along +Y, wide axis along Z. */
+  private buildShardblade(dark: THREE.Material): void {
     const w = this.weapon;
     if (this.weaponModel) {
       w.add(this.weaponModel.clone(true));
       return;
     }
+    const steel = this.mat('#c9d4de', { metalness: 0.95, roughness: 0.18 });
+    const etch = this.mat('#bfe8ff', { emissive: new THREE.Color('#7fd0ff'), emissiveIntensity: 0.9 });
     w.add(this.box(0.06, 0.34, 0.06, dark, 0, -0.03));
     w.add(this.box(0.1, 0.07, 0.42, dark, 0, 0.16));
     w.add(this.box(0.05, 1.57, 0.17, steel, 0, 0.98));
@@ -248,6 +341,11 @@ export class HumanoidModel {
     const crouch = (1 - run) * (a.combat === 'block' ? 0.18 : 0.1);
     this.legL.upper.rotation.x -= crouch; this.legR.upper.rotation.x -= crouch;
     this.legL.lower.rotation.x += crouch * 2; this.legR.lower.rotation.x += crouch * 2;
+    // Fauld plates ride up on whichever thigh strides into them (the idle
+    // crouch alone leaves them hanging).
+    const l = this.legL.upper.rotation.x + crouch, r = this.legR.upper.rotation.x + crouch;
+    if (this.fauldFront) this.fauldFront.rotation.x = Math.min(0, l, r) * 0.9;
+    if (this.fauldBack) this.fauldBack.rotation.x = Math.max(0, l, r) * 0.9;
 
     const bob = Math.abs(Math.sin(p)) * (0.03 + sprint * 0.05) * run;
     const breathe = Math.sin(this.time * 1.6) * 0.008 * (1 - run);

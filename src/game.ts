@@ -97,7 +97,7 @@ export class Game {
     this.field = buildBattlefield(this.scene, physics);
 
     this.player = new Combatant(physics, {
-      name: 'Shardbearer', team: 'player', kind: 'plate', scale: 1, weaponModel: models.shardblade,
+      name: 'Shardbearer', team: 'player', kind: 'plate', scale: 1, weaponModel: models.shardblade, plateModel: models.shardplate,
       spawn: this.field.spawn, heading: this.field.spawnHeading,
       stats: this.playerStats, moveset: shardbearerMoveset, rules: this.rules,
       movement: () => tuning.movement, gravity: () => tuning.movement.gravity,
@@ -115,7 +115,7 @@ export class Game {
       // fight. Ordinary warriors die to a single Shardblade stroke.
       const shardbearer = spot.role === 'duelist';
       const c = new Combatant(physics, shardbearer ? {
-        name: 'Parshendi Shardbearer', team: 'parshendi', kind: 'plate', variant: 1, scale: 1, weaponModel: models.shardblade,
+        name: 'Parshendi Shardbearer', team: 'parshendi', kind: 'plate', variant: 1, scale: 1, weaponModel: models.shardblade, plateModel: models.shardplate,
         spawn: spot.pos, heading: spot.heading, stance: 'stone',
         stats: { maxHp: 420, maxStamina: 100, maxPoise: 80, staminaRegen: 32, damageScale: 1, shardplate: true },
         moveset: shardbearerMoveset, rules: this.rules,

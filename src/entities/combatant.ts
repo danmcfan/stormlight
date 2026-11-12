@@ -17,6 +17,8 @@ export interface CombatantOptions {
   variant?: number;
   /** Modelled weapon to show instead of the placeholder (see render/assets.ts). */
   weaponModel?: THREE.Object3D;
+  /** Modelled Shardplate pieces (kind 'plate' only; see render/assets.ts). */
+  plateModel?: THREE.Object3D;
   scale: number;
   spawn: THREE.Vector3;
   heading: number;
@@ -73,7 +75,7 @@ export class Combatant {
     this.fighter = new Fighter(opts.stats, opts.moveset, opts.rules);
     if (opts.stance) this.fighter.stance = opts.stance;
     this.body = new CharacterBody(physics, opts.spawn, 0.4 * opts.scale, 0.6 * opts.scale, opts.gravity);
-    this.model = new HumanoidModel(opts.kind, opts.scale, opts.variant ?? 0, opts.weaponModel);
+    this.model = new HumanoidModel(opts.kind, opts.scale, opts.variant ?? 0, opts.weaponModel, opts.plateModel);
     this.loco = createLocoState(opts.heading);
     this.prevFacing = opts.heading;
     this.chestHeight = 1.4 * opts.scale;
