@@ -13,7 +13,12 @@ asset. Look: **painterly and bright**. Everything is made by us.
   `scripts/gen/openrouter_image.py` (`--dry-run` first). It logs every run,
   with prompt and billed cost, to `art/source/<slug>/runs.jsonl`.
 - **Shape.** 16:9 for scenes and style frames; 1:1 for character and prop
-  references.
+  references; 16:9 for long props (a Blade laid horizontally).
+- **Construction references** (for modelling) drop the painterly-finish
+  sentence and ask for a plain light-grey background, flat even light with no
+  cast shadows, and "from far away with a long lens so there is almost no
+  perspective". Each later view of a design passes the approved earlier view
+  as its design source.
 - **Reference images** live in `art/references/` (see its README for credits;
   they belong to their artists). Shape-only references may be
   passed in, labelled "for shape only… copy no single one"; never pass
@@ -84,3 +89,5 @@ have worked, and fixes still to test:
 | `art/source/shardbearer-closeup/nb21-v1` | Style matches v2 (reference works). Plate convincing; Stormlight reads as grey smoke; Blade looks like a generic knight's sword | $0.039 |
 | `art/source/shardbearer-closeup/nb21-v2` | Stormlight now glows ✅. Blade has wavy flared edges but still a cross-guard and leather grip; blade cropped by the frame | $0.039 |
 | `art/source/shardblade-sheet/nb21-v1` | **Distinct Shardblade design** ✅: crescent hooks instead of a crossguard, flame-wave edge, hooked tip, sapphire pommel, condensation. Scale too small next to the gauntlet; glyphs read as runes | $0.043 |
+| `art/source/shardblade-side/nb21-v1` | **Construction ref** ✅: horizontal side view, design kept, plain background. Etched line still reads as runes | $0.042 |
+| `art/source/shardplate-front/nb21-v1` | **Construction ref** ✅: symmetric front view with fauld, chest gem, knee cops. Outlined/cel look (fine for modelling); very stocky proportions; dark under-layer shows at joints | $0.039 |
