@@ -12,9 +12,21 @@ the references' plain light grey, and scores the silhouettes:
      sideways (within 6% of the width) to the best overlap
   4. IoU = overlap / union
 
-Writes art/renders/compare/<view>[-<tag>].png: reference | render | overlay
-(grey = both, red = only in the reference, blue = only in the model), and
-art/renders/compare/scores[-<tag>].json.
+Writes, per view, to art/renders/compare/:
+  <view>[-<tag>].png          reference | render | overlay (grey = both, red =
+                              only in the reference, blue = only in the model)
+  <view>[-<tag>]-profile.png  both silhouettes' left/right (side view: front/
+                              back) extents every 5 cm of height, in metres from
+                              the body axis, and the edge error per band
+  <view>[-<tag>]-detail.png   interior lines (left) and trim (right): the
+                              reference's ink lines and blue enamel (found by
+                              colour) vs the model's creases / plate edges
+                              (edges of flat normal and material-ID passes)
+                              and its `trim` material
+and scores[-<tag>].json: per view the IoU, the detail F-scores (`lines_f`,
+`trim_f`: the share of lines within 3 cm of a line in the other image, 1.5 cm
+for the helm, counted only 2.5 cm or more inside both silhouettes), chamfer
+distances in cm, the worst profile bands as sentences, and the full profile.
 
   .venv-blender/bin/python scripts/blender/compare_reference.py [--tag before] [--views plate-front,blade-side] [--fast]
 
@@ -35,6 +47,7 @@ from lib import ROOT, deg, link, reset_scene  # noqa: E402
 from skeleton import (FAULD_BACK_Z, FAULD_FRONT_Z, FAULD_Y, HELM_Y, HIP_Y, LEG_X, LOWER_ARM, SHIN,  # noqa: E402
                       SHOULDER, TASSET_X, TASSET_Y, THIGH, UPPER_ARM, WAIST_Y)
 from trace_silhouette import silhouette_mask  # noqa: E402
+import compare_metrics as M  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--tag", default="")
@@ -62,6 +75,9 @@ VIEWS = {
     "blade-side": ("shardblade-side/nb21-v1/shardblade-side.jpg", None, "blade", "blade", "w"),
 }
 HELM_PIECES = ("helm",)
+# Image-left / image-right edges per camera, for the profile.
+EDGES = {"front": ("char-right", "char-left"), "back": ("char-left", "char-right"),
+         "left": ("front", "back"), "blade": ("spine", "edge")}
 # The helm sheet draws a much deeper mantle than the body views (whose collar
 # is the target), so the helm views compare the helm alone, down to HELM_DEPTH
 # below its top (where the sheet's collar starts),
@@ -186,7 +202,60 @@ def visible_bounds(objs):
     return a.min(0), a.max(0)
 
 
+ID_COLOURS = {  # flat emission colours of the material-ID pass (linear; Standard view -> exact sRGB)
+    "plate": (0.3, 0.3, 0.3), "plate_dark": (0.05, 0.05, 0.05), "trim": (0.0, 0.0, 1.0), "glow": (0.0, 1.0, 1.0),
+}
+
+
+def emission_material(name, colour=None, normal=False):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    em = nt.nodes.new("ShaderNodeEmission")
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    if normal:   # camera-space normal as colour
+        geo = nt.nodes.new("ShaderNodeNewGeometry")
+        vt = nt.nodes.new("ShaderNodeVectorTransform")
+        vt.vector_type = "NORMAL"
+        vt.convert_from, vt.convert_to = "WORLD", "CAMERA"
+        mad = nt.nodes.new("ShaderNodeVectorMath")
+        mad.operation = "MULTIPLY_ADD"
+        mad.inputs[1].default_value = (0.5, 0.5, 0.5)
+        mad.inputs[2].default_value = (0.5, 0.5, 0.5)
+        nt.links.new(geo.outputs["Normal"], vt.inputs[0])
+        nt.links.new(vt.outputs[0], mad.inputs[0])
+        nt.links.new(mad.outputs[0], em.inputs["Color"])
+    else:
+        em.inputs["Color"].default_value = (*colour, 1)
+    return m
+
+
+_OVERRIDES = {}
+
+
+def override(objs, mode):
+    """Swap every slot's material for a flat pass ('id', 'normal') or back ('shade')."""
+    if not _OVERRIDES:
+        _OVERRIDES["normal"] = emission_material("pass_normal", normal=True)
+        for k, c in ID_COLOURS.items():
+            _OVERRIDES[k] = emission_material(f"pass_id_{k}", c)
+    for o in objs:
+        if "orig_mats" not in o:
+            o["orig_mats"] = [s.material.name if s.material else "" for s in o.material_slots]
+        for slot, name in zip(o.material_slots, o["orig_mats"]):
+            if mode == "shade":
+                slot.material = bpy.data.materials.get(name)
+            elif mode == "normal":
+                slot.material = _OVERRIDES["normal"]
+            else:
+                slot.material = _OVERRIDES.get(name.split(".")[0], _OVERRIDES["plate"])
+
+
 def render(cam, objs, side, size, path):
+    """Shaded render plus flat material-ID and normal passes; returns (images, metres per px, axis column)."""
     bpy.context.view_layer.update()
     lo, hi = visible_bounds(objs)
     c = (lo + hi) / 2
@@ -200,81 +269,93 @@ def render(cam, objs, side, size, path):
     cam.data.clip_end = 100
     s = bpy.context.scene
     s.render.resolution_x = s.render.resolution_y = size
-    s.render.filepath = str(path)
-    bpy.ops.render.render(write_still=True)
-    im = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
-    if side == "blade":   # blade along +Z, spine +Y: rotate so the tip points right, spine up
-        im = cv2.rotate(im, cv2.ROTATE_90_CLOCKWISE)
-    return im, cam.data.ortho_scale / size
+    bpy.context.view_layer.update()
+    mpp = cam.data.ortho_scale / size
+    right = Vector(cam.matrix_world.col[0][:3])
+    axis = size / 2 + (Vector((0, 0, 0)) - Vector(loc)).dot(right) / mpp   # body axis (x = 0, z = 0) column
+    imgs = {}
+    samples = s.cycles.samples
+    for mode in ("shade", "id", "normal"):
+        override(objs, mode)
+        s.cycles.samples = samples if mode == "shade" else 4
+        s.render.filepath = str(path.with_name(f"{path.stem}-{mode}.png"))
+        bpy.ops.render.render(write_still=True)
+        im = cv2.imread(s.render.filepath, cv2.IMREAD_UNCHANGED)
+        if side == "blade":   # blade along +Z, spine +Y: rotate so the tip points right, spine up
+            im = cv2.rotate(im, cv2.ROTATE_90_CLOCKWISE)
+        imgs[mode] = im
+    override(objs, "shade")
+    s.cycles.samples = samples
+    return imgs, mpp, axis
 
 
-def crop_to(mask, img):
-    x, y, w, h = cv2.boundingRect(mask)
-    return mask[y:y + h, x:x + w], img[y:y + h, x:x + w]
+def crop_box(mask):
+    return cv2.boundingRect(mask)
 
 
-def compare(name, ref_img, ren_rgba, fit, ren_mpp):
+def flat(rgba, bg=BG):
+    a = rgba[:, :, 3].astype(np.float32)[:, :, None] / 255
+    return (rgba[:, :, :3].astype(np.float32) * a + bg * (1 - a)).astype(np.uint8)
+
+
+def compare(name, ref_img, imgs, fit, ren_mpp, axis_px, edge_names):
     ref_mask, _ = silhouette_mask(ref_img)
-    alpha = ren_rgba[:, :, 3]
-    a = alpha.astype(np.float32)[:, :, None] / 255
-    ren = (ren_rgba[:, :, :3].astype(np.float32) * a + BG * (1 - a)).astype(np.uint8)
+    shade = imgs["shade"]
+    alpha = shade[:, :, 3]
     ren_mask = ((alpha > 127) * 255).astype(np.uint8)
-    rm, rc = crop_to(ref_mask, ref_img)
-    mm, mc = crop_to(ren_mask, ren)
+    rx0, ry0, rw, rh = crop_box(ref_mask)
+    mx0, my0, mw, mh = crop_box(ren_mask)
     if fit == "helm":
         k = ren_mpp / HELM_MPP
-        d_ref, d_ren = int(HELM_DEPTH / HELM_MPP), int(HELM_DEPTH / ren_mpp)
-        rm, rc = crop_to(rm[:d_ref], rc[:d_ref])
-        mm, mc = crop_to(mm[:d_ren], mc[:d_ren])
+        rh = min(rh, int(HELM_DEPTH / HELM_MPP))
+        mh = min(mh, int(HELM_DEPTH / ren_mpp))
+        rx0, ry0, rw, rh = (lambda b: (rx0 + b[0], ry0 + b[1], b[2], b[3]))(crop_box(ref_mask[ry0:ry0 + rh, rx0:rx0 + rw]))
+        mx0, my0, mw, mh = (lambda b: (mx0 + b[0], my0 + b[1], b[2], b[3]))(crop_box(ren_mask[my0:my0 + mh, mx0:mx0 + mw]))
     elif fit == "h":
-        k = rm.shape[0] / mm.shape[0]
+        k = rh / mh
     else:
-        k = rm.shape[1] / mm.shape[1]
-    mm = cv2.resize(mm, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
-    mm = ((mm > 127) * 255).astype(np.uint8)
-    mc = cv2.resize(mc, (mm.shape[1], mm.shape[0]), interpolation=cv2.INTER_AREA)
-    H = max(rm.shape[0], mm.shape[0])
-    W = max(rm.shape[1], mm.shape[1]) + 2 * int(0.06 * rm.shape[1]) + 4
+        k = rw / mw
+    cmpp = ren_mpp / k                     # metres per canvas pixel
+    sw, sh = max(1, round(mw * k)), max(1, round(mh * k))
+
+    def scaled(im, interp):
+        return cv2.resize(im[my0:my0 + mh, mx0:mx0 + mw], (sw, sh), interpolation=interp)
+    rm = ref_mask[ry0:ry0 + rh, rx0:rx0 + rw]
+    rc = ref_img[ry0:ry0 + rh, rx0:rx0 + rw]
+    mm = ((scaled(ren_mask, cv2.INTER_AREA) > 127) * 255).astype(np.uint8)
+    H = max(rh, sh)
+    W = max(rw, sw) + 2 * int(0.06 * rw) + 4
     margin = 20
+    CH, CW = H + 2 * margin, W + 2 * margin
 
-    def canvas(m, base_x, dx):
-        c = np.zeros((H + 2 * margin, W + 2 * margin), np.uint8)
-        y0 = margin + H - m.shape[0]
-        x0 = margin + base_x + dx
-        c[y0:y0 + m.shape[0], x0:x0 + m.shape[1]] = m
-        return c, (x0, y0)
+    def put(im, x0, fill=0):
+        c = np.full((CH, CW) + im.shape[2:], fill, im.dtype)
+        y0 = margin + H - im.shape[0]
+        c[y0:y0 + im.shape[0], margin + x0:margin + x0 + im.shape[1]] = im
+        return c
 
-    rx = (W - rm.shape[1]) // 2
-    A, _ = canvas(rm, rx, 0)
+    rxc = (W - rw) // 2
+    A = put(rm, rxc)
     best = (-1, 0)
-    span = int(0.06 * rm.shape[1])
-    mx = (W - mm.shape[1]) // 2
+    span = int(0.06 * rw)
+    mxc = (W - sw) // 2
     for dx in range(-span, span + 1, 2):
-        if mx + dx < 0 or mx + dx + mm.shape[1] > W:
+        if mxc + dx < 0 or mxc + dx + sw > W:
             continue
-        B, _ = canvas(mm, mx, dx)
+        B = put(mm, mxc + dx)
         inter = np.logical_and(A, B).sum()
         uni = np.logical_or(A, B).sum()
         if inter / uni > best[0]:
             best = (inter / uni, dx)
     iou, dx = best
-    B, _ = canvas(mm, mx, dx)
+    B = put(mm, mxc + dx)
     ov = np.full((*A.shape, 3), 235, np.uint8)
-    both = np.logical_and(A, B)
-    ov[both] = (120, 120, 120)
+    ov[np.logical_and(A, B)] = (120, 120, 120)
     ov[np.logical_and(A, ~B.astype(bool))] = (60, 60, 230)     # BGR: red = reference only
     ov[np.logical_and(B, ~A.astype(bool))] = (230, 120, 40)    # blue = model only
 
-    # Colour panels on the same canvas geometry.
-    def panel(col, m, x0):
-        p = np.full((H + 2 * margin, W + 2 * margin, 3), BG, np.uint8)
-        y0 = margin + H - m.shape[0]
-        region = p[y0:y0 + m.shape[0], margin + x0:margin + x0 + m.shape[1]]
-        region[:] = col[:region.shape[0], :region.shape[1]]
-        return p
-
-    left = panel(rc, rm, rx)
-    mid = panel(mc, mm, mx + dx)
+    left = put(rc, rxc, BG)
+    mid = put(flat(scaled(shade, cv2.INTER_AREA)), mxc + dx, BG)
     if fit == "w":   # long, flat things stack vertically
         sheet = np.vstack([left, np.full((6, left.shape[1], 3), 255, np.uint8), mid,
                            np.full((6, left.shape[1], 3), 255, np.uint8), ov])
@@ -283,10 +364,41 @@ def compare(name, ref_img, ren_rgba, fit, ren_mpp):
                            np.full((left.shape[0], 6, 3), 255, np.uint8), ov])
     f = 1400 / sheet.shape[1] if fit == "w" else min(1.0, 2400 / sheet.shape[1], 900 / sheet.shape[0])
     sheet = cv2.resize(sheet, None, fx=f, fy=f, interpolation=cv2.INTER_AREA)
+
+    # Interior detail: model trim from the ID pass, creases/plate edges from the ID and normal passes.
+    idc = put(scaled(imgs["id"][:, :, :3], cv2.INTER_NEAREST), mxc + dx)
+    nrm = put(scaled(imgs["normal"][:, :, :3], cv2.INTER_LINEAR), mxc + dx)
+    b, g, r = idc[..., 0].astype(int), idc[..., 1].astype(int), idc[..., 2].astype(int)
+    mod_trim = ((b > 170) & (g < 90) & (r < 90)).astype(np.uint8) * 255
+    mod_edges = M.model_edges(idc, nrm)
+    mod_edges[B == 0] = 0
+    ref_canvas = put(ref_img[ry0:ry0 + rh, rx0:rx0 + rw], rxc, BG)
+    # Finer tolerance for the helm close-ups (the helm is only 0.31 m wide).
+    tol = 0.015 if fit == "helm" else M.TOL
+    det, ref_lines, rt, mt, region = M.detail_scores(ref_canvas, A, mod_trim, mod_edges, B, cmpp, tol)
+    if fit == "w":   # the Blade has no enamel trim or plate layout to score
+        det = {"trim": None, "lines": None, "trim_cover": None}
+    lines_f = det["lines"]["f"] if det["lines"] else 0
+    trim_f = det["trim"]["f"] if det["trim"] else 0
     bar = np.full((44, sheet.shape[1], 3), 255, np.uint8)
-    cv2.putText(bar, f"{name}   reference | model | overlap (red: reference only, blue: model only)   IoU {iou:.3f}",
+    cv2.putText(bar, f"{name}   reference | model | overlap (red: reference only, blue: model only)   "
+                f"IoU {iou:.3f}   lines F {lines_f:.2f}   trim F {trim_f:.2f}",
                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (30, 30, 30), 1, cv2.LINE_AA)
-    return np.vstack([bar, sheet]), float(iou)
+    detail_img = M.detail_overlay(ref_canvas, ref_lines, cv2.bitwise_or(mod_edges, mt), rt, mt, region,
+                                  f"{name} interior lines (left) and trim (right): red = reference only, "
+                                  f"blue = model only, purple = both   lines F {lines_f:.2f}  trim F {trim_f:.2f}")
+
+    # Per-height profile (blade: along its length, from the pommel end).
+    if fit == "w":
+        At, Bt = np.ascontiguousarray(np.flipud(A.T)), np.ascontiguousarray(np.flipud(B.T))
+        ys = np.where(A.any(1))[0]
+        axis_col = int(ys.mean())
+        ground = At.shape[0] - 1 - (margin + rxc)
+        rows, worst = M.profile(At, Bt, cmpp, axis_col, ground, edge_names)
+    else:
+        axis_col = margin + mxc + dx + (axis_px - mx0) * k
+        rows, worst = M.profile(A, B, cmpp, axis_col, margin + H - 1, edge_names)
+    return np.vstack([bar, sheet]), float(iou), det, rows, worst, detail_img
 
 
 def main():
@@ -313,12 +425,25 @@ def main():
         ref_img = cv2.imread(str(SRC / ref))
         if crop:
             ref_img = ref_img[:, crop[0]:crop[1]]
-        rgba, mpp = render(cam, shown, side, 1400 if group == "blade" else 1000, tmp / f"{name}.png")
-        sheet, iou = compare(name, ref_img, rgba, fit, mpp)
+        imgs, mpp, axis = render(cam, shown, side, 1400 if group == "blade" else 1000, tmp / f"{name}.png")
+        sheet, iou, det, rows, worst, detail_img = compare(name, ref_img, imgs, fit, mpp, axis, EDGES[side])
         out = OUT / f"{name}{suffix}.png"
         cv2.imwrite(str(out), sheet)
-        scores[name] = round(iou, 3)
-        print(f"{name:12s} IoU {iou:.3f}  -> {out.relative_to(ROOT)}")
+        cv2.imwrite(str(OUT / f"{name}{suffix}-detail.png"), detail_img)
+        M.profile_plot(rows, f"{name}: silhouette extents every 5 cm (red reference, blue model)",
+                       OUT / f"{name}{suffix}-profile.png", EDGES[side])
+        scores[name] = {
+            "iou": round(iou, 3),
+            "lines_f": det["lines"]["f"] if det["lines"] else None,
+            "trim_f": det["trim"]["f"] if det["trim"] else None,
+            "detail": det,
+            "worst_bands": [w["text"] for w in worst[:10]],
+            "profile": rows,
+        }
+        print(f"{name:12s} IoU {iou:.3f}  lines F {scores[name]['lines_f']}  trim F {scores[name]['trim_f']}"
+              f"  -> {out.relative_to(ROOT)}")
+        for w in worst[:6]:
+            print("     ", w["text"])
     json.dump(scores, open(scores_path, "w"), indent=1)
     import shutil
     shutil.rmtree(tmp, ignore_errors=True)

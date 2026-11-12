@@ -8,7 +8,7 @@ GLB files the game loads at startup.
 
 ```bash
 python3 -m venv .venv-blender
-.venv-blender/bin/pip install bpy opencv-python-headless pillow
+.venv-blender/bin/pip install bpy opencv-python-headless pillow numpy matplotlib scikit-image
 ```
 
 `bpy` 5.3 needs Python 3.13. On a desktop you can also open any exported GLB in
@@ -34,7 +34,18 @@ Blender itself to inspect or hand-edit it.
    together, then slid sideways to the best overlap. The helm views compare the
    helm alone at a fixed scale (the helm sheet draws a much deeper collar than
    the body views). `--fast` (4 samples) is enough for scores while iterating.
-   The IoU only scores the outline: check trim, plate layout and details by eye.
+   It also writes, per view:
+   - `<view>-profile.png`: both silhouettes' extents every 5 cm of height in
+     metres from the body axis, and the error per band; `scores.json` lists the
+     worst bands as sentences ("at 1.52 m the model's char-left edge is 0.09 m
+     inside the reference"). Start here when the IoU drops.
+   - `<view>-detail.png` and the **detail scores** `lines_f` / `trim_f`: the
+     reference's ink lines and its blue enamel (found by colour) against the
+     model's creases and plate edges (edges of flat normal and material-ID
+     renders) and its `trim` material, as F-scores (share of lines within 3 cm
+     of a line in the other image; 1.5 cm on the helm) and chamfer distances,
+     counted only inside both silhouettes. They measure trim lines and plate
+     layout, which the IoU can't see.
 5. **Load** it in `src/render/assets.ts` and use it where the placeholder was.
 
 ## Conventions
