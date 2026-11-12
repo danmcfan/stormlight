@@ -91,3 +91,5 @@ have worked, and fixes still to test:
 | `art/source/shardblade-sheet/nb21-v1` | **Distinct Shardblade design** ✅: crescent hooks instead of a crossguard, flame-wave edge, hooked tip, sapphire pommel, condensation. Scale too small next to the gauntlet; glyphs read as runes | $0.043 |
 | `art/source/shardblade-side/nb21-v1` | **Construction ref** ✅: horizontal side view, design kept, plain background. Etched line still reads as runes | $0.042 |
 | `art/source/shardplate-front/nb21-v1` | **Construction ref** ✅: symmetric front view with fauld, chest gem, knee cops. Outlined/cel look (fine for modelling); very stocky proportions; dark under-layer shows at joints | $0.039 |
+| `art/source/shardplate-side-back/nb21-v1` | **Construction ref** ✅: side and back views consistent with the front (same pauldron discs, fauld, trim). Side view slightly turned, not a pure profile; legs still short | $0.039 |
+| `art/source/shardplate-helm/nb21-v1` | **Construction ref** ✅: helm front and side with gorget; visor, ridge and trim lines clear | $0.039 |
