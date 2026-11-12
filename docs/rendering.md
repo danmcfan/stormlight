@@ -91,12 +91,5 @@ chasm at the assault plateau's chrysalis. It also hides the fighters.
   (painting left, game right). It needs the global Playwright and ImageMagick
   from the dev container.
 
-Judge light, colour, shading and atmosphere here. Plateau shape, textures and
-props are step 2 of the art pass (#9).
-
-Kept comparisons in `art/renders/look-dev/`:
-
-- `00-before-vs-ref.jpg`: before the art pass
-- `09-final-vs-ref.jpg`: after step 1
-- `08-brushstrokes-vs-ref.jpg`: with the brushstroke filter
-- `10-gameplay-desktop.png`, `11-gameplay-iphone.png`, `12-gameplay-horde.png`: in play
+Judge light, colour, shading and atmosphere here; review against
+`docs/look-brief.md`. Comparison images are kept in `art/renders/look-dev/`.

@@ -1,7 +1,8 @@
 # Shattered Plains — gameplay prototype
 
-A browser prototype of Shardbearer combat on the Shattered Plains. Graphics are
-deliberately rough: the goal is to get the *feel* right first.
+A browser prototype of Shardbearer combat on the Shattered Plains: a duel
+against a Parshendi Shardbearer and a horde mode, in a painted look that the
+art pass is bringing toward the concept art.
 
 ## Play it
 
@@ -105,48 +106,8 @@ Every number that affects feel is in `src/config.ts`. Press ` in game to tweak
 them live, then **Copy tuning JSON** and paste the values you like back into
 `config.ts`.
 
-## Milestones
+## Plan and docs
 
-1. **Movement, camera, lock-on** ✅ — heavy Plate locomotion (inertia, limited
-   turn rate, plant-and-pivot), over-the-shoulder camera with collision,
-   Souls-style lock-on and strafing, assault plateau + bridge + chrysalis.
-2. **One-on-one duel** ✅ — data-driven moves (frame data + sword keyframes
-   that drive both animation and hit detection), Windstance/Stonestance
-   movesets, combos with input buffering, charged heavies, dodge with
-   i-frames, block/parry, stamina, poise and stagger, hit-stop, knockback,
-   blade trails, synthesized sound, a Parshendi duelist AI, combat HUD.
-3. Shardbearer systems: Stormlight, per-piece Plate cracking, Blade summon.
-4. The battle: crowds of Parshendi, attack-token AI, allied squad.
-5. Parshendi Shardbearer duel.
-6. First-person mode.
-7. A ten-minute plateau run, then an art pass.
-
-## Layout
-
-```
-src/
-  config.ts              all tunable numbers
-  game.ts                wires everything together
-  main.ts                boot + fixed 60 Hz loop with render interpolation
-  core/                  input, math, Rapier physics wrapper
-  player/locomotion.ts   pure movement model (unit-tested)
-  combat/moves.ts        every attack: frame data + sword keyframes
-  combat/fighter.ts      combat state machine (unit-tested)
-  combat/bladePose.ts    sword pose at any frame; shared by animation and hits
-  combat/hits.ts         swept blade-vs-capsule hit tests (unit-tested)
-  combat/lockOn*.ts      target selection, reticle, switching
-  entities/              physics body, Combatant (player & Parshendi), duel AI
-  horde/                 horde mode: waves, pair AI, attack tokens, aim assist, kill feel
-  render/crowd*.ts       instanced crowd rendering (one draw per body part)
-  render/humanoid.ts     box-built rig with arm IK and procedural animation
-  fx/                    blade trails, sparks, synthesized sound
-  ui/hud.ts              health / stamina / stance / target bars
-  ui/hordeHud.ts         wave / kills / time / streak, banners, results
-  ui/attackWarnings.ts   off-screen attack indicators
-  ui/touchControls.ts    on-screen joystick, look drag and action buttons
-  camera/                third-person camera
-  world/                 plateau generation, props, lighting
-tests/                   vitest unit tests (`npm test`)
-```
-
-Stack: Three.js, Rapier (physics), TypeScript, Vite, lil-gui.
+The plan and milestones are GitHub issues: #1 (plan) and #9 (art pass). Agents
+start with `AGENTS.md`. Docs are in `docs/`: the look brief, rendering, the
+art pipeline and the 3D pipeline.

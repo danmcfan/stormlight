@@ -1,13 +1,9 @@
 # Look brief
 
-Read this before any work on how the game looks: terrain, props, characters,
-materials, lighting, effects or post-processing. It is the house style for every
-agent and session. `docs/art.md` covers generating concept art,
-`docs/3d-pipeline.md` covers building models, and `docs/rendering.md` covers the
-current renderer and settings.
-
-The approach is adapted from a set of prompts that produced very high-quality
-three.js builds. Their common rules are kept here and turned to our subject.
+The house style for how the game looks. `docs/art.md` covers generating
+concept art, `docs/3d-pipeline.md` building models, and `docs/rendering.md` the
+renderer and its settings. The approach is adapted from prompts that produced
+very high-quality three.js builds, turned to our subject.
 
 ## The medium
 
@@ -39,19 +35,27 @@ and the Shardbearer close-up `art/source/shardbearer-closeup/nb21-v2`. Book
 accuracy (what rockbuds, chrysalises, Plate and Blades look like) is in the
 book-accuracy table in `docs/art.md`.
 
-## No cookie-cutter look
+## Painted, not default
 
-None of these, anywhere on screen:
+Hold every surface to these targets:
 
-- low-poly facets or flat-shaded triangles on organic forms
-- colour bands or gradients that follow triangle edges
-- default three.js materials, or plain grey metal with no painted light
-- plain fog as the only atmosphere
-- untextured boxes, blobby rocks, cone-shaped plants
-- generic cel shading or black outlines
-- a filter laid over an unchanged 3D scene in place of painted light
-- glow (bloom) on anything that is not a real light: only Stormlight, gems,
-  spren, visors and blade trails glow
+- Rock, crem, carapace and plants have smooth, rounded, hand-shaped forms;
+  facets appear only where the material really breaks (a cut plank, a cracked
+  slab edge).
+- Strata and colour bands run in soft, roughly level layers that follow the
+  rock, at any camera distance.
+- Every material is painted: lit planes, cool shade and wear are in the
+  texture and the bake, and metal shows painted highlights and worn edges.
+- Atmosphere is layered: haze lit from one side, dust where fighters ran, depth
+  that fades into blue.
+- Light comes from the bake and the medium's rules; post-processing only grades
+  and lends glow.
+- Glow belongs to real light sources only: Stormlight, gems, spren, visors and
+  blade trails.
+
+Guardrail: when a frame shows low-poly facets, bands that follow triangle
+edges, default three.js materials, plain fog, untextured boxes, blobby rocks,
+cone plants, cel shading or outlines, it fails the bar; fix it before moving on.
 
 ## Light: bake it
 
@@ -139,7 +143,7 @@ game should support them by URL (`?view=<name>`) and freeze time with
 
 1. Build a complete first version. Check it in the headless browser. Fix every
    error.
-2. Run at least **6 improvement rounds**. In each round: take screenshots of at
+2. Run **up to 3 improvement rounds** (the user's cap for now). In each round: take screenshots of at
    least three fixed views and states. Read them. Judge them as a **harsh art
    director who compares the picture with the concept art and the best painted
    games and films of this kind**. Name the three weakest things. Fix them.
@@ -153,7 +157,7 @@ game should support them by URL (`?view=<name>`) and freeze time with
    Headless browsers here render in software, so judge cost by draw calls,
    triangles, texture memory and shader complexity, and flag anything the user
    must measure on a real phone.
-5. Stop when one more round would not show on screen, or at the session's time
-   budget.
+5. Stop after the third round, or earlier when one more round would not show
+   on screen.
 6. Final summary: before/after side-by-sides, the three weakest things left,
    cost (model time and generation), and any known flaw.
