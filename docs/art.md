@@ -72,7 +72,7 @@ have worked, and fixes still to test:
 | Crem | "dry pale crust in the cracks of the rock" | Barely visible so far |
 | Shardplate | "thick and seamless: broad interlocking plates that overlap at every joint with no gaps, massive rounded pauldrons"; "fully closed, smooth and rounded helm with a single narrow horizontal slit"; "orange dust in its seams" ✅ | |
 | Stormlight | "bright white-blue light streams upward like glowing steam, lit from within", plus in the light line: "glows brighter than anything else in the frame" ✅ | "faint wisps of white-blue glowing smoke" gave plain grey smoke |
-| Shardblade | To test: "the hilt and blade are one continuous piece of metal; where a crossguard would be, the blade itself flares out into two curved hooks" | v1: "nearly as tall as a man … etched with curling lines" gave an ordinary broadsword. v2: "no plain crossguard: the hilt flows straight into the blade; back edge carved into waves and hooks" gave wavy flared edges ✅ but still a cross-guard and leather grip ❌ |
+| Shardblade | "where a crossguard would be, the blade itself flares out into two curved hooks that sweep back toward the grip"; "cutting edge ripples in flame-like waves, spine curving into a hooked tip"; "pommel set with a single sapphire"; "beaded with tiny drops of water"; with shape-only references (Images 2–3) ✅. Scale to test: "six times the length of the gauntlet; the grip as long as two gauntlets side by side" | v1: generic broadsword. v2: "no plain crossguard" still gave a crossguard (negation ignored). Sheet v1: right design but reads ~1 m long next to a huge gauntlet; "etched symbols" came out as runic lettering |
 
 ## Log
 
@@ -82,3 +82,4 @@ have worked, and fixes still to test:
 | `art/source/plateau-noon/nb21-v2` | **Painterly and bright: the look to follow.** Rockbuds and chrysalis right; bridge too short, reads as a bench | $0.041 |
 | `art/source/shardbearer-closeup/nb21-v1` | Style matches v2 (reference works). Plate convincing; Stormlight reads as grey smoke; Blade looks like a generic knight's sword | $0.039 |
 | `art/source/shardbearer-closeup/nb21-v2` | Stormlight now glows ✅. Blade has wavy flared edges but still a cross-guard and leather grip; blade cropped by the frame | $0.039 |
+| `art/source/shardblade-sheet/nb21-v1` | **Distinct Shardblade design** ✅: crescent hooks instead of a crossguard, flame-wave edge, hooked tip, sapphire pommel, condensation. Scale too small next to the gauntlet; glyphs read as runes | $0.043 |
