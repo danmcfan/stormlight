@@ -47,6 +47,12 @@ Blender itself to inspect or hand-edit it.
      counted only inside both silhouettes. They measure trim lines and plate
      layout, which the IoU can't see.
 5. **Load** it in `src/render/assets.ts` and use it where the placeholder was.
+6. **Check it in game**: `node scripts/ingame_shots.cjs [--only idle-front,guard]`
+   starts Vite, drives the game in headless Chromium (manual time stepping,
+   virtual input) and writes shots from cameras placed round the player and
+   enemy (idle front/side/three-quarter, guard, each light-combo step, heavy,
+   sprint, the enemy Shardbearer, the game camera) to `art/renders/ingame/`,
+   gridded into `sheet.png`. About 20 s.
 
 ## Conventions
 
