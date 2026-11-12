@@ -386,3 +386,64 @@ html:not(.touch) .touch-only { display: none; }
 }
 /* On the title screen the touch HUD steps aside. */
 .touch:not(.playing) .vitals, .touch:not(.playing) .target { display: none; }
+
+/* ==========================================================================
+   Horde mode
+   ========================================================================== */
+/* Title screen: mode buttons and the last run's results. */
+.modes { display: flex; justify-content: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.mode-btn {
+  font: 600 11px/1 var(--serif); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+  color: var(--brass); background: rgba(12, 17, 26, 0.6); padding: 10px 16px;
+  border: 1px solid var(--panel-edge); border-radius: 2px;
+}
+.mode-btn:hover { color: #f3ecdf; border-color: var(--brass); box-shadow: 0 0 16px rgba(207, 178, 122, 0.3); }
+.mode-btn.horde { color: #ffcf9e; border-color: rgba(255, 160, 90, 0.5); }
+.mode-btn.horde:hover { box-shadow: 0 0 18px rgba(255, 140, 70, 0.35); }
+.results { display: inline-block; margin: 0 auto 18px; padding: 10px 18px 12px; text-align: left; position: relative; }
+.results dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px 22px; font-size: 12.5px; }
+.results dt { color: var(--muted); }
+.results dd { margin: 0; color: #f3ecdf; font: 600 13px/1.2 var(--serif); text-align: right; }
+
+/* Top bar: wave · kills · time · streak. */
+.horde-bar {
+  position: fixed; left: 50%; top: var(--safe-t); transform: translateX(-50%); z-index: 40;
+  display: flex; gap: 18px; padding: 7px 16px 8px;
+}
+.horde-bar div { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 38px; }
+.horde-bar label { font: 600 8.5px/1 var(--serif); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.horde-bar b { font: 600 16px/1 var(--serif); color: #f3ecdf; font-variant-numeric: tabular-nums; }
+.horde-bar .streak.hot b { color: var(--storm); text-shadow: 0 0 10px var(--storm-glow); }
+/* With a horde bar up top, the locked-target panel drops below it. */
+.horde-bar:not(.hidden) ~ .target { top: calc(var(--safe-t) + 52px); }
+.touch:not(.playing) .horde-bar { display: none; }
+
+.wave-banner {
+  position: fixed; left: 0; right: 0; top: 24%; z-index: 41; pointer-events: none; text-align: center;
+}
+.wave-banner.in { animation: banner 2.4s ease-out both; }
+.wave-banner h2 { margin: 0; font: 600 clamp(26px, 4.5vw, 44px)/1.1 var(--serif); letter-spacing: 0.14em; color: #f3ecdf; text-shadow: 0 2px 18px #000, 0 0 24px rgba(255, 150, 80, 0.25); }
+.wave-banner p { margin: 10px 0 0; font: italic 500 13px/1 var(--serif); letter-spacing: 0.14em; color: rgba(230, 237, 245, 0.7); text-shadow: 0 1px 8px #000; }
+@keyframes banner { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Off-screen attack warnings: amber chevrons on an ellipse round the screen. */
+.threats { position: fixed; inset: 0; pointer-events: none; z-index: 38; }
+.threat {
+  --k: 0; position: absolute; left: -22px; top: -22px; width: 44px; height: 44px;
+  display: flex; align-items: flex-start; justify-content: center;
+}
+.threat i {
+  width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
+  border-bottom: 18px solid rgb(255 calc(190 - 110 * var(--k)) 80 / calc(0.55 + 0.45 * var(--k)));
+  filter: drop-shadow(0 0 calc(4px + 10px * var(--k)) rgba(255, 120, 50, 0.9));
+}
+.threat.heavy i { border-bottom-width: 24px; border-left-width: 17px; border-right-width: 17px; }
+.threat::after {
+  /* The HUD's gem motif under the chevron. */
+  content: ''; position: absolute; left: 50%; top: 24px; width: 6px; height: 6px; margin-left: -3px;
+  transform: rotate(45deg); background: #ffb25e; box-shadow: 0 0 8px rgba(255, 140, 60, 0.9);
+}
+
+/* Touch: the Shove button, above the Lock button. */
+.act-shove { --s: 52px; --x: 52px; --y: 64px; }
+.act-shove svg { width: 44%; height: 44%; }

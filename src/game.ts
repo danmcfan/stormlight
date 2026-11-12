@@ -15,7 +15,13 @@ import { HitboxView } from './debug/hitboxView';
 import { PerfMonitor } from './debug/perfMonitor';
 import { Combatant, type ControlInput } from './entities/combatant';
 import { DuelAI } from './entities/duelAI';
+import { EyeBurn } from './fx/eyeBurn';
 import { Sfx } from './fx/sfx';
+import { chooseAimTarget } from './horde/aimAssist';
+import { HordeMode } from './horde/hordeMode';
+import { inputToWorld } from './player/locomotion';
+import { AttackWarnings } from './ui/attackWarnings';
+import { HordeHud } from './ui/hordeHud';
 import { Sparks } from './fx/sparks';
 import { BladeTrail } from './fx/trail';
 import { Hud } from './ui/hud';
@@ -47,6 +53,10 @@ const SPARK_STEEL = new THREE.Color('#ffd9a0');
 const SPARK_PARRY = new THREE.Color('#cfefff');
 const MOTE = new THREE.Color('#8fd6ff');
 const BLOOD_PARSH = new THREE.Color('#ff9a5a');
+const TELEGRAPH = new THREE.Color('#ffb25e');
+const DUST = new THREE.Color('#b59a78');
+
+export type GameMode = 'duel' | 'horde';
 
 export class Game {
   readonly renderer: THREE.WebGLRenderer;
@@ -60,6 +70,23 @@ export class Game {
   readonly rules: CombatRules = { ...DEFAULT_RULES };
   /** Lets automated tests drive combat without pointer lock. */
   allowInputWithoutLock = false;
+  /** Duel (default) or horde. */
+  mode: GameMode = 'duel';
+  readonly horde: HordeMode;
+  /** Called a moment after the Shardbearer falls in horde mode (show results). */
+  onHordeEnd: (() => void) | null = null;
+  private hordeHud = new HordeHud();
+  private warnings = new AttackWarnings();
+  private eyeBurn = new EyeBurn();
+  private endTimer = 0;
+  /** Slow motion: remaining real seconds and the time scale while it lasts. */
+  private slowmoLeft = 0;
+  private slowmoScale = 1;
+  private assistTarget: Combatant | null = null;
+  private assistSerial = -1;
+  /** Player + current foes, rebuilt each tick for hit tests. */
+  private fighters: Combatant[] = [];
+  private duelFoes: Combatant[] = [];
   private env: Environment;
   // Right HUD column: frame timing on top, tuning panel below it.
   readonly perf = new PerfMonitor(document.getElementById('hud-right')!);
@@ -92,6 +119,7 @@ export class Game {
     pmrem.dispose();
 
     this.input = new Input(canvas);
+    this.debug.addModeButtons(() => this.startHorde(), () => this.startDuel());
     this.env = new Environment(this.scene);
     if (isTouchFirst()) this.env.sun.shadow.mapSize.set(1024, 1024);
     this.field = buildBattlefield(this.scene, physics);
@@ -132,13 +160,29 @@ export class Game {
       this.scene.add(c.model.root, trail.mesh);
     }
 
-    this.scene.add(this.playerTrail.mesh, this.sparks.points);
-    this.hitboxes = new HitboxView(this.enemies.length + 1);
+    this.scene.add(this.playerTrail.mesh, this.sparks.points, this.eyeBurn.points);
+    this.duelFoes = this.enemies.map((e) => e.c);
+    this.horde = new HordeMode({
+      physics, scene: this.scene, rules: this.rules, field: this.field, player: this.player, movement: enemyMovement,
+      onEvents: (c, ev) => this.handleEvents(c, ev),
+      onTelegraph: (c, heavy) => {
+        // A glint off the axe as it goes up: readable even in a crowd.
+        this.tmp.copy(c.position).setY(c.position.y + c.chestHeight + 0.5);
+        this.sparks.burst(this.tmp, heavy ? 10 : 6, TELEGRAPH, 1.4, heavy ? 0.5 : 0.35, 0, 1);
+      },
+      onWave: (n, cleared) => {
+        if (cleared) this.hordeHud.announce(`Wave ${n} broken`, 'Stormlight knits your wounds', 3);
+        else this.hordeHud.announce(`Wave ${n}`, n === 1 ? 'They fight in pairs' : 'More come up out of the chasms');
+        this.sfx.wave(cleared, 0.8);
+      },
+      onPlummet: (c) => this.sfx.plummet(this.audibility(c)),
+    });
+    this.hitboxes = new HitboxView(48);
     this.scene.add(this.hitboxes.group);
 
     this.cam = new ThirdPersonCamera(physics, this.player.body.collider, 1);
     this.cam.snapTo(this.field.spawn, this.field.spawnHeading);
-    this.lockOn = new LockOnSystem(this.scene, this.enemies.map((e) => e.c));
+    this.lockOn = new LockOnSystem(this.scene, this.duelFoes);
 
     // Browsers only allow audio after a user gesture.
     const unlock = () => this.sfx.unlock();
@@ -157,6 +201,7 @@ export class Game {
   private resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);
+    this.eyeBurn.setViewportHeight(h * this.renderer.getPixelRatio(), tuning.camera.fov);
     this.cam.camera.aspect = w / h;
     this.cam.camera.updateProjectionMatrix();
   }
@@ -173,6 +218,7 @@ export class Game {
     if (inp.consumePress('KeyH')) document.getElementById('hint')?.classList.toggle('hidden');
     if (inp.consumePress('KeyF')) this.perf.toggle();
     if (inp.consumePress('KeyM')) this.sfx.muted = !this.sfx.muted;
+    if (inp.consumePress('KeyN')) { if (this.mode === 'horde') this.startDuel(); else this.startHorde(); }
     this.sfx.volume = tuning.combat.volume;
     this.rules.parryWindow = tuning.combat.parryWindow;
     this.playerStats.damageScale = tuning.combat.playerDamage;
@@ -183,13 +229,72 @@ export class Game {
     if (this.hitStop > 0) { this.hitStop--; return; }
 
     this.stepPlayer(dt);
-    for (const e of this.enemies) {
-      const intent = e.ai.think(dt, e.c, this.player);
-      this.handleEvents(e.c, e.c.fixedStep(dt, intent));
-    }
+    if (this.mode === 'duel') {
+      for (const e of this.enemies) {
+        const intent = e.ai.think(dt, e.c, this.player);
+        this.handleEvents(e.c, e.c.fixedStep(dt, intent));
+      }
+    } else this.horde.fixedUpdate(dt);
     this.physics.world.step();
     this.resolveHits();
     this.updateDeaths(dt);
+  }
+
+  /** Current foes: the duel's Parshendi, or the horde. */
+  foes(): readonly Combatant[] {
+    return this.mode === 'horde' ? this.horde.foes : this.duelFoes;
+  }
+
+  /** Game-time multiplier for the main loop (slow motion). */
+  get timeScale(): number {
+    if (this.slowmoLeft <= 0) return 1;
+    // Ease back to full speed over the last 0.2 s.
+    return this.slowmoScale + (1 - this.slowmoScale) * Math.max(0, 1 - this.slowmoLeft / 0.2);
+  }
+
+  private slowmo(seconds: number, scale: number): void {
+    if (seconds <= 0) return;
+    this.slowmoLeft = Math.max(this.slowmoLeft, seconds);
+    this.slowmoScale = Math.min(this.slowmoLeft > seconds ? this.slowmoScale : 1, scale);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Modes
+  // ---------------------------------------------------------------------------
+
+  /** Start (or restart) a horde run. */
+  startHorde(): void {
+    this.mode = 'horde';
+    for (const e of this.enemies) {
+      e.c.fighter.kill();
+      e.c.body.setSolid(false);
+      e.c.model.root.visible = false;
+      e.trail.mesh.visible = false;
+    }
+    this.lockOn.enemies = this.horde.foes;
+    this.lockOn.target = null;
+    this.horde.start();
+    this.endTimer = 0;
+    this.respawnPlayer();
+    this.hordeHud.show(true);
+    HordeHud.showResults(null);
+  }
+
+  /** Back to the one-on-one duel, exactly as it was. */
+  startDuel(): void {
+    this.horde.stop();
+    this.mode = 'duel';
+    this.hordeHud.show(false);
+    this.warnings.hide();
+    this.lockOn.enemies = this.duelFoes;
+    this.lockOn.target = null;
+    for (const e of this.enemies) {
+      e.c.respawn(e.spawn, e.heading);
+      e.c.model.root.visible = true;
+      e.trail.mesh.visible = true;
+    }
+    this.slowmoLeft = 0;
+    this.respawnPlayer();
   }
 
   private stepPlayer(dt: number): void {
@@ -200,6 +305,7 @@ export class Game {
     const axes = inp.moveAxes();
     const target = this.lockOn.target;
     const p = this.player.position;
+    const aim = this.aimAssist(axes.x, axes.y, !!target);
     const ctrl: ControlInput = {
       ...noIntent,
       light: live && light,
@@ -208,6 +314,8 @@ export class Game {
       dodge: inp.consumePress('Space'),
       block: inp.isHeld('KeyE'),
       switchStance: inp.consumePress('Tab'),
+      shove: live && inp.consumePress('KeyR'),
+      aimHeading: aim ? headingOf(aim.position.x - p.x, aim.position.z - p.z) : null,
       moveX: axes.x,
       moveY: axes.y,
       sprint: inp.isHeld('ShiftLeft') || inp.isHeld('ShiftRight'),
@@ -216,15 +324,71 @@ export class Game {
       targetHeading: target ? headingOf(target.position.x - p.x, target.position.z - p.z) : null,
     };
     if (!this.player.alive) Object.assign(ctrl, noIntent, { moveX: 0, moveY: 0 });
+    const serial = this.player.fighter.attackSerial;
     this.handleEvents(this.player, this.player.fixedStep(dt, ctrl));
+    if (this.player.fighter.attackSerial !== serial) { this.assistTarget = aim; this.assistSerial = this.player.fighter.attackSerial; }
     if (this.player.position.y < -45) this.respawnPlayer();
+  }
+
+  /**
+   * Aim assist (horde, not locked on): the warrior a swing should turn toward,
+   * inside a cone round the pushed direction (or facing, with no input).
+   * Mid-swing it sticks with the target it picked, while that one lives.
+   */
+  private aimAssist(mx: number, my: number, locked: boolean): Combatant | null {
+    const h = tuning.horde;
+    const pl = this.player;
+    if (this.mode !== 'horde' || locked || !h.aimAssist || !pl.alive) return null;
+    const f = pl.fighter;
+    const cur = this.assistTarget;
+    if (f.state === 'attack' && f.attackSerial === this.assistSerial && cur?.alive) return cur;
+    const dir = inputToWorld(mx, my, this.cam.yaw);
+    const heading = Math.hypot(dir.x, dir.z) > 0.2 ? headingOf(dir.x, dir.z) : pl.facing;
+    const foes = this.horde.foes;
+    let best: Combatant | null = null;
+    const pick = chooseAimTarget(pl.position.x, pl.position.z, heading,
+      foes.filter((c) => c.alive).map((c) => ({ id: c.id, x: c.position.x, z: c.position.z })),
+      { coneDeg: h.aimCone, range: h.aimRange, distanceWeight: 0.6 });
+    if (pick) best = foes.find((c) => c.id === pick.id) ?? null;
+    return best;
+  }
+
+  /** Plate shove: knock everyone in front back (and maybe off a ledge). */
+  private shove(att: Combatant): void {
+    const h = tuning.horde;
+    let n = 0;
+    for (const def of this.foes()) {
+      if (!def.alive || def.team === att.team) continue;
+      const dx = def.position.x - att.position.x, dz = def.position.z - att.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > h.shoveRange + 0.5) continue;
+      const off = Math.abs(angleDiff(headingOf(dx, dz), att.facing));
+      if (off > (h.shoveCone * Math.PI) / 180 && dist > 1) continue;
+      if (def.fighter.stats.shardplate) {
+        // Plate against Plate: a nudge, never a free stagger (duel balance).
+        def.knockback(att.position.x, att.position.z, h.shoveForce * 0.2);
+        continue;
+      }
+      if (!def.fighter.receiveShove(48)) continue;
+      def.knockback(att.position.x, att.position.z, h.shoveForce * (1.15 - 0.3 * dist / h.shoveRange), h.shoveDecay);
+      def.model.hitFlash();
+      this.tmp.copy(def.position).setY(def.position.y + 0.3);
+      this.sparks.burst(this.tmp, 8, DUST, 2.5, 0.5, 6, 0.5);
+      n++;
+    }
+    if (n) {
+      this.sfx.shove(1);
+      this.cam.addShake(0.06 * tuning.combat.shakeScale);
+      this.hitStop = Math.max(this.hitStop, Math.round(3 * tuning.combat.hitStopScale));
+    }
   }
 
   private handleEvents(c: Combatant, events: FighterEvent[]): void {
     const isPlayer = c === this.player;
     const g = this.audibility(c);
     for (const e of events) {
-      if (e.type === 'activeStart') this.sfx.swing(e.move.kind === 'heavy', g);
+      if (e.type === 'activeStart' && e.move.shove) this.shove(c);
+      else if (e.type === 'activeStart') this.sfx.swing(e.move.kind === 'heavy', g);
       else if (e.type === 'dodgeStart') this.sfx.dodge(g * 0.8);
       else if (e.type === 'stanceSwitched' && isPlayer) this.sfx.stance(0.8);
     }
@@ -237,10 +401,13 @@ export class Game {
 
   /** Sweep every active blade against its opponents' capsules. */
   private resolveHits(): void {
-    const all = [this.player, ...this.enemies.map((e) => e.c)];
+    const all = this.fighters;
+    all.length = 0;
+    all.push(this.player, ...this.foes());
     for (const att of all) {
       if (!att.alive || !att.fighter.isActive()) continue;
       const move = att.fighter.move!;
+      if (move.shove) continue;
       for (const def of all) {
         if (def === att || def.team === att.team || !def.alive || att.fighter.hitIds.has(def.id)) continue;
         if (!sweptBladeHits(att.prevBladeA, att.prevBladeB, att.bladeA, att.bladeB, def.capsule(this.cap), 4, this.contact)) continue;
@@ -266,8 +433,16 @@ export class Game {
     switch (outcome) {
       case 'hit':
       case 'kill': {
-        stop(move.hitStop + (outcome === 'kill' ? 5 : 0));
-        shake(heavy ? 0.13 : 0.07);
+        let stopN = move.hitStop + (outcome === 'kill' ? 5 : 0);
+        let shakeN = heavy ? 0.13 : 0.07;
+        if (outcome === 'kill' && this.mode === 'horde' && def !== this.player) {
+          // Crowd kills scale down; multi-kills and the wave's last kill scale up.
+          const kf = this.horde.registerKill(def, att === this.player ? att.fighter.attackSerial : -1);
+          if (kf) { stopN = kf.hitStop; shakeN = kf.shake; this.slowmo(kf.slowmo, kf.slowmoScale); }
+        }
+        if (outcome === 'hit' && def === this.player && this.mode === 'horde') this.horde.onPlayerHit();
+        stop(stopN);
+        shake(shakeN);
         def.knockback(att.position.x, att.position.z, move.knockback * c.knockbackScale * (outcome === 'kill' ? 1.6 : 1));
         def.model.hitFlash();
         const shard = att.opts.moveset.weapon.shardblade;
@@ -277,6 +452,8 @@ export class Game {
         else this.sparks.burst(at, 10, BLOOD_PARSH, 3, 0.35, 9);
         if (def === this.player) this.hud.playerHurt(heavy ? 0.9 : 0.6);
         if (outcome === 'kill') this.sfx.fall(g);
+        // Shardblade kills burn out the eyes: two dark wisps of smoke.
+        if (outcome === 'kill' && shard && !def.fighter.stats.shardplate) this.eyeBurn.emit(def.position, def.facing, 1.62 * def.opts.scale);
         break;
       }
       case 'block':
@@ -304,6 +481,14 @@ export class Game {
   }
 
   private updateDeaths(dt: number): void {
+    if (this.mode === 'horde') {
+      // No respawn in a horde run: the end screen follows the fall.
+      if (this.horde.ended && (this.endTimer += dt) > 2.6 && this.endTimer - dt <= 2.6) {
+        HordeHud.showResults(this.horde.stats);
+        this.onHordeEnd?.();
+      }
+      return;
+    }
     for (const e of this.enemies) {
       const c = e.c;
       if (c.alive) continue;
@@ -319,9 +504,17 @@ export class Game {
   }
 
   private respawnPlayer(): void {
+    const hp = this.player.fighter.hp;
+    const midRun = this.mode === 'horde' && this.player.alive && this.horde.active && this.horde.stats.time > 0;
     this.player.respawn(this.field.landing, 0);
     this.cam.snapTo(this.field.landing, 0);
     this.lockOn.target = null;
+    this.assistTarget = null;
+    if (this.mode === 'horde') {
+      // Falling off mid-run puts you back at the landing, hurt.
+      if (midRun) this.player.fighter.hp = Math.max(1, hp - this.player.fighter.stats.maxHp * 0.25);
+      return;
+    }
     // The duel restarts fresh too.
     for (const e of this.enemies) if (e.ai.aggressive) e.c.respawn(e.spawn, e.heading);
   }
@@ -347,20 +540,36 @@ export class Game {
     this.cam.look(m.dx, m.dy, m.wheel, locked);
     if (locked) this.lockOn.handleMouse(m.dx, dt, this.player.position, this.cam.yaw);
 
-    this.player.render(adt, a, tuning.movement);
-    this.updateTrail(this.playerTrail, this.player, adt);
+    // Slow motion slows animation and effects too (the camera stays real-time).
+    const ts = this.timeScale;
+    const sdt = adt * ts;
+    if (this.slowmoLeft > 0) this.slowmoLeft -= rawDt;
+    this.player.render(sdt, a, tuning.movement);
+    this.updateTrail(this.playerTrail, this.player, sdt);
     const em = enemyMovement();
-    for (const e of this.enemies) {
-      e.c.render(adt, a, em);
-      this.updateTrail(e.trail, e.c, adt);
-    }
-    this.sparks.update(dt);
-    this.hitboxes.update([this.player, ...this.enemies.map((e) => e.c)], tuning.combat.showHitboxes);
+    if (this.mode === 'duel') {
+      for (const e of this.enemies) {
+        e.c.render(sdt, a, em);
+        this.updateTrail(e.trail, e.c, sdt);
+      }
+    } else this.horde.render(sdt, a, em, this.cam.camera, this.trailFn);
+    this.sparks.update(dt * ts);
+    this.eyeBurn.update(dt * ts);
+    if (tuning.combat.showHitboxes) this.hitboxes.update([this.player, ...this.foes()], true);
+    else this.hitboxes.update([], false);
     const pr = this.player.body.renderPos;
     this.lockOn.update(dt, pr);
     this.cam.update(dt, pr, this.lockOn.focus(this.tmp));
     this.env.follow(pr);
     this.hud.update(dt, this.player, this.lockOn.target);
+    if (this.mode === 'horde') {
+      this.hordeHud.update(dt, this.horde.stats);
+      const camera = this.cam.camera;
+      camera.updateMatrixWorld();
+      camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+      const fresh = this.warnings.update(this.cam.camera, this.horde.foes, this.player, tuning.horde.warnRange, true);
+      if (fresh) this.sfx.warn(0.55);
+    }
 
     this.renderer.render(this.scene, this.cam.camera);
 
@@ -368,6 +577,7 @@ export class Game {
     this.showDebug(locked);
   }
 
+  private trailFn = (t: BladeTrail, c: Combatant, dt: number) => this.updateTrail(t, c, dt);
   private trailTip = new THREE.Vector3();
   private trailBase = new THREE.Vector3();
   private updateTrail(trail: BladeTrail, c: Combatant, dt: number): void {
@@ -393,6 +603,10 @@ export class Game {
       move: mv ? `${mv.id} f${f.frame}/${mv.windup + mv.active + mv.recovery}${f.chargeFrames ? ` charge ${Math.round(f.chargeFrac() * 100)}%` : ''}` : '—',
       stamina: `${f.stamina.toFixed(0)} / ${f.stats.maxStamina}`,
       poise: `${f.poise.toFixed(0)} / ${f.stats.maxPoise}`,
+      horde: this.mode === 'horde' ? (() => {
+        const n = this.horde.counts();
+        return `${n.alive} alive · ${n.pairs} pairs · tokens ${this.horde.tokensInUse}/${tuning.horde.attackTokens} · pool ${n.pool}`;
+      })() : undefined,
     });
   }
 }

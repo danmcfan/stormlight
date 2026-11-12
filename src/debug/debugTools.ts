@@ -13,11 +13,13 @@ export interface DebugInfo {
   move: string;
   stamina: string;
   poise: string;
+  horde?: string;
 }
 
 /** Debug readout plus a live tuning panel, both toggled with the ` key. */
 export class DebugTools {
   private gui: GUI;
+  private hordeFolder!: GUI;
   private el: HTMLElement;
   private text: HTMLElement;
   visible = false;
@@ -71,6 +73,45 @@ export class DebugTools {
     lock.add(tuning.lockOn, 'breakRange', 5, 60, 1);
     lock.add(tuning.lockOn, 'switchThreshold', 5, 200, 1).name('flick threshold (px)');
     lock.add(tuning.lockOn, 'switchCooldown', 0, 1, 0.05);
+    const h = tuning.horde;
+    const hd = this.gui.addFolder('Horde');
+    this.hordeFolder = hd;
+    hd.add(h, 'waveStart', 2, 20, 2).name('wave 1 size');
+    hd.add(h, 'waveGrowth', 0, 12, 1).name('added per wave');
+    hd.add(h, 'waveMax', 4, 60, 2).name('wave cap');
+    hd.add(h, 'maxAlive', 4, 60, 1).name('max on plateau');
+    hd.add(h, 'spawnInterval', 0.1, 4, 0.05).name('pair arrival (s)');
+    hd.add(h, 'waveBreak', 0, 15, 0.5).name('break between (s)');
+    hd.add(h, 'healBetweenWaves', 0, 1, 0.05).name('heal between waves');
+    hd.add(h, 'warriorDamage', 0, 4, 0.05).name('warrior damage ×');
+    hd.add(h, 'attackTokens', 0, 10, 1).name('attack tokens');
+    hd.add(h, 'tokenCooldown', 0, 6, 0.1).name('token cooldown (s)');
+    hd.add(h, 'holdRadius', 3, 14, 0.1).name('circle radius');
+    hd.add(h, 'closeRadius', 2.5, 10, 0.1).name('close-in radius');
+    hd.add(h, 'flankAngle', 0, 90, 1).name('pair flank (°)');
+    hd.add(h, 'feintLead', 0, 2, 0.05).name('feint lead (s)');
+    hd.add(h, 'berserkChance', 0, 1, 0.05).name('berserk chance');
+    hd.add(h, 'fearDodge', 0, 1, 0.05).name('flinch chance');
+    hd.add(h, 'thinkRate', 2, 60, 1).name('AI thinks / s');
+    hd.add(h, 'lodDistance', 5, 60, 1).name('LOD distance');
+    hd.add(h, 'aimAssist').name('aim assist');
+    hd.add(h, 'aimCone', 0, 90, 1).name('aim cone (°)');
+    hd.add(h, 'aimRange', 1, 10, 0.1).name('aim range');
+    hd.add(h, 'shoveForce', 0, 40, 0.5).name('shove force');
+    hd.add(h, 'shoveDecay', 0.5, 12, 0.1).name('shove slide decay');
+    hd.add(h, 'shoveRange', 1, 5, 0.1).name('shove range');
+    hd.add(h, 'shoveCone', 10, 120, 1).name('shove cone (°)');
+    hd.add(h, 'killStop', 0, 20, 1).name('kill hit-stop');
+    hd.add(h, 'killWindow', 0, 4, 0.05).name('rapid-kill window');
+    hd.add(h, 'killFalloff', 0, 3, 0.05).name('rapid-kill falloff');
+    hd.add(h, 'killMinScale', 0, 1, 0.05).name('min kill freeze');
+    hd.add(h, 'killShake', 0, 0.4, 0.01).name('kill shake');
+    hd.add(h, 'multiKillStop', 0, 20, 1).name('multi-kill extra stop');
+    hd.add(h, 'multiKillSlowmo', 0, 2, 0.05).name('multi-kill slow-mo (s)');
+    hd.add(h, 'waveEndSlowmo', 0, 3, 0.05).name('wave-end slow-mo (s)');
+    hd.add(h, 'slowmoScale', 0.05, 1, 0.05).name('slow-mo speed');
+    hd.add(h, 'warnRange', 2, 25, 0.5).name('warning range');
+    hd.close();
     const touch = this.gui.addFolder('Touch');
     touch.add(tuning.touch, 'lookSensitivity', 0.001, 0.02, 0.0002).name('look sensitivity');
     touch.add(tuning.touch, 'pitchScale', 0.2, 1.5, 0.05).name('vertical look ×');
@@ -80,6 +121,15 @@ export class DebugTools {
     this.gui.add({ copy: () => this.copyJson() }, 'copy').name('Copy tuning JSON');
     this.gui.add({ reset: () => this.reset() }, 'reset').name('Reset to defaults');
     this.gui.hide();
+  }
+
+  /** Mode switch buttons at the top of the Horde folder. */
+  addModeButtons(horde: () => void, duel: () => void): void {
+    const f = this.hordeFolder;
+    const a = f.add({ horde }, 'horde').name('▶ Start horde (N)');
+    const b = f.add({ duel }, 'duel').name('◀ Back to the duel');
+    // Put them first in the folder.
+    f.$children.prepend(a.domElement, b.domElement);
   }
 
   toggle(): void {
@@ -113,6 +163,7 @@ export class DebugTools {
       row('move', info.move),
       row('stamina', info.stamina),
       row('poise', info.poise),
+      ...(info.horde ? [row('horde', info.horde)] : []),
     ].join('\n');
   }
 }

@@ -32,6 +32,7 @@ const ICONS = {
   block: svg('<path d="M16 4 L26 8 L26 16 C26 22 21 26 16 28 C11 26 6 22 6 16 L6 8 Z" stroke-width="2.4"/><path d="M16 9 L16 23" stroke-width="1.6" opacity=".6"/>'),
   lock: svg('<rect x="9" y="9" width="14" height="14" transform="rotate(45 16 16)" stroke-width="2.4"/><circle cx="16" cy="16" r="2.4" class="fill"/>'),
   stance: svg('<rect x="5" y="12" width="8" height="8" transform="rotate(45 9 16)" stroke-width="2.2"/><rect x="19" y="12" width="8" height="8" transform="rotate(45 23 16)" stroke-width="2.2" class="fill"/>'),
+  shove: svg('<path d="M6 16 H18" stroke-width="2.6"/><path d="M14 10 L20 16 L14 22" stroke-width="2.4"/><path d="M24 7 L24 25" stroke-width="3"/>'),
   pause: svg('<path d="M12 8 L12 24 M20 8 L20 24" stroke-width="3"/>'),
   gear: svg('<circle cx="16" cy="16" r="4.5" stroke-width="2.2"/><path d="M16 4 V9 M16 23 V28 M4 16 H9 M23 16 H28 M7.5 7.5 L11 11 M21 21 L24.5 24.5 M7.5 24.5 L11 21 M21 11 L24.5 7.5" stroke-width="2.2"/>'),
   fps: svg('<path d="M5 26 H27" stroke-width="1.6" opacity=".6"/><path d="M8 22 V16 M13 22 V10 M18 22 V14 M23 22 V7" stroke-width="2.8"/>'),
@@ -44,6 +45,7 @@ const ACTIONS: ButtonSpec[] = [
   { id: 'dodge', code: 'Space', label: 'Dodge', icon: ICONS.dodge, mode: 'hold' },
   { id: 'block', code: 'KeyE', label: 'Block', icon: ICONS.block, mode: 'hold' },
   { id: 'stance', code: 'Tab', label: 'Stance', icon: ICONS.stance, mode: 'tap' },
+  { id: 'shove', code: 'KeyR', label: 'Shove', icon: ICONS.shove, mode: 'tap' },
 ];
 
 /** Horizontal swipe on the lock button (CSS px) that counts as a target switch. */

@@ -11,6 +11,14 @@ export interface Battlefield {
   landing: THREE.Vector3;
   /** Where Parshendi stand, with the heading they face. */
   enemySpots: { pos: THREE.Vector3; heading: number; role: 'warrior' | 'duelist' }[];
+  /** The assault plateau (rim queries for horde arrivals and ledge falls). */
+  main: Plateau;
+  /** Bridge ends: staging side and assault side (horde reinforcements cross it). */
+  bridgeFar: THREE.Vector3;
+  bridgeNear: THREE.Vector3;
+  /** Rock footprints on the assault plateau (x, z, radius), to keep arrivals clear. */
+  rocks: { x: number; z: number; r: number }[];
+  chrysalis: { x: number; z: number; r: number };
 }
 
 const NORTH = -Math.PI / 2; // shape-polar angle pointing to world -Z
@@ -58,6 +66,7 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
   // --- Rocks -----------------------------------------------------------------
   const keepClear = (p: THREE.Vector3) =>
     p.distanceTo(chrysalis.position) < 10 || (Math.abs(p.x) < 5 && p.z < -mainEdge + 14); // chrysalis + bridge landing
+  const rocks: Battlefield['rocks'] = [];
   let placed = 0;
   for (let i = 0; placed < 16 && i < 200; i++) {
     const p = main.randomPoint(rng, 0.92);
@@ -67,6 +76,7 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
     rock.position.copy(p).setY(rock.scale.y * 0.35);
     scene.add(rock);
     physics.addStaticHull(rock);
+    rocks.push({ x: p.x, z: p.z, r: Math.max(rock.scale.x, rock.scale.z) * 1.25 + 0.5 });
     placed++;
   }
   for (let i = 0; i < 6; i++) {
@@ -118,5 +128,10 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
     spawnHeading: 0,
     landing: new THREE.Vector3(0, 0.3, -mainEdge + 5),
     enemySpots,
+    main,
+    bridgeFar: new THREE.Vector3(0, 0.3, -mainEdge - gap - 2),
+    bridgeNear: new THREE.Vector3(0, 0.3, -mainEdge + 2),
+    rocks,
+    chrysalis: { x: chrysalis.position.x, z: chrysalis.position.z, r: 8 },
   };
 }

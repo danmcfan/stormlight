@@ -28,12 +28,17 @@
     <!-- Title screen: shown whenever the mouse is not captured. -->
     <div id="splash" class="splash">
       <div class="splash-inner">
+        <section id="results" class="panel results hidden"></section>
         <div class="ornament" aria-hidden="true"><span></span><i></i><span></span></div>
         <h1>The Shattered Plains</h1>
         <p class="sub">Milestone 2 &nbsp;·&nbsp; The duel</p>
         <div class="cta"><i aria-hidden="true"></i>Take up the Blade<i aria-hidden="true"></i></div>
         <p class="cta-hint"><span class="desk-only">Click to begin</span><span class="touch-only">Tap to begin</span></p>
-        <p class="touch-only touch-legend">Left thumb moves &nbsp;·&nbsp; drag right to look &nbsp;·&nbsp; pinch to zoom<br />Push the stick past its ring to sprint &nbsp;·&nbsp; hold Heavy to charge &nbsp;·&nbsp; swipe Lock to switch target</p>
+        <div class="modes">
+          <button type="button" id="mode-horde" class="mode-btn horde">Face the horde</button>
+          <button type="button" id="mode-duel" class="mode-btn hidden">Return to the duel</button>
+        </div>
+        <p class="touch-only touch-legend">Left thumb moves &nbsp;·&nbsp; drag right to look &nbsp;·&nbsp; pinch to zoom<br />Push the stick past its ring to sprint &nbsp;·&nbsp; hold Heavy to charge &nbsp;·&nbsp; swipe Lock to switch target &nbsp;·&nbsp; Shove knocks warriors back</p>
         <p class="motto">Journey before destination</p>
       </div>
     </div>
@@ -65,6 +70,8 @@
           <dt><kbd>E</kbd></dt><dd>Block · tap to parry</dd>
           <dt><kbd>Tab</kbd></dt><dd>Wind / Stone stance</dd>
           <dt><kbd>Q</kbd><kbd>MMB</kbd></dt><dd>Lock on · flick to switch</dd>
+          <dt><kbd>R</kbd></dt><dd>Shove (knock back, off ledges)</dd>
+          <dt><kbd>N</kbd></dt><dd>Horde mode / back to duel</dd>
           <dt class="sep"><kbd>C</kbd></dt><dd class="sep">Walk toggle</dd>
           <dt><kbd>`</kbd></dt><dd>Debug &amp; tuning</dd>
           <dt><kbd>F</kbd> <kbd>M</kbd></dt><dd>Frame timing · mute</dd>

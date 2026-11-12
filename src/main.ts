@@ -1,4 +1,5 @@
 import { Physics } from './core/physics';
+import { tuning } from './config';
 import { loadModels } from './render/assets';
 import { Game, SIM_DT } from './game';
 import { isTouchFirst } from './core/device';
@@ -9,8 +10,8 @@ import { TouchControls } from './ui/touchControls';
  * on-screen controls appear, and Pause returns to the title. A hybrid laptop
  * switches to this mode the first time its screen is touched on the title.
  */
-function setupTouch(game: Game, splash: HTMLElement): { enabled: boolean } {
-  const state = { enabled: false };
+function setupTouch(game: Game, splash: HTMLElement): { enabled: boolean; pause: () => void } {
+  const state = { enabled: false, pause: () => pause() };
   let controls: TouchControls | null = null;
 
   const enable = () => {
@@ -71,6 +72,34 @@ function setupTouch(game: Game, splash: HTMLElement): { enabled: boolean } {
   return state;
 }
 
+/**
+ * Title-screen mode buttons. They run before the splash's own click handler
+ * (which takes the mouse / starts touch play), so choosing a mode and
+ * starting are one click.
+ */
+function setupModes(game: Game): void {
+  const horde = document.getElementById('mode-horde')!;
+  const duel = document.getElementById('mode-duel')!;
+  horde.addEventListener('click', () => { game.startHorde(); syncModeButtons(game); });
+  duel.addEventListener('click', () => { game.startDuel(); syncModeButtons(game); });
+  // A click anywhere else after a horde run ends starts a fresh run.
+  document.getElementById('splash')!.addEventListener('click', (e) => {
+    if (e.target === horde || e.target === duel) return;
+    if (game.mode === 'horde' && game.horde.ended) { game.startHorde(); syncModeButtons(game); }
+  });
+  window.addEventListener('keydown', (e) => { if (e.code === 'KeyN') setTimeout(() => syncModeButtons(game), 50); });
+}
+
+function syncModeButtons(game: Game): void {
+  const horde = document.getElementById('mode-horde')!;
+  const duel = document.getElementById('mode-duel')!;
+  const inHorde = game.mode === 'horde';
+  horde.textContent = !inHorde ? 'Face the horde' : game.horde.ended ? 'Fight again' : 'Restart the horde';
+  duel.classList.toggle('hidden', !inHorde);
+  const cta = document.querySelector('.cta');
+  if (cta) cta.lastChild!.previousSibling!.textContent = inHorde && game.horde.ended ? 'Fight again' : inHorde ? 'Back into the horde' : 'Take up the Blade';
+}
+
 async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const [physics, models] = await Promise.all([Physics.create(), loadModels()]);
@@ -78,7 +107,14 @@ async function boot(): Promise<void> {
   document.getElementById('loading')?.classList.add('hidden');
 
   const splash = document.getElementById('splash')!;
+  setupModes(game);
   const touch = setupTouch(game, splash);
+  // A horde run ended: back to the title screen, which now shows the results.
+  game.onHordeEnd = () => {
+    if (touch.enabled) touch.pause();
+    else if (document.pointerLockElement) document.exitPointerLock();
+    syncModeButtons(game);
+  };
   splash.addEventListener('click', () => { if (!touch.enabled) game.input.requestPointerLock(); });
   canvas.addEventListener('click', () => { if (!touch.enabled && !game.input.pointerLocked) game.input.requestPointerLock(); });
   document.addEventListener('pointerlockchange', () => {
@@ -95,7 +131,7 @@ async function boot(): Promise<void> {
     const dt = Math.min(0.1, rawDt);
     last = now;
     const simStart = performance.now();
-    acc += dt;
+    acc += dt * game.timeScale; // slow motion runs fewer sim steps
     let steps = 0;
     while (acc >= SIM_DT && steps < 5) {
       game.fixedUpdate(SIM_DT);
@@ -108,7 +144,7 @@ async function boot(): Promise<void> {
   };
   requestAnimationFrame(frame);
 
-  if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
+  if (import.meta.env.DEV) Object.assign(window as object, { game, tuning });
 }
 
 boot().catch((err) => {

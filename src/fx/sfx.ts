@@ -139,4 +139,38 @@ export class Sfx {
     this.tone(ctx, out, t + 0.35, 'sine', 70, 35, 0.4, 0.8);
     this.burst(ctx, out, t + 0.35, 'lowpass', 700, 150, 0.6, 0.3, 0.4, 0.01);
   }
+
+  /** Off-screen attack warning: a short rising two-note grunt-horn. */
+  warn(gain = 1): void {
+    const r = this.ready(gain); if (!r) return;
+    const { ctx, out, t } = r;
+    this.tone(ctx, out, t, 'sawtooth', 140, 210, 0.16, 0.12, 0.01);
+    this.burst(ctx, out, t, 'bandpass', 500, 900, 2.5, 0.14, 0.25, 0.01);
+  }
+
+  /** Plate barging into bodies. */
+  shove(gain = 1): void {
+    const r = this.ready(gain); if (!r) return;
+    const { ctx, out, t } = r;
+    this.tone(ctx, out, t, 'triangle', 95, 45, 0.22, 0.8);
+    this.burst(ctx, out, t, 'lowpass', 1100, 200, 0.7, 0.14, 0.6, 0.003);
+  }
+
+  /** A body tumbling into the chasm: falling whoosh. */
+  plummet(gain = 1): void {
+    const r = this.ready(gain); if (!r) return;
+    const { ctx, out, t } = r;
+    this.burst(ctx, out, t, 'bandpass', 1400, 300, 1.2, 0.9, 0.35, 0.1);
+  }
+
+  /** Wave start (low drum) / wave cleared (bright chord). */
+  wave(cleared: boolean, gain = 1): void {
+    const r = this.ready(gain); if (!r) return;
+    const { ctx, out, t } = r;
+    if (cleared) {
+      for (const [f, d] of [[440, 0], [554, 0.06], [659, 0.12], [880, 0.18]] as const) this.tone(ctx, out, t + d, 'sine', f, f, 1.2, 0.12, 0.02);
+    } else {
+      for (const d of [0, 0.32, 0.64]) this.tone(ctx, out, t + d, 'sine', 62, 38, 0.3, 0.9);
+    }
+  }
 }
