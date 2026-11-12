@@ -1,5 +1,8 @@
 # Concept art: how we generate it
 
+For how the **game itself** should look (medium, bar, baked light, review
+process), read `docs/look-brief.md` first.
+
 Concept art sets the game's look. It is reference for us, never a shipped
 asset. Look: **painterly and bright**. Everything is made by us.
 
