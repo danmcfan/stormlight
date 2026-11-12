@@ -93,7 +93,7 @@ def srgb(h):
 
 # In-game colours (humanoid.ts buildModelledPlate) so the render reads like the game.
 PLATE_LOOK = {
-    "plate": dict(color=srgb("#6c7b89"), metallic=0.55, roughness=0.42),
+    "plate": dict(color=srgb("#8a939c"), metallic=0.55, roughness=0.42),
     "plate_dark": dict(color=srgb("#2b2724"), metallic=0.05, roughness=0.85),
     "trim": dict(color=srgb("#36438c"), metallic=0.25, roughness=0.38, emission=srgb("#0b1233"), strength=0.5),
     "glow": dict(color=srgb("#a9ccff"), metallic=0.0, roughness=0.3, emission=srgb("#5aa2ff"), strength=2.2),

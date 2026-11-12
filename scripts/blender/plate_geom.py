@@ -476,10 +476,12 @@ def hexgem(piece, centre, nrm, w, h, depth):
     g1 = [p + nrm * depth * 1.15 for p in hexpts(w * 0.62, h * 0.62)]
     g2 = [p + nrm * depth * 1.45 for p in hexpts(w * 0.34, h * 0.34)]
     verts = g0 + g1 + g2
-    faces = [tuple(range(5, -1, -1)), tuple(range(12, 18))]
+    # Sapphire: deep blue facets (trim enamel colour) round a glowing table.
+    sides = [tuple(range(5, -1, -1))]
     for a, b in ((0, 6), (6, 12)):
-        faces += [(a + i, a + (i + 1) % 6, b + (i + 1) % 6, b + i) for i in range(6)]
-    piece.add(verts, faces, "glow")
+        sides += [(a + i, a + (i + 1) % 6, b + (i + 1) % 6, b + i) for i in range(6)]
+    piece.add(verts, sides, "trim")
+    piece.add(verts, [tuple(range(12, 18))], "glow")
 
 
 

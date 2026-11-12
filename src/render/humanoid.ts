@@ -15,6 +15,12 @@ const SHOULDER = new THREE.Vector3(0.42, 0.62, 0);
 const UPPER_ARM = 0.4;
 const LOWER_ARM = 0.36;
 const HAND = 0.06;
+/**
+ * The modelled Shardplate gauntlet closes its fingers round the grip this far
+ * below the wrist (build_shardplate.py GRIP_Y), so the arm IK puts the grip
+ * there instead of at the palm.
+ */
+const PLATE_HAND = 0.23;
 const THIGH = 0.4;
 const SHIN = 0.53;
 const HELM_Y = 0.92;
@@ -170,9 +176,9 @@ export class HumanoidModel {
   private buildModelledPlate(model: THREE.Object3D, enemy: boolean): THREE.Material {
     // Satin rather than mirror metal: the references paint the Plate as a matt slate blue-grey,
     // with deep indigo enamel and a dark brown-black padded layer showing at the joints.
-    const shade = { metalness: 0.4, flatShading: false };
+    const shade = { metalness: 0.25, flatShading: false };
     const mats: Record<string, THREE.MeshStandardMaterial> = {
-      plate: this.mat(enemy ? '#6e5a47' : '#6c7b89', { ...shade, roughness: 0.42 }),
+      plate: this.mat(enemy ? '#6e5a47' : '#9ca3aa', { ...shade, roughness: 0.45 }),
       plate_dark: this.mat(enemy ? '#2a1d16' : '#2b2724', { metalness: 0.05, roughness: 0.85, flatShading: false }),
       // Enamel bands: deep sapphire-indigo on the player's Plate, dull gold on the enemy's.
       trim: this.mat(enemy ? '#a8803f' : '#36438c', {
@@ -411,6 +417,7 @@ export class HumanoidModel {
     this.dir.lerp(pose.dir, k).normalize();
     handPoint(pose, _hand);
     this.hand.lerp(_hand, k);
+    this.keepHandOffHelm();
     this.twist += (pose.twist - this.twist) * k;
     this.twoHanded += ((pose.twoHanded ? 1 : 0) - this.twoHanded) * (1 - Math.exp(-14 * dt));
 
@@ -425,6 +432,22 @@ export class HumanoidModel {
     _mat.makeBasis(x, this.dir, z);
     this.weapon.quaternion.setFromRotationMatrix(_mat);
     this.weapon.position.copy(this.hand);
+  }
+
+  /**
+   * The Plate's big gauntlet must not cover the visor (e.g. raising the guard):
+   * push the grip out of a sphere round the helm. Visual only; the hit segment
+   * comes from the pose, not from the model.
+   */
+  private keepHandOffHelm(): void {
+    if (!this.plateModel || this.kind !== 'plate') return;
+    const t = this.torso.rotation.y, l = this.lean;
+    // Helm centre (0, HELM_Y + 0.17, 0.08) from the waist, through the torso's lean and twist.
+    const x1 = 0.08 * Math.sin(t), z1 = 0.08 * Math.cos(t), y1 = HELM_Y + 0.17;
+    _head.set(x1, WAIST_Y + y1 * Math.cos(l) - z1 * Math.sin(l), y1 * Math.sin(l) + z1 * Math.cos(l));
+    const d = _off.subVectors(this.hand, _head);
+    const r = d.length();
+    if (r < HELM_CLEAR && r > 1e-4) this.hand.addScaledVector(d, (HELM_CLEAR - r) / r);
   }
 
   private solveArms(): void {
@@ -442,7 +465,7 @@ export class HumanoidModel {
   /** Two-bone IK: point the upper arm and forearm so the hand reaches `target`. */
   private ik(limb: Limb, target: THREE.Vector3, poleBody: THREE.Vector3): void {
     const s = this.scale;
-    const L1 = UPPER_ARM * s, L2 = (LOWER_ARM + HAND) * s;
+    const L1 = UPPER_ARM * s, L2 = (LOWER_ARM + (this.plateModel && this.kind === 'plate' ? PLATE_HAND : HAND)) * s;
     limb.upper.getWorldPosition(_sh);
     const toT = _d.subVectors(target, _sh);
     const dist = clamp(toT.length(), Math.abs(L1 - L2) + 1e-3, L1 + L2 - 1e-3);
@@ -470,6 +493,9 @@ export class HumanoidModel {
 }
 
 const FLASH = new THREE.Color('#dff4ff');
+/** Grip's clearance from the helm centre (helm radius + half the gauntlet). */
+const HELM_CLEAR = 0.4;
+const _head = new THREE.Vector3(), _off = new THREE.Vector3();
 const DOWN = new THREE.Vector3(0, -1, 0);
 const _rest = new THREE.Vector3(0, -0.6, 0.8).normalize();
 const _v = new THREE.Vector3(), _m = new THREE.Vector3(), _z = new THREE.Vector3(), _x = new THREE.Vector3();

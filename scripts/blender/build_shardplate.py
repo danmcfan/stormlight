@@ -160,8 +160,8 @@ def build_gorget():
 
     def top(th):
         d = abs(((th - FRONT + math.pi) % TAU) - math.pi)
-        f = 0.5 * (1 + math.cos(math.pi * d / 0.62)) if d < 0.62 else 0.0
-        return t_rim + (t_v - t_rim) * f ** 0.8
+        f = 0.5 * (1 + math.cos(math.pi * d / 0.78)) if d < 0.78 else 0.0
+        return t_rim + (t_v - t_rim) * f ** 0.6
     rim = shell(p, L, top, 0.0, thick=0.018, nth=40, nu=5)
     tube(p, "trim", rim, r=TRIM_R, closed=True)
     # Dark padded neck inside the collar, under the helm (shows in the V).
@@ -229,83 +229,114 @@ def build_belt():
 
 
 def leaf_rows(p, rows, back=False):
-    """Fish-scale rows of leaf plates hanging from the origin, wrapping round the body."""
+    """Overlapping rows of long pointed leaves hanging from the origin, wrapping round the body."""
     sgn = -1 if back else 1
     for n, w, h, y, z, tilt in rows:
         for k in range(n):
-            x = (k - (n - 1) / 2) * w * 0.8
+            x = (k - (n - 1) / 2) * w * 0.98
             zz = z - 0.9 * x * x
-            # Lower rows sit behind the ones above and splay out a little (side reference).
             fr = Frame(rot_y(0 if not back else math.pi) @ rot_y(-x * 1.6) @ rot_x(-tilt), (x, y, sgn * zz))
-            leaf(p, "plate", w, h, 0.012, fr)
+            leaf(p, "plate", w, h, 0.011, fr, nu=2, nv=3, bulge=0.01)
 
 
 def build_fauld():
+    """Fauld: rows of long pointed leaves with a centre ridge, each row behind and below the one
+    above, the centre leaf to 0.58 m (front reference); the back one to 0.56 m."""
     front = Piece("fauld_front")
-    # (count, width, height, top y, z, forward tilt) from the top row down.
-    leaf_rows(front, [(4, 0.125, 0.24, 0.0, 0.0, 0.16), (3, 0.125, 0.26, -0.12, -0.007, 0.19),
-                      (2, 0.13, 0.28, -0.24, -0.014, 0.22), (1, 0.135, 0.3, -0.33, -0.021, 0.25)])
+    # (count, width, height, top y, z, forward tilt) from the top row down; origin at FAULD_Y (1.22 m).
+    leaf_rows(front, [(5, 0.084, 0.215, -0.02, 0.0, 0.1), (4, 0.084, 0.225, -0.13, -0.008, 0.12),
+                      (3, 0.086, 0.235, -0.24, -0.016, 0.14), (2, 0.086, 0.225, -0.35, -0.024, 0.16),
+                      (1, 0.09, 0.26, -0.40, -0.03, 0.17)])
     back = Piece("fauld_back")
-    leaf_rows(back, [(5, 0.105, 0.21, 0.0, 0.0, 0.18), (4, 0.105, 0.22, -0.1, -0.006, 0.21),
-                     (3, 0.105, 0.23, -0.2, -0.012, 0.24), (2, 0.11, 0.24, -0.3, -0.018, 0.27)], back=True)
+    leaf_rows(back, [(5, 0.084, 0.215, 0.02, 0.0, 0.12), (4, 0.084, 0.225, -0.1, -0.008, 0.14),
+                     (3, 0.086, 0.235, -0.22, -0.016, 0.16), (2, 0.086, 0.225, -0.33, -0.024, 0.18),
+                     (1, 0.09, 0.26, -0.40, -0.03, 0.19)], back=True)
     return front, back
 
 
 def build_tasset(s):
-    """Broad curved plate over the outside of the hip, hung from the belt. Origin: its hinge."""
+    """Shield-shaped plate over the outside of the hip, splaying out from the belt: narrow under the
+    belt with a pointed upper front corner, widest near the bottom, rounded lower corners, a trim
+    line set in from its edge. Origin: its hinge on the belt."""
     p = Piece(f"tasset_{'l' if s > 0 else 'r'}")
     o = np.array([s * TASSET_X, TASSET_Y, 0.0])
     L = Loft([
-        dict(y=1.27, rx=0.4, rf=0.34, rb=0.3, cz=0.02, p=2.6),
-        dict(y=1.08, rx=0.46, rf=0.36, rb=0.32, cz=0.02, p=2.6),
-        dict(y=0.9, rx=0.51, rf=0.38, rb=0.34, cz=0.02, p=2.6),
+        dict(y=1.27, rx=0.4, rf=0.27, rb=0.26, cz=0.02, p=2.6),
+        dict(y=1.08, rx=0.46, rf=0.285, rb=0.275, cz=0.02, p=2.6),
+        dict(y=0.87, rx=0.515, rf=0.3, rb=0.29, cz=0.02, p=2.6),
     ], Frame(None, -o))
-    if s > 0:
-        th0, th1 = deg(-48), deg(60)
-    else:
-        th0, th1 = deg(120), deg(228)
-    # Lower edge slants up toward the front (front reference).
-    edge = patch(p, "plate", L, 0.0, 2.0, th0, th1, off=0.0, thick=0.016, nt=6, nth=12)
-    tube(p, "trim", edge[1::2] + [edge[1]], r=TRIM_R * 0.85)
-    # Inner trim line parallel to the front edge.
-    front_th = th1 if s > 0 else th0
-    path(p, "trim", L, [(0.15, front_th - s * deg(9)), (1.0, front_th - s * deg(11)), (1.85, front_th - s * deg(14))],
-         r=TRIM_R * 0.8, off=0.016, n=10)
+    c = 0.0 if s > 0 else math.pi          # the outside of the hip
+    front = lambda u: deg(36 + 30 * min(1, u / 0.7) - 14 * max(0, (u - 0.82) / 0.18) ** 2)   # noqa: E731
+    rear = lambda u: deg(-40 - 20 * min(1, u / 0.7) + 12 * max(0, (u - 0.82) / 0.18) ** 2)   # noqa: E731
+    th0 = (lambda u: c + rear(u)) if s > 0 else (lambda u: c - front(u))
+    th1 = (lambda u: c + front(u)) if s > 0 else (lambda u: c - rear(u))
+    patch(p, "plate", L, 0.0, 2.0, th0, th1, off=0.0, thick=0.016, nt=8, nth=12)
+    # Inset trim: round the sides and bottom, a few cm in from the edge.
+    loop = []
+    for k in range(9):          # down the rear edge
+        u = 0.08 + 0.84 * k / 8
+        loop.append((u * 2.0, th0(u) + (th1(u) - th0(u)) * 0.06))
+    for k in range(1, 10):      # along the bottom
+        v = 0.06 + 0.88 * k / 9
+        u = 0.92
+        loop.append((u * 2.0, th0(u) + (th1(u) - th0(u)) * v))
+    for k in range(1, 9):       # up the front edge
+        u = 0.92 - 0.84 * k / 8
+        loop.append((u * 2.0, th0(u) + (th1(u) - th0(u)) * 0.94))
+    path(p, "trim", L, loop, r=TRIM_R * 0.85, off=0.016, n=40)
     return p
 
 
 def build_pauldron(s):
-    """Massive rounded pauldron: dome, upright flange, disc boss, two lames. Origin: the shoulder."""
+    """Pauldron (front/side/back references, plate-pauldron sheet): an upright dome whose outer face
+    drops nearly straight over the arm, a trimmed rim, two lames below it wrapping the outside of the
+    arm, an arched flange (the "horn" seen from the front) along its inner edge, and round bosses
+    where it meets the chest and back. Built for the left side and mirrored. Origin: the shoulder."""
     p = Piece(f"pauldron_{'l' if s > 0 else 'r'}")
-    tilt = Frame(rot_z(-s * deg(28)), (s * 0.07, 0.0, -0.035))
+    M = Frame(np.diag([s, 1.0, 1.0]))
+    mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
+    cx, cz = 0.095, -0.07
     dome = Loft([
-        dict(y=0.06, rx=0.235, rf=0.29, rb=0.33, p=2.3),
-        dict(y=0.17, rx=0.24, rf=0.3, rb=0.34, p=2.3),
-        dict(y=0.28, rx=0.2, rf=0.27, rb=0.3, p=2.2),
-        dict(y=0.36, rx=0.135, rf=0.19, rb=0.21),
-        dict(y=0.405, rx=0.06, rf=0.08, rb=0.085),
-        dict(y=0.415, rx=0.01, rf=0.01, rb=0.01),
-    ], tilt).mesh(p, "plate", seg=24, sub=2)
-    ring(p, "trim", dome, 0.15, r=TRIM_R)
-    ring(p, "trim", dome, 0.95, r=TRIM_R * 0.9)
-    # Two lames stepping down and out over the upper arm.
-    for k, (y0, y1, r) in enumerate(((-0.02, 0.09, 0.245), (-0.1, 0.01, 0.25))):
-        fr = Frame(rot_z(-s * deg(24 + 5 * (k + 1))), (s * (0.09 + 0.012 * (k + 1)), 0.0, -0.035))
-        lame = Loft([dict(y=y0, rx=r, rf=r * 1.18, rb=r * 1.22, p=2.3),
-                     dict(y=y1, rx=r + 0.012, rf=r * 1.18 + 0.012, rb=r * 1.22 + 0.012, p=2.3)], fr)
-        lame.mesh(p, "plate", seg=20, sub=2)
-        ring(p, "trim", lame, 0.15, r=TRIM_R * 0.9)
-    # Upright flange on the inner top edge (front reference: a horn rising past the helm's jaw).
-    outline = [(0.22, 0.22), (0.17, 0.33), (0.09, 0.43), (0.0, 0.5), (-0.06, 0.535), (-0.09, 0.56),
-               (-0.075, 0.5), (-0.1, 0.42), (-0.16, 0.34), (-0.22, 0.24)]
-    R = np.column_stack([[0, 0, 1], [0, 1, 0], [1, 0, 0]]).astype(float)   # local x -> z, local z -> x
-    fr = Frame(rot_y(s * deg(14)) @ rot_z(-s * deg(4)) @ R, (-s * 0.08, -0.03, -0.02))
-    fin(p, "plate", outline, 0.05, fr)
-    tube(p, "trim", [fr((x, y - 0.03, 0)) + np.array([s * 0.004, 0, 0]) for x, y in outline[1:-1]], r=TRIM_R * 0.8)
-    # Round disc bosses where the pauldron meets the chest, front and back.
-    for th in (FRONT + s * deg(52), BACK - s * deg(52)):
-        t = 0.75
-        disc(p, "plate", dome.surf(t, th, -0.012), dome.normal(t, th), 0.085, 0.045, seg=16, rim="trim")
+        dict(y=0.055, rx=0.212, rf=0.262, rb=0.27, cx=cx, cz=cz, p=2.4),
+        dict(y=0.095, rx=0.222, rf=0.272, rb=0.28, cx=cx, cz=cz, p=2.4),
+        dict(y=0.18, rx=0.214, rf=0.265, rb=0.272, cx=cx, cz=cz, p=2.35),
+        dict(y=0.26, rx=0.182, rf=0.232, rb=0.242, cx=cx, cz=cz, p=2.2),
+        dict(y=0.32, rx=0.125, rf=0.165, rb=0.172, cx=cx, cz=cz),
+        dict(y=0.352, rx=0.06, rf=0.08, rb=0.085, cx=cx, cz=cz),
+        dict(y=0.362, rx=0.01, rf=0.01, rb=0.01, cx=cx, cz=cz),
+    ], M).mesh(p, "plate", seg=26, sub=2)
+    ring(p, "trim", dome, t_at(dome, 0.085), r=TRIM_R)
+    # Lames: partial bands round the outside of the arm, each tucked under the one above,
+    # lower edge flared and trimmed.
+    for y0, y1, k in ((-0.005, 0.07, 0.0), (-0.085, -0.01, 0.012)):
+        lame = Loft([dict(y=y1, rx=0.2 - k, rf=0.245 - k, rb=0.25 - k, cx=cx + 0.005, cz=cz, p=2.3),
+                     dict(y=y0, rx=0.214 - k, rf=0.258 - k, rb=0.262 - k, cx=cx + 0.005, cz=cz, p=2.3)], M)
+        patch(p, "plate", lame, 0.0, 1.0, deg(-112), deg(112), off=0.0, thick=0.014, nt=2, nth=16)
+        ring(p, "trim", lame, 0.92, r=TRIM_R * 0.9, off=0.014, th0=deg(-108), th1=deg(108), n=18)
+    # The arched flange along the inner edge: outline in (z, y), bent to follow the dome's edge,
+    # leaning a little toward the head. Its top arc carries a trim line on the outer face.
+    arc = [(0.165, 0.33), (0.14, 0.42), (0.08, 0.49), (0.0, 0.525), (-0.1, 0.535), (-0.2, 0.51),
+           (-0.28, 0.44), (-0.33, 0.35), (-0.345, 0.26)]
+    base = [(-0.3, 0.2), (-0.15, 0.24), (0.0, 0.25), (0.13, 0.27)]
+    outline = arc + base
+    lean = rot_z(s * deg(4))
+
+    def fl(z, y, x=0.0):
+        return lean @ mx((-0.04 + x + 1.2 * (z - cz) ** 2, y, z))
+    thick = 0.045
+    n = len(outline)
+    verts = [fl(z, y, thick / 2) for z, y in outline] + [fl(z, y, -thick / 2) for z, y in outline]
+    faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+    p.add(verts, faces, "plate")
+    inset = [(z * 0.93 + cz * 0.07, y - 0.035) for z, y in arc[:-1]]
+    pts = [fl(z, y, thick / 2 + 0.002) for z, y in inset]
+    tube(p, "trim", pts, r=TRIM_R * 0.85, nrm=[lean @ mx((1, 0, 0))] * len(pts), flat=0.45)
+    # Round bosses where the pauldron meets the chest (front) and the back plate.
+    for z, nz in ((0.205, 1.0), (-0.335, -1.0)):
+        c = mx((-0.075, 0.1, z))
+        nrm = mx((-0.35, 0.05, nz))
+        disc(p, "plate", c, nrm, 0.082, 0.045, seg=18)
+        disc(p, "plate", c + 0.022 * nrm / np.linalg.norm(nrm), nrm, 0.058, 0.03, seg=18)
     return p
 
 
@@ -328,116 +359,155 @@ def build_upperarm(s):
 
 
 def build_forearm(s):
-    """Couter (round elbow boss) + flared vambrace. Origin: the elbow; the arm hangs along -y."""
+    """Couter (round elbow cop with a disc on the outside) + a heavy vambrace flared toward the
+    elbow, trim bands at both ends and the stepped line down the outside. Origin: the elbow."""
     p = Piece(f"forearm_{'l' if s > 0 else 'r'}")
-    ellipsoid(p, "plate", (s * 0.015, 0.0, -0.01), (0.138, 0.13, 0.135), seg=16, rings=6)
-    # Disc on the outside of the elbow (front reference).
-    disc(p, "plate", (s * 0.125, 0.0, -0.035), (s, 0, -0.35), 0.075, 0.04, seg=16, rim="trim")
+    # The elbow cop rides high: the references draw the elbow well up under the lames.
+    ellipsoid(p, "plate", (s * 0.012, 0.05, -0.01), (0.145, 0.13, 0.14), seg=16, rings=6)
+    disc(p, "plate", (s * 0.135, 0.09, -0.03), (s, 0.15, -0.3), 0.07, 0.04, seg=16)
+    disc(p, "plate", (s * 0.155, 0.094, -0.036), (s, 0.15, -0.3), 0.045, 0.03, seg=16)
     L = Loft([
-        dict(y=-0.05, rx=0.135, rf=0.135, rb=0.135),
-        dict(y=-0.13, rx=0.148, rf=0.145, rb=0.145),
-        dict(y=-0.27, rx=0.168, rf=0.16, rb=0.16),
-        dict(y=-0.33, rx=0.17, rf=0.162, rb=0.162),
-        dict(y=-0.355, rx=0.15, rf=0.145, rb=0.145),
+        dict(y=0.03, rx=0.165, rf=0.15, rb=0.15),
+        dict(y=-0.05, rx=0.18, rf=0.158, rb=0.158),
+        dict(y=-0.2, rx=0.17, rf=0.15, rb=0.15),
+        dict(y=-0.31, rx=0.158, rf=0.142, rb=0.142),
+        dict(y=-0.345, rx=0.15, rf=0.136, rb=0.136),
     ]).mesh(p, "plate", seg=22, sub=2)
-    ring(p, "trim", L, 0.3, r=TRIM_R)
-    ring(p, "trim", L, 3.1, r=TRIM_R)
+    ring(p, "trim", L, 0.55, r=TRIM_R)
+    ring(p, "trim", L, 3.45, r=TRIM_R)
     outer = 0.0 if s > 0 else math.pi   # loft angle facing away from the body
-    # The stepped line down the outside (front reference).
-    path(p, "trim", L, [(0.45, outer + s * 0.35), (1.4, outer + s * 0.35), (1.7, outer - s * 0.05),
-                        (3.0, outer - s * 0.05)], r=TRIM_R * 0.85, n=14)
+    path(p, "trim", L, [(0.75, outer + s * 0.32), (1.5, outer + s * 0.32), (1.8, outer - s * 0.05),
+                        (3.25, outer - s * 0.05)], r=TRIM_R * 0.9, n=14)
     return p
 
 
+HAND_K = 1.35      # fist scale (the references draw huge gauntlets)
+GRIP_Y = -0.17 * HAND_K   # the grip passes through the fist this far below the wrist (humanoid.ts PLATE_HAND)
+
+
 def build_gauntlet(s):
-    """Heavy gauntlet: flared cuff and a big armoured fist. Origin: the wrist (the grip is ~0.06 below)."""
+    """Heavy gauntlet (plate-gauntlet sheet): a short flared cuff, a back-of-hand plate with a
+    trimmed lower edge, a row of knuckle domes, four fingers of three plates curled round the
+    grip, a thumb of two plates over them, dark leather at the palm. The back of the hand faces
+    out (+x on the left hand), the thumb forward. Origin: the wrist; the grip runs through the
+    fist along z, GRIP_Y below the wrist."""
     p = Piece(f"gauntlet_{'l' if s > 0 else 'r'}")
+    M = Frame(np.diag([s, 1.0, 1.0]) * HAND_K)
+    mx = lambda v: np.array([s * v[0], v[1], v[2]]) * HAND_K   # noqa: E731
     cuff = Loft([
-        dict(y=0.06, rx=0.14, rf=0.135, rb=0.135),
-        dict(y=0.01, rx=0.152, rf=0.148, rb=0.145),
-        dict(y=-0.04, rx=0.105, rf=0.11, rb=0.1),
-    ]).mesh(p, "plate", seg=24, sub=2)
-    ring(p, "trim", cuff, 0.95, r=TRIM_R * 0.85)
-    fist = Loft([
-        dict(y=-0.02, rx=0.09, rf=0.105, rb=0.09, p=2.6),
-        dict(y=-0.1, rx=0.1, rf=0.14, rb=0.095, p=3.0),
-        dict(y=-0.19, rx=0.095, rf=0.14, rb=0.09, p=3.0),
-        dict(y=-0.25, rx=0.072, rf=0.1, rb=0.068, p=2.6),
-    ]).mesh(p, "plate", seg=18, sub=2)
-    # Finger lames across the back of the hand and the knuckles.
-    for t in (1.0, 1.6, 2.2, 2.7):
-        path(p, "plate_dark", fist, [(t, FRONT - deg(80)), (t, FRONT), (t, FRONT + deg(80))], r=0.007, off=-0.002, n=6)
-    # Thumb, on the inner side.
-    Loft([dict(y=-0.03, rx=0.036, rf=0.036, rb=0.036),
-          dict(y=-0.11, rx=0.033, rf=0.033, rb=0.033),
-          dict(y=-0.14, rx=0.012, rf=0.012, rb=0.012)],
-         Frame(rot_z(s * 0.35), (-s * 0.075, -0.01, 0.04))).mesh(p, "plate", seg=10, sub=2)
+        dict(y=0.05, rx=0.13, rf=0.122, rb=0.122),
+        dict(y=0.0, rx=0.128, rf=0.118, rb=0.118),
+        dict(y=-0.045, rx=0.1, rf=0.105, rb=0.1),
+    ], M).mesh(p, "plate", seg=22, sub=1)
+    ring(p, "trim", cuff, 0.15, r=TRIM_R * 0.85)
+    # Hand: dark leather body, a plate over its back.
+    hand = Loft([
+        dict(y=-0.02, rx=0.06, rf=0.092, rb=0.085, cx=0.0, p=2.6),
+        dict(y=-0.08, rx=0.062, rf=0.1, rb=0.09, cx=0.005, p=2.8),
+        dict(y=-0.14, rx=0.055, rf=0.098, rb=0.088, cx=0.01, p=2.6),
+    ], M).mesh(p, "plate_dark", seg=16, sub=1)
+    edge = patch(p, "plate", hand, 0.0, 2.0, deg(-75), deg(75), off=0.0, thick=0.014, nt=3, nth=8)
+    tube(p, "trim", [e for e in edge if e[1] < -0.12][:9], r=0.006)
+    # Knuckle domes and fingers: each finger three plates wrapping the grip axis (along z).
+    gx, gy = -0.005, GRIP_Y / HAND_K
+    zs = (-0.066, -0.022, 0.022, 0.066)
+    for k, z in enumerate(zs):
+        ellipsoid(p, "plate", mx((0.05, -0.145, z)), tuple(HAND_K * np.array((0.024, 0.022, 0.021))), seg=8, rings=4)
+        rad = 0.056 - 0.003 * abs(k - 1.5)
+        angs = [deg(a) for a in (26, -28, -88, -140)]     # down round the grip from the knuckles
+        pts = [mx((gx + rad * math.cos(a), gy + rad * math.sin(a), z)) for a in angs]
+        for i in range(3):
+            a0, a1 = pts[i], pts[i + 1]
+            d = a1 - a0
+            ln = np.linalg.norm(d)
+            R = np.column_stack([np.cross(d / ln, [0, 0, 1]), -d / ln, [0, 0, 1]])
+            w = (0.019 - 0.002 * i) * HAND_K
+            Loft([dict(y=0.004, rx=w, rf=w * 1.05, rb=w * 1.05, p=2.6),
+                  dict(y=-ln - 0.004, rx=w * 0.92, rf=w, rb=w, p=2.6)],
+                 Frame(R, a0)).mesh(p, "plate", seg=8, sub=1)
+    # Thumb: from the inside front of the hand, across the front of the fingers.
+    th = [mx((-0.035, -0.05, 0.075)), mx((-0.06, -0.13, 0.098)), mx((-0.035, -0.2, 0.09))]
+    for i in range(2):
+        a0, a1 = th[i], th[i + 1]
+        d = a1 - a0
+        ln = np.linalg.norm(d)
+        up = np.cross(d / ln, [1, 0, 0])
+        up /= np.linalg.norm(up)
+        R = np.column_stack([np.cross(-d / ln, up), -d / ln, up])
+        k = HAND_K
+        Loft([dict(y=0.006, rx=(0.026 - 0.004 * i) * k, rf=0.024 * k, rb=0.024 * k, p=2.5),
+              dict(y=-ln, rx=(0.022 - 0.004 * i) * k, rf=0.02 * k, rb=0.02 * k, p=2.5)], Frame(R, a0)).mesh(p, "plate", seg=8, sub=1)
     return p
 
 
 def build_thigh(s):
-    """Cuisse. Origin: the hip joint."""
+    """Cuisse, mostly under the tassets and fauld; a trim line down its inner front. Origin: the hip."""
     p = Piece(f"thigh_{'l' if s > 0 else 'r'}")
     L = Loft([
         dict(y=0.1, rx=0.06, rf=0.06, rb=0.06),
         dict(y=0.05, rx=0.15, rf=0.16, rb=0.15),
-        dict(y=-0.08, rx=0.172, rf=0.18, rb=0.17),
-        dict(y=-0.26, rx=0.168, rf=0.172, rb=0.165),
-        dict(y=-0.36, rx=0.15, rf=0.152, rb=0.148),
-        dict(y=-0.41, rx=0.12, rf=0.12, rb=0.12),
-    ]).mesh(p, "plate", seg=20, sub=2)
-    ypath(p, "trim", L, [(-0.33, FRONT + s * 0.6), (-0.2, FRONT + s * 0.65), (-0.05, FRONT + s * 0.75)], n=10)
-    yring(p, "plate_dark", L, -0.36, r=0.012)
+        dict(y=-0.08, rx=0.165, rf=0.172, rb=0.165),
+        dict(y=-0.26, rx=0.155, rf=0.165, rb=0.158),
+        dict(y=-0.36, rx=0.138, rf=0.148, rb=0.14),
+        dict(y=-0.41, rx=0.11, rf=0.115, rb=0.11),
+    ]).mesh(p, "plate", seg=18, sub=2)
+    ypath(p, "trim", L, [(-0.34, FRONT + s * 0.5), (-0.2, FRONT + s * 0.52), (-0.02, FRONT + s * 0.55)], n=10)
     return p
 
 
 def build_shin(s):
-    """Poleyn (big knee cop) + thick greave. Origin: the knee."""
+    """Knee cop (a round dome standing well forward of the greave, trim on its top and bottom
+    edges, a centre ridge) over a dark padded knee, and a plain greave with a calf. Origin: the knee."""
     p = Piece(f"shin_{'l' if s > 0 else 'r'}")
-    ellipsoid(p, "plate_dark", (0, 0.0, 0.0), (0.15, 0.1, 0.15), seg=12, rings=4)
-    cop = Loft([dict(y=-0.08, rx=0.15, rf=0.16, rb=0.0, cz=0.03), dict(y=0.04, rx=0.175, rf=0.19, rb=0.0, cz=0.03),
-                dict(y=0.13, rx=0.15, rf=0.165, rb=0.0, cz=0.03), dict(y=0.17, rx=0.09, rf=0.11, rb=0.0, cz=0.03)])
-    edge = patch(p, "plate", cop, 0.0, 3.0, deg(-5), deg(185), off=0.0, thick=0.02, nt=8, nth=12)
-    tube(p, "trim", edge[1::2] + [edge[1]], r=TRIM_R * 0.9)
-    # Fan on the outside of the knee.
-    disc(p, "plate", (s * 0.165, 0.04, 0.02), (s, 0, 0.3), 0.07, 0.03, seg=14)
+    ellipsoid(p, "plate_dark", (0, 0.02, -0.01), (0.14, 0.11, 0.15), seg=12, rings=4)
+    cx = s * 0.005
+    cop = Loft([dict(y=-0.1, rx=0.12, rf=0.19, rb=0.0, cx=cx, cz=0.02), dict(y=-0.02, rx=0.155, rf=0.245, rb=0.0, cx=cx, cz=0.02),
+                dict(y=0.08, rx=0.16, rf=0.25, rb=0.0, cx=cx, cz=0.02), dict(y=0.17, rx=0.125, rf=0.205, rb=0.0, cx=cx, cz=0.02),
+                dict(y=0.215, rx=0.07, rf=0.12, rb=0.0, cx=cx, cz=0.02)])
+    patch(p, "plate", cop, 0.0, 4.0, deg(-12), deg(192), off=-0.02, thick=0.02, nt=10, nth=12)
+    ring(p, "trim", cop, 0.35, r=TRIM_R, th0=deg(-8), th1=deg(188), n=16)
+    ring(p, "trim", cop, 3.35, r=TRIM_R, th0=deg(-8), th1=deg(188), n=14)
+    path(p, "plate", cop, [(0.6, FRONT), (2.0, FRONT), (3.2, FRONT)], r=0.007, off=0.0, n=8, flat=None)
+    disc(p, "plate", (s * 0.165, 0.05, 0.0), (s, 0, 0.25), 0.06, 0.03, seg=12)
     L = Loft([
-        dict(y=-0.06, rx=0.15, rf=0.155, rb=0.16),
-        dict(y=-0.18, rx=0.168, rf=0.165, rb=0.175),
-        dict(y=-0.34, rx=0.16, rf=0.163, rb=0.172),
-        dict(y=-0.46, rx=0.152, rf=0.158, rb=0.158),
-        dict(y=-0.5, rx=0.145, rf=0.15, rb=0.15),
-    ]).mesh(p, "plate", seg=22, sub=2)
-    yring(p, "trim", L, -0.09)
-    yring(p, "trim", L, -0.47)
+        dict(y=-0.05, rx=0.13, rf=0.15, rb=0.13, cx=s * 0.0),
+        dict(y=-0.15, rx=0.132, rf=0.158, rb=0.17, cx=s * 0.0),
+        dict(y=-0.3, rx=0.126, rf=0.155, rb=0.165, cx=s * 0.0),
+        dict(y=-0.42, rx=0.118, rf=0.148, rb=0.142, cx=s * 0.0),
+        dict(y=-0.48, rx=0.12, rf=0.15, rb=0.14, cx=s * 0.0),
+    ]).mesh(p, "plate", seg=20, sub=2)
     return p
 
 
 def build_boot(s):
-    """Broad sabaton, toes turned out a little. Origin: the ankle; the sole sits 0.07 below it."""
+    """Sabaton: an ankle lame with a rivet over a dark gap, a raised instep, overlapping toe lames
+    and a domed toe cap, a heel cup; toes turned out a little. Origin: the ankle; the sole is 0.07 below."""
     p = Piece(f"boot_{'l' if s > 0 else 'r'}")
     cuff = Loft([
-        dict(y=0.16, rx=0.16, rf=0.165, rb=0.16),
-        dict(y=0.06, rx=0.168, rf=0.175, rb=0.17),
-        dict(y=-0.03, rx=0.17, rf=0.18, rb=0.17),
-    ]).mesh(p, "plate", seg=20, sub=2)
-    yring(p, "trim", cuff, 0.14)
+        dict(y=0.14, rx=0.13, rf=0.155, rb=0.15),
+        dict(y=0.07, rx=0.142, rf=0.165, rb=0.158),
+        dict(y=0.02, rx=0.148, rf=0.17, rb=0.162),
+    ]).mesh(p, "plate", seg=18, sub=1)
+    Loft([dict(y=0.03, rx=0.13, rf=0.15, rb=0.15), dict(y=-0.04, rx=0.13, rf=0.15, rb=0.15)]
+         ).mesh(p, "plate_dark", seg=14, sub=1)
+    rivet(p, (s * 0.15, 0.08, 0.0), (s, 0, 0), 0.012)
     # Foot: sections run heel -> toe along +z (loft y mapped to game z; loft z up).
     R = np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]], float)
     to_foot = Frame(rot_y(s * deg(14)) @ R, (s * 0.02, -0.02, 0))
     foot = Loft([
-        dict(y=-0.17, rx=0.13, rf=0.08, rb=0.05, p=2.4),
-        dict(y=-0.1, rx=0.17, rf=0.12, rb=0.05, p=2.6),
-        dict(y=0.04, rx=0.19, rf=0.115, rb=0.05, p=2.8),
-        dict(y=0.17, rx=0.195, rf=0.085, rb=0.05, p=2.8),
-        dict(y=0.29, rx=0.17, rf=0.06, rb=0.05, p=2.6),
-        dict(y=0.36, rx=0.11, rf=0.04, rb=0.04, p=2.3),
-        dict(y=0.38, rx=0.04, rf=0.02, rb=0.02),
+        dict(y=-0.16, rx=0.12, rf=0.06, rb=0.05, p=2.4),
+        dict(y=-0.09, rx=0.155, rf=0.1, rb=0.05, p=2.6),
+        dict(y=0.04, rx=0.17, rf=0.13, rb=0.05, p=2.8),
+        dict(y=0.15, rx=0.175, rf=0.105, rb=0.05, p=2.8),
+        dict(y=0.25, rx=0.165, rf=0.08, rb=0.05, p=2.6),
+        dict(y=0.32, rx=0.12, rf=0.06, rb=0.045, p=2.3),
+        dict(y=0.345, rx=0.05, rf=0.03, rb=0.03),
     ], to_foot).mesh(p, "plate", seg=16, sub=2)
-    # Toe lames and the sole edge.
-    for t in (2.6, 3.3, 4.0):
-        path(p, "plate_dark", foot, [(t, deg(-8)), (t, deg(90)), (t, deg(188))], r=0.008, n=8)
-    ring(p, "plate_dark", foot, 1.4, r=0.012, th0=deg(-12), th1=deg(192), n=20)
+    for t in (2.5, 3.2):
+        path(p, "plate_dark", foot, [(t, deg(-6)), (t, deg(90)), (t, deg(186))], r=0.007, n=8, flat=None)
+    ring(p, "plate_dark", foot, 1.2, r=0.01, th0=deg(-10), th1=deg(190), n=16, flat=None)
+    # Heel cup.
+    ellipsoid(p, "plate", to_foot((0.0, -0.13, 0.02)), (0.11, 0.06, 0.07), seg=10, rings=4)
     return p
 
 
@@ -450,7 +520,7 @@ def lin(h):
 
 
 MATS.update({   # the game's colours (humanoid.ts buildModelledPlate), linear
-    "plate": material("plate", lin("#6c7b89"), metallic=0.55, roughness=0.42),
+    "plate": material("plate", lin("#8a939c"), metallic=0.55, roughness=0.42),
     "plate_dark": material("plate_dark", lin("#2b2724"), metallic=0.05, roughness=0.85),
     "trim": material("trim", lin("#36438c"), metallic=0.25, roughness=0.38),
     "glow": material("glow", lin("#a9ccff"), roughness=0.3, emission=lin("#5aa2ff"), strength=2.2),
