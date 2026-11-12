@@ -14,6 +14,10 @@ asset. Look: **painterly and bright**. Everything is made by us.
   with prompt and billed cost, to `art/source/<slug>/runs.jsonl`.
 - **Shape.** 16:9 for scenes and style frames; 1:1 for character and prop
   references.
+- **Reference images** live in `art/references/` (gitignored: the repo is
+  public and they are other people's work). Shape-only references may be
+  passed in, labelled "for shape only… copy no single one"; never pass
+  references with lettering or signatures.
 - **Fan and official art** inform the *words* of a prompt (shapes,
   proportions, colours). Never pass someone else's art in as an image without
   the artist's permission.
@@ -57,7 +61,10 @@ have worked, and fixes still to test:
 
 | Subject | Write | Avoid / known failure |
 |---|---|---|
-| Shattered Plains | "a vast plain of stone mesas split by sheer chasms", banded orange/tan/cream walls | Without the finish sentence it reads as an American Southwest photo |
+| Shattered Plains | To test: "a vast, almost flat plain broken into hundreds of flat-topped stone slabs, like dried mud cracked from above; narrow, deep chasms between tightly packed plateaus; smooth sun-bleached tops with rounded, wind-worn edges; now and then a lone rock spire" | "a vast plain of stone mesas split by sheer chasms" gave Earth canyon country (widely separated buttes, wide canyons). Without the finish sentence it reads as an American Southwest photo |
+| Plains palette | Sun-bleached apricot and tan tops, rust-brown chasm walls, blue sky with puffy cloud; a highstorm as a towering dark wall of cloud on the horizon | |
+| Chasmfiend | To test: a huge spiny armoured crustacean, layered shell plates bristling with spikes, many jointed legs, picking its way across cracked slabs | |
+| Warcamps | Camps filling round craters at the edge of the Plains, smoke rising, the cracked plain beyond | |
 | Rockbuds | "squat stone-grey shells the size of a barrel, ridged like clams, a few thin green vines trailing from their open lips" ✅ | "round shelled rockbuds with vines unfurled" gave melons with tentacles |
 | Chrysalis | "a huge chrysalis three times a man's height, a hunched mound of overlapping ridged grey-brown plates" ✅ | "huge ridged grey chrysalis" gave a flat boulder |
 | Bridge | Plain wooden span carried by bridge crews: no ropes, rails or posts. To test: "a long bridge about fifteen paces across, its far end resting on the plateau's rim, support beams hidden underneath" | "narrow wooden bridge" gave a rope suspension bridge; "flat span … bolted to two beams" gave a short bench with protruding legs |
