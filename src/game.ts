@@ -33,6 +33,8 @@ const enemyMovement = () => ({
 
 interface Enemy {
   c: Combatant;
+  /** Base damage multiplier before the tuning panel's enemy damage ×. */
+  damage: number;
   ai: DuelAI;
   spawn: THREE.Vector3;
   heading: number;
@@ -70,7 +72,7 @@ export class Game {
   private tmp = new THREE.Vector3();
   private cap: Capsule = { bottom: new THREE.Vector3(), top: new THREE.Vector3(), radius: 0 };
   private contact = new THREE.Vector3();
-  private playerStats = { maxHp: 160, maxStamina: 100, maxPoise: 70, staminaRegen: 42, damageScale: 1 };
+  private playerStats = { maxHp: 160, maxStamina: 100, maxPoise: 70, staminaRegen: 42, damageScale: 1, shardplate: true };
 
   constructor(canvas: HTMLCanvasElement, readonly physics: Physics) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -105,19 +107,24 @@ export class Game {
 
     const aiParams = () => tuning.ai;
     for (const spot of this.field.enemySpots) {
-      const duelist = spot.role === 'duelist';
-      const c = new Combatant(physics, {
-        name: duelist ? 'Parshendi Duelist' : 'Parshendi Warrior', team: 'parshendi', kind: 'parshendi',
-        variant: duelist ? 1 : 0, scale: duelist ? 1.0 : 0.94,
+      // The duel is against a Parshendi Shardbearer: Plate and Blade, a long
+      // fight. Ordinary warriors die to a single Shardblade stroke.
+      const shardbearer = spot.role === 'duelist';
+      const c = new Combatant(physics, shardbearer ? {
+        name: 'Parshendi Shardbearer', team: 'parshendi', kind: 'plate', variant: 1, scale: 1,
+        spawn: spot.pos, heading: spot.heading, stance: 'stone',
+        stats: { maxHp: 420, maxStamina: 100, maxPoise: 80, staminaRegen: 32, damageScale: 1, shardplate: true },
+        moveset: shardbearerMoveset, rules: this.rules,
+        movement: enemyMovement, gravity: () => tuning.movement.gravity,
+      } : {
+        name: 'Parshendi Warrior', team: 'parshendi', kind: 'parshendi', scale: 0.94,
         spawn: spot.pos, heading: spot.heading,
-        stats: duelist
-          ? { maxHp: 240, maxStamina: 90, maxPoise: 60, staminaRegen: 30, damageScale: 1 }
-          : { maxHp: 50, maxStamina: 60, maxPoise: 25, staminaRegen: 25, damageScale: 1 },
+        stats: { maxHp: 40, maxStamina: 60, maxPoise: 25, staminaRegen: 25, damageScale: 1, shardplate: false },
         moveset: parshendiMoveset, rules: this.rules,
         movement: enemyMovement, gravity: () => tuning.movement.gravity,
       });
-      const trail = new BladeTrail(new THREE.Color('#5a4030'), 0.12);
-      this.enemies.push({ c, ai: new DuelAI(aiParams, duelist), spawn: spot.pos.clone(), heading: spot.heading, trail });
+      const trail = new BladeTrail(new THREE.Color(shardbearer ? '#5f86a3' : '#5a4030'), shardbearer ? 0.16 : 0.12);
+      this.enemies.push({ c, damage: shardbearer ? 0.7 : 1, ai: new DuelAI(aiParams, shardbearer), spawn: spot.pos.clone(), heading: spot.heading, trail });
       this.scene.add(c.model.root, trail.mesh);
     }
 
@@ -162,7 +169,7 @@ export class Game {
     this.sfx.volume = tuning.combat.volume;
     this.rules.parryWindow = tuning.combat.parryWindow;
     this.playerStats.damageScale = tuning.combat.playerDamage;
-    for (const e of this.enemies) e.c.fighter.stats.damageScale = tuning.combat.enemyDamage;
+    for (const e of this.enemies) e.c.fighter.stats.damageScale = e.damage * tuning.combat.enemyDamage;
 
     // Hit-stop: the whole fight freezes for a few frames on impact. Inputs
     // stay latched, so presses made during the freeze still register.
@@ -256,10 +263,10 @@ export class Game {
         shake(heavy ? 0.13 : 0.07);
         def.knockback(att.position.x, att.position.z, move.knockback * c.knockbackScale * (outcome === 'kill' ? 1.6 : 1));
         def.model.hitFlash();
-        const shard = att === this.player;
+        const shard = att.opts.moveset.weapon.shardblade;
         this.sfx.hit(heavy, shard, g);
         // A Shardblade doesn't cut flesh: the soul burns, shedding light.
-        if (shard) this.sparks.burst(at, heavy ? 26 : 16, MOTE, 2.6, 0.7, -0.6, 0.6);
+        if (shard) this.sparks.burst(at, heavy || outcome === 'kill' ? 26 : 16, MOTE, 2.6, 0.7, -0.6, 0.6);
         else this.sparks.burst(at, 10, BLOOD_PARSH, 3, 0.35, 9);
         if (def === this.player) this.hud.playerHurt(heavy ? 0.9 : 0.6);
         if (outcome === 'kill') this.sfx.fall(g);

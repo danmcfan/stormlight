@@ -23,6 +23,8 @@ export interface FighterStats {
   /** Stamina regained per second once the regen delay has passed. */
   staminaRegen: number;
   damageScale: number;
+  /** Wearing Shardplate: survives Shardblade strikes. */
+  shardplate: boolean;
 }
 
 /** Tunables shared by every fighter (live-editable from the tuning panel). */
@@ -289,6 +291,13 @@ export class Fighter {
    */
   receiveHit(attacker: Fighter, move: Move, facingOff: number): HitOutcome {
     if (!this.alive || this.invulnerable()) return 'ignored';
+    // A Shardblade shears through flesh, armour and ordinary weapons alike:
+    // without Plate, no guard or parry helps.
+    if (attacker.moveset.weapon.shardblade && !this.stats.shardplate) {
+      this.hp = 0;
+      this.enter('dead');
+      return 'kill';
+    }
     const charge = 1 + ((move.charge?.damageMult ?? 1) - 1) * attacker.chargeFrac();
     const frontal = Math.abs(facingOff) < (75 * Math.PI) / 180;
 

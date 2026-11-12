@@ -73,7 +73,7 @@ export class HumanoidModel {
     this.torso.position.y = WAIST_Y;
     this.body.add(this.torso);
     this.body.add(this.weapon);
-    if (kind === 'plate') this.buildPlate(); else this.buildParshendi(variant);
+    if (kind === 'plate') this.buildPlate(variant); else this.buildParshendi(variant);
     if (kind === 'plate') { this.tipLocal = new THREE.Vector3(0, 1.95, 0); this.baseLocal = new THREE.Vector3(0, 0.3, 0); }
     else { this.tipLocal = new THREE.Vector3(0, 1.28, 0.3); this.baseLocal = new THREE.Vector3(0, 0.85, 0.05); }
     this.root.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -123,9 +123,11 @@ export class HumanoidModel {
     this.torso.add(this.armL.upper, this.armR.upper);
   }
 
-  private buildPlate(): void {
-    const plate = this.mat('#7a8796', { metalness: 0.65, roughness: 0.42 });
-    const dark = this.mat('#4d5865', { metalness: 0.6, roughness: 0.5 });
+  private buildPlate(variant: number): void {
+    // Variant 1: a Parshendi Shardbearer's Plate, darker and bronze-toned.
+    const enemy = variant === 1;
+    const plate = this.mat(enemy ? '#6e5a47' : '#7a8796', { metalness: 0.65, roughness: 0.42 });
+    const dark = this.mat(enemy ? '#3b2d25' : '#4d5865', { metalness: 0.6, roughness: 0.5 });
     const glow = this.mat('#d8f2ff', { emissive: new THREE.Color('#9fdcff'), emissiveIntensity: 2.2, flatShading: false });
     const steel = this.mat('#c9d4de', { metalness: 0.95, roughness: 0.18 });
     const etch = this.mat('#bfe8ff', { emissive: new THREE.Color('#7fd0ff'), emissiveIntensity: 0.9 });
@@ -149,6 +151,14 @@ export class HumanoidModel {
     const visor = this.box(0.24, 0.035, 0.02, glow, 0, 0.2, 0.175);
     visor.castShadow = false;
     helm.add(visor, this.box(0.06, 0.1, 0.3, dark, 0, 0.38));
+    if (enemy) {
+      // Carapace-like ridges sweeping back from the helm.
+      for (const side of [-1, 1]) {
+        const ridge = this.box(0.05, 0.08, 0.34, dark, side * 0.12, 0.36, -0.04);
+        ridge.rotation.z = side * 0.35;
+        helm.add(ridge);
+      }
+    }
     t.add(helm);
     this.addArms(plate, dark, dark, 0.19);
 

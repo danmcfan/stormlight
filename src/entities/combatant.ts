@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { bladeSegment, currentPose, newPose, type BladePose } from '../combat/bladePose';
 import { Fighter, type CombatRules, type FighterEvent, type FighterStats, type Intent } from '../combat/fighter';
 import type { Capsule } from '../combat/hits';
-import type { Moveset } from '../combat/moves';
+import type { Moveset, Stance } from '../combat/moves';
 import { angleDiff, approachAngle, headingOf, wrapAngle } from '../core/math';
 import type { Physics } from '../core/physics';
 import { createLocoState, inputToWorld, planarSpeed, stepLocomotion, type LocoState } from '../player/locomotion';
@@ -18,6 +18,8 @@ export interface CombatantOptions {
   scale: number;
   spawn: THREE.Vector3;
   heading: number;
+  /** Starting stance (default Windstance). */
+  stance?: Stance;
   stats: FighterStats;
   moveset: Moveset;
   rules: CombatRules;
@@ -67,6 +69,7 @@ export class Combatant {
 
   constructor(physics: Physics, readonly opts: CombatantOptions) {
     this.fighter = new Fighter(opts.stats, opts.moveset, opts.rules);
+    if (opts.stance) this.fighter.stance = opts.stance;
     this.body = new CharacterBody(physics, opts.spawn, 0.4 * opts.scale, 0.6 * opts.scale, opts.gravity);
     this.model = new HumanoidModel(opts.kind, opts.scale, opts.variant ?? 0);
     this.loco = createLocoState(opts.heading);

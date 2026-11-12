@@ -5,7 +5,7 @@ import { Fighter, noIntent, type Intent } from '../src/combat/fighter';
 import { segmentDistance, sweptBladeHits } from '../src/combat/hits';
 import { moves, moveTotal, parshendiMoveset, shardbearerMoveset } from '../src/combat/moves';
 
-const stats = { maxHp: 100, maxStamina: 100, maxPoise: 50, staminaRegen: 40, damageScale: 1 };
+const stats = { maxHp: 100, maxStamina: 100, maxPoise: 50, staminaRegen: 40, damageScale: 1, shardplate: true };
 const make = () => new Fighter(stats, shardbearerMoveset);
 const press = (p: Partial<Intent>): Intent => ({ ...noIntent, ...p });
 function run(f: Fighter, n: number, i: Intent = noIntent) { for (let k = 0; k < n; k++) f.tick(i); }
@@ -187,5 +187,29 @@ describe('fighter', () => {
     let dist = 0;
     for (let i = 0; i < 40; i++) { dist += f.rootSpeed() / 60; f.tick(noIntent); }
     expect(dist).toBeCloseTo(f.rules.dodgeDistance, 0);
+  });
+
+  describe('Shardblade vs no Plate', () => {
+    const unarmored = () => new Fighter({ ...stats, maxHp: 500, shardplate: false }, parshendiMoveset);
+    it('kills in one stroke, whatever the health', () => {
+      expect(unarmored().receiveHit(make(), moves.wind_l1, 0)).toBe('kill');
+    });
+    it('cuts through a block and cannot be parried', () => {
+      const def = unarmored();
+      def.tick(press({ block: true }));
+      expect(def.receiveHit(make(), moves.wind_l1, 0)).toBe('kill');
+    });
+    it('can still be dodged', () => {
+      const def = unarmored();
+      def.tick(press({ dodge: true }));
+      run(def, 4);
+      expect(def.receiveHit(make(), moves.wind_l1, 0)).toBe('ignored');
+    });
+    it('an axe against Plate does ordinary damage', () => {
+      const axeman = new Fighter({ ...stats, shardplate: false }, parshendiMoveset);
+      const def = make();
+      expect(def.receiveHit(axeman, moves.axe_l1, 0)).toBe('hit');
+      expect(def.hp).toBe(100 - moves.axe_l1.damage);
+    });
   });
 });

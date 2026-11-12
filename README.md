@@ -33,8 +33,9 @@ Open the printed URL (usually http://localhost:5173) and click to take control.
 | H | Hide the commands card |
 | Esc | Release the mouse |
 
-A Parshendi duelist waits just past the bridge; the other warriors are
-training targets. Fall into a chasm, or fall in battle, and you return to the
+A Parshendi Shardbearer waits just past the bridge: Plate against Plate is a
+long fight. Ordinary Parshendi die to a single Shardblade stroke, through any
+guard (for now they are training targets). Fall into a chasm, or fall in battle, and you return to the
 bridge landing.
 
 ## Tuning feel

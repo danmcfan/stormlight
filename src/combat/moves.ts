@@ -72,6 +72,8 @@ export interface WeaponDef {
   /** Distance from the hand where the damaging part starts / ends. */
   hitFrom: number;
   hitTo: number;
+  /** A Shardblade: kills anyone not in Shardplate in one stroke, through any guard. */
+  shardblade: boolean;
 }
 
 export interface Moveset {
@@ -251,7 +253,7 @@ export const shardbearerMoveset: Moveset = {
   },
   block: { yaw: 70, pitch: 28, reach: 0.42, twist: 15 },
   // Shardblade: hilt at the hand, ~1.85 m of blade.
-  weapon: { hitFrom: 0.2, hitTo: 1.95 },
+  weapon: { hitFrom: 0.2, hitTo: 1.95, shardblade: true },
   twoHandedGuard: { wind: false, stone: true },
 };
 
@@ -264,7 +266,7 @@ export const parshendiMoveset: Moveset = {
   },
   block: { yaw: 65, pitch: 30, reach: 0.42, twist: 12 },
   // Axe: the head is the dangerous part.
-  weapon: { hitFrom: 0.75, hitTo: 1.3 },
+  weapon: { hitFrom: 0.75, hitTo: 1.3, shardblade: false },
   twoHandedGuard: { wind: false, stone: false },
 };
 
