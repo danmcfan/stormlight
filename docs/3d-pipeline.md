@@ -34,9 +34,23 @@ Blender itself to inspect or hand-edit it.
   glTF +Y, the cutting edge faces +Z (it leads the swing), and it is thin along
   X. A Shardblade's tip is 1.95 m from the hand, matching the hit segment in
   `src/combat/moves.ts`.
-- **Plate (next):** one mesh per rigid piece, named for the bone it rides on
-  (helm, pauldron_l, …), so it can replace the box parts in
-  `src/render/humanoid.ts` without skinning.
+- **Plate:** one mesh per rigid piece, named for the bone it rides on
+  (`helm`, `pauldron_l`, `forearm_r`, …), with its origin at that joint in the
+  body space of `src/render/humanoid.ts` (+Y up, +Z forward, +X = the
+  character's left). No skinning: `HumanoidModel` parents each piece to its
+  group, so the procedural animation drives it. The table of pieces, parent
+  groups and origins is at the top of `build_shardplate.py`; keep it and
+  `buildModelledPlate` in step. Exported node transforms are identity (the
+  geometry is already relative to the joint).
+- **Material names are an interface.** The game swaps glTF materials for
+  per-instance ones by name (`plate`, `plate_dark`, `trim`, `glow`), which
+  gives each fighter its own colours (the enemy's bronze) and hit flash.
+- **Avoid big flat metal faces.** Under the game's sun, a flat metallic face
+  mirrors it as a white patch; give plates some curvature.
+- **Scripted geometry helpers** in `build_shardplate.py`: `Loft` (stacked
+  superellipse sections, smooth between key sections), `ring`/`path` (raised
+  trim tubes on a loft's surface), `patch` (a solid plate lying on a loft
+  region), `leaf`, `disc`, `ellipsoid`.
 - **Materials:** Principled BSDF only (exports to glTF PBR). Glow is emission:
   Stormlight blue `(0.5, 0.82, 1.0)`.
 - **Storage:** GLBs and renders are Git LFS (`.gitattributes`); the Pages
@@ -49,3 +63,4 @@ Blender itself to inspect or hand-edit it.
 | Model | Script | Reference | Notes |
 |---|---|---|---|
 | `shardblade.glb` | `build_shardblade.py` | `art/source/shardblade-side/nb21-v1` | Traced outline, chamfered edges, ringed two-hand grip, glowing sapphire and etched line. 2.5 m overall, ~3.6k faces |
+| `shardplate.glb` | `build_shardplate.py` | `art/source/shardplate-front`, `shardplate-side-back`, `shardplate-helm` (`nb21-v1`) | 22 rigid pieces on the game skeleton (helm with glowing slit, gorget, breastplate with sapphire, abdomen, belt, front/back fauld of leaf plates, pauldrons with discs, upper arms, couters + vambraces, gauntlets, cuisses with tassets, poleyns + greaves, sabatons) plus an enemy-only `helm_crest`. ~22.8k triangles. Renders in `art/renders/shardplate/` (in-game shots in `in-game/`) |
