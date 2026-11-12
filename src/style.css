@@ -183,6 +183,54 @@ kbd {
 @keyframes pulse { 50% { opacity: 0.35; box-shadow: 0 0 2px var(--storm-glow); } }
 
 /* --- Small screens: drop the commands card, keep it on the title screen. -- */
-@media (max-height: 560px), (max-width: 720px) {
+@media (max-height: 560px), (max-width: 920px) {
   .hud-left .hint { display: none; }
 }
+
+/* --- Combat HUD ------------------------------------------------------------ */
+.vitals {
+  position: fixed; left: 50%; bottom: var(--gutter); transform: translateX(-50%); z-index: 40;
+  width: min(380px, calc(100vw - 2 * var(--gutter))); padding: 10px 14px 12px;
+}
+.stance { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.stance-opt {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 600 10.5px/1 var(--serif); letter-spacing: 0.18em; text-transform: uppercase; color: rgba(148, 163, 181, 0.55);
+  transition: color 0.2s;
+}
+.stance-opt i { width: 6px; height: 6px; transform: rotate(45deg); background: rgba(148, 163, 181, 0.35); transition: all 0.2s; }
+.stance-opt.active { color: var(--brass); }
+.stance-opt.active i { background: var(--storm); box-shadow: 0 0 8px var(--storm-glow); }
+.stance-key kbd { font-size: 9.5px; }
+.vital-rows { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+.vital-label { font: 600 9.5px/1 var(--serif); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+
+.bar { position: relative; height: 9px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(207, 178, 122, 0.25); overflow: hidden; }
+.bar-fill, .bar-ghost { position: absolute; inset: 0; transform-origin: left center; }
+.bar-ghost { background: rgba(255, 214, 140, 0.55); }
+.bar-hp .bar-fill { background: linear-gradient(180deg, #e0525a, #9b1c2b); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+.bar-stamina .bar-fill { background: linear-gradient(180deg, #bfe8ff, #4aa6dc); box-shadow: 0 0 8px var(--storm-glow); }
+.bar-poise { height: 4px; margin-top: 4px; }
+.bar-poise .bar-fill { background: linear-gradient(180deg, #f1dca8, #b8913f); }
+.bar-poise .bar-ghost { background: transparent; }
+
+.target {
+  position: fixed; left: 50%; top: var(--gutter); transform: translateX(-50%); z-index: 40;
+  width: min(440px, calc(100vw - 2 * (var(--col-width) + var(--gutter) * 2))); min-width: 220px; padding: 9px 14px 11px;
+}
+.target-name { margin: 0 0 7px; text-align: center; font: 600 12px/1 var(--serif); letter-spacing: 0.2em; text-transform: uppercase; color: #f3ecdf; }
+
+.hurt {
+  position: fixed; inset: 0; pointer-events: none; z-index: 35; opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(120, 0, 0, 0) 45%, rgba(150, 10, 20, 0.55) 100%);
+}
+.fallen {
+  position: fixed; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(5, 5, 8, 0.35), rgba(5, 5, 8, 0.8)); pointer-events: none;
+  animation: fadein 0.8s ease-out;
+}
+.fallen h2 { margin: 0; font: 600 clamp(28px, 5vw, 48px)/1.1 var(--serif); letter-spacing: 0.1em; color: #e8c9c4; text-shadow: 0 2px 18px #000; }
+.fallen p { margin: 14px 0 0; font: italic 500 14px/1 var(--serif); letter-spacing: 0.14em; color: rgba(230, 237, 245, 0.6); }
+@keyframes fadein { from { opacity: 0; } }
+
+@media (max-width: 900px) { .target { width: calc(100vw - 2 * var(--gutter)); top: auto; bottom: 120px; } }

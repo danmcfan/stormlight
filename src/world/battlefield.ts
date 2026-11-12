@@ -7,8 +7,10 @@ import { makeBridge, makeChrysalis, makeRock, makeRockbuds } from './props';
 export interface Battlefield {
   spawn: THREE.Vector3;
   spawnHeading: number;
+  /** Just off the bridge on the assault plateau: where you return after falling. */
+  landing: THREE.Vector3;
   /** Where Parshendi stand, with the heading they face. */
-  enemySpots: { pos: THREE.Vector3; heading: number }[];
+  enemySpots: { pos: THREE.Vector3; heading: number; role: 'warrior' | 'duelist' }[];
 }
 
 const NORTH = -Math.PI / 2; // shape-polar angle pointing to world -Z
@@ -101,16 +103,20 @@ export function buildBattlefield(scene: THREE.Scene, physics: Physics): Battlefi
     enemySpots.push({
       pos: new THREE.Vector3(chrysalis.position.x + Math.cos(a) * r, 0, chrysalis.position.z + Math.sin(a) * r),
       heading: Math.atan2(Math.cos(a), Math.sin(a)), // face outward
+      role: 'warrior',
     });
   }
-  // A forward screen near the bridge landing.
-  for (const x of [-7, 0, 7]) {
-    enemySpots.push({ pos: new THREE.Vector3(x, 0, -mainEdge + 20 + rng() * 3), heading: Math.PI });
+  // A forward screen near the bridge landing, with a duelist at its centre
+  // who comes out to meet you in the open ground.
+  for (const x of [-11, 11]) {
+    enemySpots.push({ pos: new THREE.Vector3(x, 0, -mainEdge + 21 + rng() * 3), heading: Math.PI, role: 'warrior' });
   }
+  enemySpots.push({ pos: new THREE.Vector3(0, 0, -mainEdge + 19), heading: Math.PI, role: 'duelist' });
 
   return {
     spawn: new THREE.Vector3(0, 0.5, stagingZ + stagingEdge - 6),
     spawnHeading: 0,
+    landing: new THREE.Vector3(0, 0.3, -mainEdge + 5),
     enemySpots,
   };
 }

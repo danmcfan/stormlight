@@ -9,6 +9,10 @@ export interface DebugInfo {
   grounded: boolean;
   lock: string;
   walkToggle: boolean;
+  combat: string;
+  move: string;
+  stamina: string;
+  poise: string;
 }
 
 /** Debug readout plus a live tuning panel, both toggled with the ` key. */
@@ -46,6 +50,22 @@ export class DebugTools {
     cam.add(tuning.camera, 'lockYawDamping', 1, 20, 0.5);
     cam.add(tuning.camera, 'lockPitch', -0.2, 0.8, 0.01);
     cam.add(tuning.camera, 'footfallShake', 0, 0.12, 0.005);
+    const cb = this.gui.addFolder('Combat');
+    cb.add(tuning.combat, 'hitStopScale', 0, 3, 0.05).name('hit-stop ×');
+    cb.add(tuning.combat, 'shakeScale', 0, 3, 0.05).name('shake ×');
+    cb.add(tuning.combat, 'knockbackScale', 0, 3, 0.05).name('knockback ×');
+    cb.add(tuning.combat, 'parryWindow', 0, 20, 1).name('parry window (frames)');
+    cb.add(tuning.combat, 'playerDamage', 0.2, 5, 0.05).name('player damage ×');
+    cb.add(tuning.combat, 'enemyDamage', 0, 5, 0.05).name('enemy damage ×');
+    cb.add(tuning.combat, 'volume', 0, 1, 0.05);
+    cb.add(tuning.combat, 'showHitboxes').name('show hitboxes');
+    const ai = this.gui.addFolder('Duelist AI');
+    ai.add(tuning.ai, 'aggression', 0, 1, 0.05);
+    ai.add(tuning.ai, 'blockChance', 0, 1, 0.05).name('block chance');
+    ai.add(tuning.ai, 'dodgeChance', 0, 1, 0.05).name('dodge chance');
+    ai.add(tuning.ai, 'reaction', 0, 1, 0.01).name('reaction (s)');
+    ai.add(tuning.ai, 'parryChance', 0, 1, 0.05).name('parry chance');
+    mv.close(); cam.close();
     const lock = this.gui.addFolder('Lock-on');
     lock.add(tuning.lockOn, 'range', 5, 50, 1);
     lock.add(tuning.lockOn, 'breakRange', 5, 60, 1);
@@ -83,6 +103,10 @@ export class DebugTools {
       row('facing', `${f(info.facingDeg, 0)}°`),
       row('grounded', String(info.grounded)),
       row('lock', info.lock),
+      row('combat', info.combat),
+      row('move', info.move),
+      row('stamina', info.stamina),
+      row('poise', info.poise),
     ].join('\n');
   }
 }

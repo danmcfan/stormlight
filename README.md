@@ -19,18 +19,23 @@ Open the printed URL (usually http://localhost:5173) and click to take control.
 
 | Input | Action |
 |---|---|
-| WASD | Move (relative to camera) |
-| Shift | Sprint |
-| C | Toggle walk |
+| WASD | Move (relative to camera) · Shift to sprint · C to toggle walk |
+| Left mouse | Light attack (press again to combo) |
+| Right mouse | Heavy attack (hold to charge) |
+| Space | Dodge (brief invulnerability) |
+| E | Block (raise it just before a hit to parry) |
+| Tab | Switch Windstance / Stonestance |
+| Q / Middle mouse | Lock on / release · flick the mouse to switch target |
 | Mouse | Look · Scroll to zoom |
-| Q / Middle mouse | Lock on / release |
-| Flick mouse while locked | Switch target left/right |
 | ` (backquote) | Debug readout + live tuning panel |
-| F | Show/hide the FPS graph (top right) |
-| H | Hide the help panel |
+| F | Show/hide the frame-timing graph |
+| M | Mute |
+| H | Hide the commands card |
 | Esc | Release the mouse |
 
-Fall into a chasm and you respawn on the staging plateau.
+A Parshendi duelist waits just past the bridge; the other warriors are
+training targets. Fall into a chasm, or fall in battle, and you return to the
+bridge landing.
 
 ## Tuning feel
 
@@ -43,8 +48,11 @@ them live, then **Copy tuning JSON** and paste the values you like back into
 1. **Movement, camera, lock-on** ✅ — heavy Plate locomotion (inertia, limited
    turn rate, plant-and-pivot), over-the-shoulder camera with collision,
    Souls-style lock-on and strafing, assault plateau + bridge + chrysalis.
-2. One-on-one duel: light/heavy combos, dodge, block, parry, hit-stop,
-   Windstance / Stonestance switching.
+2. **One-on-one duel** ✅ — data-driven moves (frame data + sword keyframes
+   that drive both animation and hit detection), Windstance/Stonestance
+   movesets, combos with input buffering, charged heavies, dodge with
+   i-frames, block/parry, stamina, poise and stagger, hit-stop, knockback,
+   blade trails, synthesized sound, a Parshendi duelist AI, combat HUD.
 3. Shardbearer systems: Stormlight, per-piece Plate cracking, Blade summon.
 4. The battle: crowds of Parshendi, attack-token AI, allied squad.
 5. Parshendi Shardbearer duel.
@@ -60,12 +68,16 @@ src/
   main.ts                boot + fixed 60 Hz loop with render interpolation
   core/                  input, math, Rapier physics wrapper
   player/locomotion.ts   pure movement model (unit-tested)
-  player/player.ts       character controller (Rapier)
-  player/playerModel.ts  placeholder Plate model + procedural animation
+  combat/moves.ts        every attack: frame data + sword keyframes
+  combat/fighter.ts      combat state machine (unit-tested)
+  combat/bladePose.ts    sword pose at any frame; shared by animation and hits
+  combat/hits.ts         swept blade-vs-capsule hit tests (unit-tested)
+  combat/lockOn*.ts      target selection, reticle, switching
+  entities/              physics body, Combatant (player & Parshendi), duel AI
+  render/humanoid.ts     box-built rig with arm IK and procedural animation
+  fx/                    blade trails, sparks, synthesized sound
+  ui/hud.ts              health / stamina / stance / target bars
   camera/                third-person camera
-  combat/lockOn.ts       pure target selection (unit-tested)
-  combat/lockOnSystem.ts reticle + switching
-  enemies/parshendi.ts   placeholder warriors (no AI yet)
   world/                 plateau generation, props, lighting
 tests/                   vitest unit tests (`npm test`)
 ```

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { tuning } from '../config';
-import type { Parshendi } from '../enemies/parshendi';
+import type { Combatant } from '../entities/combatant';
 import { selectTarget, switchTarget } from './lockOn';
 
 function makeReticle(): THREE.Sprite {
@@ -28,18 +28,18 @@ function makeReticle(): THREE.Sprite {
 
 /** Owns which enemy is locked, the reticle, and mouse-flick target switching. */
 export class LockOnSystem {
-  target: Parshendi | null = null;
+  target: Combatant | null = null;
   readonly reticle = makeReticle();
   private flick = 0;
   private cooldown = 0;
   private pulse = 0;
 
-  constructor(scene: THREE.Scene, private enemies: Parshendi[]) {
+  constructor(scene: THREE.Scene, private enemies: Combatant[]) {
     scene.add(this.reticle);
   }
 
   private candidates() {
-    return this.enemies.map((e) => ({ id: e.id, x: e.position.x, z: e.position.z }));
+    return this.enemies.filter((e) => e.alive).map((e) => ({ id: e.id, x: e.position.x, z: e.position.z }));
   }
 
   toggle(playerPos: THREE.Vector3, cameraYaw: number): void {
@@ -68,7 +68,7 @@ export class LockOnSystem {
   }
 
   update(dt: number, playerPos: THREE.Vector3): void {
-    if (this.target && this.target.position.distanceTo(playerPos) > tuning.lockOn.breakRange) this.target = null;
+    if (this.target && (!this.target.alive || this.target.position.distanceTo(playerPos) > tuning.lockOn.breakRange)) this.target = null;
     this.reticle.visible = !!this.target;
     if (this.target) {
       this.reticle.position.copy(this.target.position).setY(this.target.position.y + this.target.chestHeight);

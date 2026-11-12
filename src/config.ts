@@ -39,6 +39,27 @@ export const tuning = {
     /** Camera kick on heavy sprint footfalls. */
     footfallShake: 0.035,
   },
+  combat: {
+    /** Multiplies every move's freeze-on-impact frames. */
+    hitStopScale: 1,
+    shakeScale: 1,
+    knockbackScale: 1,
+    /** Frames after raising the guard that count as a parry. */
+    parryWindow: 9,
+    playerDamage: 1,
+    enemyDamage: 1,
+    showHitboxes: false,
+    volume: 0.7,
+  },
+  ai: {
+    aggression: 0.55,
+    blockChance: 0.35,
+    dodgeChance: 0.12,
+    /** Seconds before the duelist reacts to your windup. */
+    reaction: 0.22,
+    /** When it blocks, chance the block is a parry. */
+    parryChance: 0.2,
+  },
   lockOn: {
     range: 24,
     breakRange: 32,
