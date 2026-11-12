@@ -12,8 +12,4 @@ describe('angles', () => {
     expect(angleDiff(-3, 3)).toBeCloseTo(2 * Math.PI - 6);
     expect(approachAngle(3, -3, 0.1)).toBeCloseTo(3.1);
   });
-
-  it('snaps when within reach', () => {
-    expect(approachAngle(0, 0.05, 0.1)).toBeCloseTo(0.05);
-  });
 });

@@ -36,6 +36,10 @@ live site (`.github/workflows/deploy.yml`). For each push:
   the animation and the hit detection (`src/combat/bladePose.ts`); weapon pivots
   and the hit capsule must stay in step with the skeleton in
   `src/render/humanoid.ts`.
+- **Tests guard rules, not numbers.** Unit-test rules of play and pure logic
+  (the fighter state machine, direction conventions, horde logic) through their
+  public functions, with fixed inputs of the test's own; tuning values in
+  `src/config.ts` and the look stay free to change, and screenshots judge art.
 - **A Shardblade kills anyone without Shardplate in one stroke.** Long fights
   are Plate against Plate. This is a design decision from the user.
 

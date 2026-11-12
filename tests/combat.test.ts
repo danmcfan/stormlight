@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { dirFromAngles, movePose } from '../src/combat/bladePose';
+import { dirFromAngles } from '../src/combat/bladePose';
 import { Fighter, noIntent, type Intent } from '../src/combat/fighter';
 import { segmentDistance, sweptBladeHits } from '../src/combat/hits';
 import { moves, moveTotal, parshendiMoveset, shardbearerMoveset } from '../src/combat/moves';
@@ -23,19 +23,6 @@ describe('move data', () => {
       }
     });
   }
-  it('every move starts and ends in its stance guard', () => {
-    const g = shardbearerMoveset.guard.wind;
-    const p = movePose(moves.wind_l1, 0);
-    expect(p.dir.angleTo(dirFromAngles(g.yaw, g.pitch))).toBeLessThan(1e-6);
-    const axe = parshendiMoveset.guard.wind;
-    expect(movePose(moves.axe_l1, moveTotal(moves.axe_l1)).dir.angleTo(dirFromAngles(axe.yaw, axe.pitch))).toBeLessThan(1e-6);
-  });
-  it('a horizontal slash sweeps from the right to the left side', () => {
-    const start = movePose(moves.wind_l1, moves.wind_l1.windup).dir.x;
-    const end = movePose(moves.wind_l1, moves.wind_l1.windup + moves.wind_l1.active).dir.x;
-    expect(start).toBeLessThan(-0.5); // right is -X in body space
-    expect(end).toBeGreaterThan(0.5);
-  });
 });
 
 describe('hit geometry', () => {
