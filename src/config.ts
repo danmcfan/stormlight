@@ -67,6 +67,62 @@ export const tuning = {
     switchThreshold: 55,
     switchCooldown: 0.3,
   },
+  horde: {
+    /** Warriors in wave 1, added per wave, and the cap (all rounded to pairs). */
+    waveStart: 4,
+    waveGrowth: 6,
+    waveMax: 38,
+    /** Most warriors on the plateau at once; the rest of a wave waits to arrive. */
+    maxAlive: 40,
+    /** Seconds between each arriving pair. */
+    spawnInterval: 0.9,
+    /** Breather between waves (seconds). */
+    waveBreak: 5,
+    /** Fraction of max health restored between waves. */
+    healBetweenWaves: 0.35,
+    /** Warrior hit damage × (on top of the enemy damage × above). */
+    warriorDamage: 1,
+    /** Attack tokens: how many warriors may swing at you at once. */
+    attackTokens: 3,
+    /** Seconds a pair rests after using its tokens before asking again. */
+    tokenCooldown: 1.6,
+    /** Radius the waiting warriors circle at, and how close they shuffle in. */
+    holdRadius: 6.5,
+    closeRadius: 4.6,
+    /** Degrees either side of a pair's axis each partner flanks from. */
+    flankAngle: 55,
+    /** Seconds between the feint and the partner's committed strike. */
+    feintLead: 0.35,
+    /** Chance a warrior whose partner dies turns berserk (else regroups). */
+    berserkChance: 0.5,
+    /** Chance a warrior steps back from your windup when close. */
+    fearDodge: 0.12,
+    /** AI decisions run this many times a second per warrior (staggered). */
+    thinkRate: 12,
+    /** Warriors further than this skip blade/animation work on alternate frames. */
+    lodDistance: 22,
+    /** Aim assist when not locked on: cone half-angle (°), range (m). */
+    aimAssist: true,
+    aimCone: 55,
+    aimRange: 5,
+    /** Shove (R / Shove button): speed given to warriors hit (m/s) and how slowly it decays. */
+    shoveForce: 15,
+    shoveDecay: 3.2,
+    shoveRange: 2.6,
+    shoveCone: 70,
+    /** Kill feel in a crowd. */
+    killStop: 11,
+    killWindow: 1.2,
+    killFalloff: 0.8,
+    killMinScale: 0.15,
+    killShake: 0.09,
+    multiKillStop: 6,
+    multiKillSlowmo: 0.45,
+    waveEndSlowmo: 1.1,
+    slowmoScale: 0.3,
+    /** Off-screen warning: warriors winding up within this range. */
+    warnRange: 9,
+  },
   touch: {
     /** Radians of camera turn per CSS pixel of look drag (separate from mouse). */
     lookSensitivity: 0.0062,
