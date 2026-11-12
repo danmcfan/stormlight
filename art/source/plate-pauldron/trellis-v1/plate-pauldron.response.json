@@ -1,0 +1,13 @@
+{
+ "model_mesh": {
+  "url": "https://v3b.fal.media/files/b/0ab239ac/AhWM7d-kyxoAISm3UNkkC_model.glb",
+  "content_type": "model/gltf-binary",
+  "file_name": "model.glb",
+  "file_size": 2063456
+ },
+ "timings": {
+  "prepare": 1.547099999754664e-05,
+  "generation": 3.740288284999991,
+  "export": 25.204102429000002
+ }
+}
