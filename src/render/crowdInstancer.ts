@@ -37,6 +37,9 @@ export class CrowdInstancer {
         // A shared copy of the part's material: per-warrior flashes go
         // through the instance colour instead.
         const mat = (m.material as THREE.Material).clone();
+        // A clone carries the source's userData but not its shader hooks:
+        // let the scene's stylizer (render/stylize.ts) treat it as new.
+        delete mat.userData.stylized;
         const im = new THREE.InstancedMesh(m.geometry, mat, this.capacity);
         im.castShadow = m.castShadow;
         im.receiveShadow = m.receiveShadow;
