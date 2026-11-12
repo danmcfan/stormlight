@@ -110,6 +110,9 @@ async function boot(): Promise<void> {
 
   const splash = document.getElementById('splash')!;
   setupModes(game);
+  // ?seed=123 makes horde runs repeatable (balance testing).
+  const seed = new URLSearchParams(location.search).get('seed');
+  if (seed !== null && !Number.isNaN(Number(seed))) game.horde.seed = Number(seed);
   const touch = setupTouch(game, splash);
   // A horde run ended: back to the title screen, which now shows the results.
   game.onHordeEnd = () => {
