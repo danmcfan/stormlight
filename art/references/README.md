@@ -14,6 +14,11 @@ of these and want it credited differently or removed, please open an issue.
 | `plains-cracked-slabs-spire.png` | Cracked plateau slabs and a rock spire | Fan art, source unknown |
 | `plains-chasmfiend.png` | A chasmfiend on the plateaus | Fan art, source unknown |
 | `plains-warcamps-edge.png` | Warcamps in craters at the edge of the Plains | Fan art, source unknown |
+| `plate-gem-belt-blue.webp` | Shardbearer in grey-and-blue Plate, gem at the waist, Blade crystallising | Fan art, source unknown |
+| `plate-blue-glow-warcamp.png` | Shardbearer with Stormlight glowing blue around Plate and Blade (signed) | Fan art, artist credited by their signature on the image |
+| `plate-helm-underarm-summon-mist.webp` | Dark Plate with violet-lit seams, helm under the arm, Blade forming from mist | Fan art by Vargasni (patreon.com/vargasni) |
+| `plate-leap-glowing-seams.png` | Shardbearer leaping, amber light at the Plate seams, scale-like fauld | © 2020 Brotherwise Games, LLC |
+| `plate-dark-blade-on-shoulder.webp` | Angular dark Plate, etched Blade resting on the shoulder | Fan art, source unknown |
 
 Also referenced in conversation (not stored here): Michael Whelan's cover
 painting for *The Way of Kings*.
