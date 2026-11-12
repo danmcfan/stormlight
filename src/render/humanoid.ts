@@ -67,7 +67,11 @@ export class HumanoidModel {
   private twoHanded = 0;
   onFootfall: ((speed: number) => void) | null = null;
 
-  constructor(readonly kind: HumanoidKind, readonly scale = 1, variant = 0) {
+  /**
+   * @param weaponModel  a modelled weapon (from public/models) to use instead
+   *                     of the placeholder boxes; cloned per instance
+   */
+  constructor(readonly kind: HumanoidKind, readonly scale = 1, variant = 0, private weaponModel?: THREE.Object3D) {
     this.root.add(this.body);
     this.root.scale.setScalar(scale);
     this.torso.position.y = WAIST_Y;
@@ -164,6 +168,10 @@ export class HumanoidModel {
 
     // Shardblade: grip at the origin, blade along +Y, wide axis along Z.
     const w = this.weapon;
+    if (this.weaponModel) {
+      w.add(this.weaponModel.clone(true));
+      return;
+    }
     w.add(this.box(0.06, 0.34, 0.06, dark, 0, -0.03));
     w.add(this.box(0.1, 0.07, 0.42, dark, 0, 0.16));
     w.add(this.box(0.05, 1.57, 0.17, steel, 0, 0.98));

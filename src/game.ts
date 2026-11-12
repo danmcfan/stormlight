@@ -20,6 +20,7 @@ import { BladeTrail } from './fx/trail';
 import { Hud } from './ui/hud';
 import { buildBattlefield, type Battlefield } from './world/battlefield';
 import { Environment } from './world/environment';
+import type { Models } from './render/assets';
 
 export const SIM_DT = 1 / 60;
 
@@ -74,7 +75,7 @@ export class Game {
   private contact = new THREE.Vector3();
   private playerStats = { maxHp: 160, maxStamina: 100, maxPoise: 70, staminaRegen: 42, damageScale: 1, shardplate: true };
 
-  constructor(canvas: HTMLCanvasElement, readonly physics: Physics) {
+  constructor(canvas: HTMLCanvasElement, readonly physics: Physics, models: Models) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -93,7 +94,7 @@ export class Game {
     this.field = buildBattlefield(this.scene, physics);
 
     this.player = new Combatant(physics, {
-      name: 'Shardbearer', team: 'player', kind: 'plate', scale: 1,
+      name: 'Shardbearer', team: 'player', kind: 'plate', scale: 1, weaponModel: models.shardblade,
       spawn: this.field.spawn, heading: this.field.spawnHeading,
       stats: this.playerStats, moveset: shardbearerMoveset, rules: this.rules,
       movement: () => tuning.movement, gravity: () => tuning.movement.gravity,
@@ -111,7 +112,7 @@ export class Game {
       // fight. Ordinary warriors die to a single Shardblade stroke.
       const shardbearer = spot.role === 'duelist';
       const c = new Combatant(physics, shardbearer ? {
-        name: 'Parshendi Shardbearer', team: 'parshendi', kind: 'plate', variant: 1, scale: 1,
+        name: 'Parshendi Shardbearer', team: 'parshendi', kind: 'plate', variant: 1, scale: 1, weaponModel: models.shardblade,
         spawn: spot.pos, heading: spot.heading, stance: 'stone',
         stats: { maxHp: 420, maxStamina: 100, maxPoise: 80, staminaRegen: 32, damageScale: 1, shardplate: true },
         moveset: shardbearerMoveset, rules: this.rules,

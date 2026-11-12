@@ -1,10 +1,11 @@
 import { Physics } from './core/physics';
+import { loadModels } from './render/assets';
 import { Game, SIM_DT } from './game';
 
 async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement;
-  const physics = await Physics.create();
-  const game = new Game(canvas, physics);
+  const [physics, models] = await Promise.all([Physics.create(), loadModels()]);
+  const game = new Game(canvas, physics, models);
   document.getElementById('loading')?.classList.add('hidden');
 
   const splash = document.getElementById('splash')!;
