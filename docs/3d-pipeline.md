@@ -24,7 +24,18 @@ Blender itself to inspect or hand-edit it.
 3. **Build** with a script in `scripts/blender/` (`build_<model>.py`). It
    writes `public/models/<model>.glb` and preview renders to
    `art/renders/<model>/`. Review the renders before using the model in game.
-4. **Load** it in `src/render/assets.ts` and use it where the placeholder was.
+4. **Compare** it with its references side by side:
+   `.venv-blender/bin/python scripts/blender/compare_reference.py [--fast] [--views plate-front,blade-side] [--tag before]`
+   renders each reference view with a matched orthographic camera (Plate
+   front/side/back, helm front/side, Blade side) and writes
+   `art/renders/compare/<view>.png` (reference | model | overlap: red = only in
+   the reference, blue = only in the model) and `scores.json` with the
+   silhouette IoU. Masks are aligned by height (Blade: length), bottom edges
+   together, then slid sideways to the best overlap. The helm views compare the
+   helm alone at a fixed scale (the helm sheet draws a much deeper collar than
+   the body views). `--fast` (4 samples) is enough for scores while iterating.
+   The IoU only scores the outline: check trim, plate layout and details by eye.
+5. **Load** it in `src/render/assets.ts` and use it where the placeholder was.
 
 ## Conventions
 
@@ -40,7 +51,8 @@ Blender itself to inspect or hand-edit it.
   character's left). No skinning: `HumanoidModel` parents each piece to its
   group, so the procedural animation drives it. The table of pieces, parent
   groups and origins is at the top of `build_shardplate.py`; keep it and
-  `buildModelledPlate` in step. Exported node transforms are identity (the
+  `buildModelledPlate` in step. The skeleton constants are read from
+  `humanoid.ts` by `scripts/blender/skeleton.py`, so the scripts can't drift. Exported node transforms are identity (the
   geometry is already relative to the joint).
 - **Material names are an interface.** The game swaps glTF materials for
   per-instance ones by name (`plate`, `plate_dark`, `trim`, `glow`), which
@@ -62,5 +74,5 @@ Blender itself to inspect or hand-edit it.
 
 | Model | Script | Reference | Notes |
 |---|---|---|---|
-| `shardblade.glb` | `build_shardblade.py` | `art/source/shardblade-side/nb21-v1` | Traced outline, chamfered edges, ringed two-hand grip, glowing sapphire and etched line. 2.5 m overall, ~3.6k faces |
-| `shardplate.glb` | `build_shardplate.py` | `art/source/shardplate-front`, `shardplate-side-back`, `shardplate-helm` (`nb21-v1`) | 22 rigid pieces on the game skeleton (helm with glowing slit, gorget, breastplate with sapphire, abdomen, belt, front/back fauld of leaf plates, pauldrons with discs, upper arms, couters + vambraces, gauntlets, cuisses with tassets, poleyns + greaves, sabatons) plus an enemy-only `helm_crest`. ~22.8k triangles. Renders in `art/renders/shardplate/` (in-game shots in `in-game/`) |
+| `shardblade.glb` | `build_shardblade.py` | `art/source/shardblade-side/nb21-v1` | Traced outline (shrunk by the bevel width so the finished silhouette matches), chamfered edges, two-hand grip, glowing sapphire, diamond boss at the hooks, etched fuller with abstract glyph strokes. 2.5 m overall. Side IoU 0.955 (was 0.897) |
+| `shardplate.glb` | `build_shardplate.py` | `art/source/shardplate-front` (primary), `shardplate-side-back`, `shardplate-helm` (`nb21-v1`) | 24 rigid pieces sized from the front reference's measured silhouette: the stocky build (1.7 m across the arms, 0.34 m thick legs). Helm with glowing slit and centre ridge, high flared collar with a V front, barrel breastplate with hex sapphire and trim V, belt, leaf-plate fauld front/back, tassets hung from the belt, pauldrons with upright horn, disc bosses and two lames, couters + flared vambraces, heavy gauntlets, big knee cops, thick greaves, broad sabatons; enemy-only `helm_crest`. ~26.1k triangles. IoU front 0.876, side 0.888, back 0.884, helm 0.922 / 0.911 (were 0.59 / 0.60 / 0.62 for the body) |

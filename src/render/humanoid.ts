@@ -4,7 +4,7 @@ import { clamp, damp } from '../core/math';
 
 /*
  * Shared skeleton (body space, metres, +Z forward, +X = left):
- *   hips at y 1.0, legs 0.47 + 0.46
+ *   hips at y 1.0 (±0.25 apart), legs 0.40 + 0.53 (high knees under the stocky Plate)
  *   torso pivots at the waist (y 1.08); shoulders at (±0.42, +0.62) from it
  *   arms 0.40 + 0.36 (+ hand)
  * Matches the pivots in combat/bladePose.ts so the weapon sits in the hand.
@@ -15,9 +15,17 @@ const SHOULDER = new THREE.Vector3(0.42, 0.62, 0);
 const UPPER_ARM = 0.4;
 const LOWER_ARM = 0.36;
 const HAND = 0.06;
-const THIGH = 0.47;
-const SHIN = 0.46;
+const THIGH = 0.4;
+const SHIN = 0.53;
 const HELM_Y = 0.92;
+const LEG_X = 0.25;
+/** Fauld plates hang from the belt, in front of and behind the legs. */
+const FAULD_Y = 1.22;
+const FAULD_FRONT_Z = 0.3;
+const FAULD_BACK_Z = -0.26;
+/** Tassets hang from the belt over the outside of each hip. */
+const TASSET_X = 0.3;
+const TASSET_Y = 1.24;
 
 export type HumanoidKind = 'plate' | 'parshendi';
 
@@ -71,6 +79,9 @@ export class HumanoidModel {
   /** Fauld plates that swing aside when a leg strides through them. */
   private fauldFront: THREE.Object3D | null = null;
   private fauldBack: THREE.Object3D | null = null;
+  /** Tassets that swing with their thigh, hinged at the belt. */
+  private tassetL: THREE.Object3D | null = null;
+  private tassetR: THREE.Object3D | null = null;
   onFootfall: ((speed: number) => void) | null = null;
 
   /**
@@ -157,7 +168,8 @@ export class HumanoidModel {
    * bronze colours don't touch other fighters. Returns the dark plate material.
    */
   private buildModelledPlate(model: THREE.Object3D, enemy: boolean): THREE.Material {
-    const shade = { metalness: 0.65, flatShading: false };
+    // Satin rather than mirror metal: the references paint the Plate as a matt slate blue-grey.
+    const shade = { metalness: 0.4, flatShading: false };
     const mats: Record<string, THREE.MeshStandardMaterial> = {
       plate: this.mat(enemy ? '#6e5a47' : '#7a8796', { ...shade, roughness: 0.4 }),
       plate_dark: this.mat(enemy ? '#3b2d25' : '#4d5865', { ...shade, roughness: 0.5 }),
@@ -189,11 +201,13 @@ export class HumanoidModel {
     this.armL = this.emptyLimb(UPPER_ARM);
     this.armR = this.emptyLimb(UPPER_ARM);
     for (const [s, side, leg, arm] of [[1, 'l', this.legL, this.armL], [-1, 'r', this.legR, this.armR]] as const) {
-      leg.upper.position.set(s * 0.17, HIP_Y, 0);
+      leg.upper.position.set(s * LEG_X, HIP_Y, 0);
       arm.upper.position.set(s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
       this.body.add(leg.upper);
       this.torso.add(arm.upper);
       piece(`thigh_${side}`, leg.upper);
+      const tasset = piece(`tasset_${side}`, this.body, s * TASSET_X, TASSET_Y, 0);
+      if (s > 0) this.tassetL = tasset; else this.tassetR = tasset;
       piece(`shin_${side}`, leg.lower);
       piece(`boot_${side}`, leg.lower, 0, -SHIN);
       piece(`pauldron_${side}`, this.torso, s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
@@ -202,8 +216,8 @@ export class HumanoidModel {
       piece(`gauntlet_${side}`, arm.lower, 0, -LOWER_ARM);
     }
     piece('belt', this.body, 0, WAIST_Y);
-    this.fauldFront = piece('fauld_front', this.body, 0, HIP_Y, 0.17);
-    this.fauldBack = piece('fauld_back', this.body, 0, HIP_Y, -0.15);
+    this.fauldFront = piece('fauld_front', this.body, 0, FAULD_Y, FAULD_FRONT_Z);
+    this.fauldBack = piece('fauld_back', this.body, 0, FAULD_Y, FAULD_BACK_Z);
     for (const name of ['abdomen', 'breastplate', 'gorget']) piece(name, this.torso);
     const helm = new THREE.Group();
     helm.position.y = HELM_Y;
@@ -346,6 +360,9 @@ export class HumanoidModel {
     const l = this.legL.upper.rotation.x + crouch, r = this.legR.upper.rotation.x + crouch;
     if (this.fauldFront) this.fauldFront.rotation.x = Math.min(0, l, r) * 0.9;
     if (this.fauldBack) this.fauldBack.rotation.x = Math.max(0, l, r) * 0.9;
+    // Tassets follow their own thigh, lifting more when it swings forward.
+    if (this.tassetL) this.tassetL.rotation.x = Math.min(0, l) * 0.6 + Math.max(0, l) * 0.3;
+    if (this.tassetR) this.tassetR.rotation.x = Math.min(0, r) * 0.6 + Math.max(0, r) * 0.3;
 
     const bob = Math.abs(Math.sin(p)) * (0.03 + sprint * 0.05) * run;
     const breathe = Math.sin(this.time * 1.6) * 0.008 * (1 - run);
