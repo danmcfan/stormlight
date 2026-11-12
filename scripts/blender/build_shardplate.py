@@ -63,7 +63,7 @@ CHEST_O = (0.0, WAIST_Y, 0.0)              # torso pieces' origin (the waist)
 
 
 def rivet(p, centre, nrm, r=0.009):
-    disc(p, "plate", centre, nrm, r, r * 0.9, seg=6)
+    disc(p, "plate", centre, nrm, r, r * 0.9, seg=8)
 
 
 def build_helm(enemy_crest=False):
@@ -75,7 +75,7 @@ def build_helm(enemy_crest=False):
     p = Piece("helm")
     cz = 0.08
     L = Loft([
-        dict(y=-0.10, rx=0.158, rf=0.15, rb=0.19, cz=cz),
+        dict(y=-0.10, rx=0.158, rf=0.15, rb=0.215, cz=cz),
         dict(y=0.0, rx=0.158, rf=0.162, rb=0.178, cz=cz, p=2.2),
         dict(y=0.10, rx=0.152, rf=0.172, rb=0.165, cz=cz, p=2.3),
         dict(y=0.20, rx=0.145, rf=0.196, rb=0.162, cz=cz, p=2.3),
@@ -83,7 +83,7 @@ def build_helm(enemy_crest=False):
         dict(y=0.335, rx=0.118, rf=0.142, rb=0.118, cz=cz),
         dict(y=0.37, rx=0.078, rf=0.092, rb=0.078, cz=cz),
         dict(y=0.385, rx=0.025, rf=0.025, rb=0.025, cz=cz),
-    ]).mesh(p, "plate", seg=26, sub=2)
+    ]).mesh(p, "plate", seg=24, sub=2)
     # Faceplate: front-only loft, a forward wedge at the chin, faceted (p < 2).
     face = Loft([
         dict(y=-0.04, rx=0.135, rf=0.15, rb=0.0, p=1.5, cz=cz),
@@ -104,7 +104,7 @@ def build_helm(enemy_crest=False):
     patch(p, "plate_dark", L, lo, hi, FRONT - deg(46), FRONT + deg(46), off=0.004, thick=0.003, nt=2, nth=12)
     glo = lambda v: t_at(L, 0.203 - 0.012 * (1 - vee(v)))         # noqa: E731
     ghi = lambda v: t_at(L, 0.208 - 0.012 * (1 - vee(v)))         # noqa: E731
-    patch(p, "glow", L, glo, ghi, FRONT - deg(30), FRONT + deg(30), off=0.006, thick=0.001, nt=1, nth=10)
+    patch(p, "glow", L, glo, ghi, FRONT - deg(24), FRONT + deg(24), off=0.0055, thick=0.001, nt=1, nth=8)
     # Centre ridge down the faceplate, from under the slit to the chin point.
     path(p, "plate", face, [(t_at(face, 0.165), FRONT), (t_at(face, 0.09), FRONT), (t_at(face, 0.025), FRONT)],
          r=0.008, off=0.012, n=6, flat=None)
@@ -114,7 +114,6 @@ def build_helm(enemy_crest=False):
     rib = [(t_at(L, y), BACK) for y in (0.0, 0.12, 0.24, 0.32, 0.36)] + [(top_t, FRONT + TAU)] + \
           [(t_at(L, y), FRONT + TAU) for y in (0.36, 0.32, 0.29)]
     rp, rn = sample_path(L, rib, 22, 0.0)
-    tube(p, "plate", [q + nv * 0.001 for q, nv in zip(rp, rn)], r=0.02, nrm=rn, flat=0.22)
     back_n = 15     # rib samples up to the crown top
     oy = HELM_O[1]
     for sgn in (1, -1):
@@ -127,8 +126,8 @@ def build_helm(enemy_crest=False):
         tths = proj(L, [(sgn * x, y) for x, y in front], "front", HELM_O) + \
             proj(L, side, "left" if sgn > 0 else "right", HELM_O) + \
             proj(L, [(sgn * x, y) for x, y in chin], "front", HELM_O)
-        fp, fn = sample_path(L, tths, 40, 0.003)
-        tube(p, "trim", [q + nv * 0.003 for q, nv in zip(edge, en)] + fp, r=0.0075, nrm=list(en) + fn, flat=0.45)
+        fp, fn = sample_path(L, tths, 40, 0.0015)
+        tube(p, "trim", [q + nv * 0.0015 for q, nv in zip(edge, en)] + fp, r=0.0055, nrm=list(en) + fn, flat=0.45)
         # Rivets: the visor pivot and three along the cheek plate's lower edge (side view).
         for z, y, r in ((0.01, 2.245, 0.012), (-0.01, 2.085, 0.009), (-0.06, 2.085, 0.009), (-0.11, 2.09, 0.009)):
             t = t_at(L, y - oy)
@@ -152,10 +151,10 @@ def build_gorget():
         dict(y=0.86, rx=0.37, rf=0.3, rb=0.28, cz=0.04),
         dict(y=0.93, rx=0.3, rf=0.27, rb=0.255, cz=0.05),
         dict(y=0.99, rx=0.262, rf=0.262, rb=0.245, cz=0.05),
-        dict(y=1.03, rx=0.265, rf=0.268, rb=0.248, cz=0.05),
-        dict(y=1.055, rx=0.28, rf=0.282, rb=0.262, cz=0.05),
+        dict(y=1.04, rx=0.258, rf=0.262, rb=0.244, cz=0.05),
+        dict(y=1.075, rx=0.272, rf=0.276, rb=0.256, cz=0.05),
     ])
-    t_rim = t_at(L, 1.055)
+    t_rim = t_at(L, 1.075)
     t_back = t_at(L, 1.0)
     t_v = t_at(L, 0.85)
 
@@ -166,6 +165,9 @@ def build_gorget():
         return t_rim + (t_v - t_rim) * f ** 0.6 + (t_back - t_rim) * b
     rim = shell(p, L, top, 0.0, thick=0.018, nth=34, nu=4)
     tube(p, "trim", rim, r=TRIM_R, closed=True)
+    # A second band inset below the rim, following the V down toward the gem.
+    inner = [L.surf(top(TAU * j / 34) - 0.45, TAU * j / 34, 0.003) for j in range(34)]
+    tube(p, "trim", inner, r=TRIM_R * 0.8, closed=True)
     # Dark padded neck inside the collar, under the helm (shows in the V).
     Loft([dict(y=0.72, rx=0.16, rf=0.17, rb=0.15, cz=0.06), dict(y=0.98, rx=0.14, rf=0.15, rb=0.13, cz=0.07)]
          ).mesh(p, "plate_dark", seg=14, sub=1)
@@ -181,8 +183,8 @@ def build_breastplate():
         dict(y=0.16, rx=0.3, rf=0.27, rb=0.3, cz=0.03, p=2.3),
         dict(y=0.32, rx=0.33, rf=0.31, rb=0.34, cz=0.03, p=2.4),
         dict(y=0.48, rx=0.37, rf=0.35, rb=0.34, cz=0.03, p=2.5),
-        dict(y=0.62, rx=0.385, rf=0.36, rb=0.30, cz=0.03, p=2.5),
-        dict(y=0.74, rx=0.375, rf=0.335, rb=0.29, cz=0.03, p=2.4),
+        dict(y=0.62, rx=0.385, rf=0.37, rb=0.33, cz=0.03, p=2.5),
+        dict(y=0.74, rx=0.375, rf=0.34, rb=0.31, cz=0.03, p=2.4),
         dict(y=0.84, rx=0.355, rf=0.29, rb=0.27, cz=0.03),
         dict(y=0.90, rx=0.29, rf=0.24, rb=0.23, cz=0.04),
     ]).mesh(p, "plate", seg=28, sub=2)
@@ -220,21 +222,21 @@ def build_belt():
     padding (abdomen piece) shows below it between the tassets and the fauld. Origin: the waist."""
     p = Piece("belt")
     L = Loft([
-        dict(y=0.305, rx=0.36, rf=0.335, rb=0.32, cz=0.03, p=2.5),
-        dict(y=0.22, rx=0.39, rf=0.355, rb=0.34, cz=0.03, p=2.5),
-        dict(y=0.12, rx=0.395, rf=0.36, rb=0.335, cz=0.03, p=2.5),
-        dict(y=0.06, rx=0.39, rf=0.355, rb=0.33, cz=0.03, p=2.5),
+        dict(y=0.29, rx=0.355, rf=0.325, rb=0.315, cz=0.03, p=2.5),
+        dict(y=0.22, rx=0.37, rf=0.335, rb=0.325, cz=0.03, p=2.5),
+        dict(y=0.12, rx=0.372, rf=0.338, rb=0.322, cz=0.03, p=2.5),
+        dict(y=0.06, rx=0.37, rf=0.335, rb=0.32, cz=0.03, p=2.5),
     ])
-    nth = 40
+    nth = 32
 
     def vee(v):
         d = abs(((v * TAU - FRONT + math.pi) % TAU) - math.pi)
         return max(0.0, 1 - d / 0.55)
-    bot = lambda v: t_at(L, 0.145 - 0.05 * vee(v))      # noqa: E731
-    top = t_at(L, 0.3)
+    bot = lambda v: t_at(L, 0.18 - 0.05 * vee(v))       # noqa: E731
+    top = t_at(L, 0.27)
     patch(p, "plate", L, bot, top, 0.0, TAU, off=0.0, thick=0.02, nt=3, nth=nth)
-    yring(p, "trim", L, 0.285, off=0.02)
-    path(p, "trim", L, [(bot(j / 48) - 0.1, TAU * j / 48) for j in range(49)], r=TRIM_R, off=0.02, n=60)
+    yring(p, "trim", L, 0.258, off=0.02)
+    path(p, "trim", L, [(bot(j / 48) - 0.1, TAU * j / 48) for j in range(49)], r=TRIM_R, off=0.02, n=44)
     return p
 
 
@@ -243,10 +245,10 @@ def leaf_rows(p, rows, back=False, dz=0.0):
     sgn = -1 if back else 1
     for n, w, h, y, z, tilt in rows:
         for k in range(n):
-            x = (k - (n - 1) / 2) * w * 0.98
-            zz = z + dz - 2.2 * x * x
-            fr = Frame(rot_y(0 if not back else math.pi) @ rot_y(-x * 3.4) @ rot_x(-tilt), (x, y, sgn * zz))
-            leaf(p, "plate", w, h, 0.011, fr, nu=2, nv=3, bulge=0.01)
+            x = (k - (n - 1) / 2) * w * 0.86
+            zz = z + dz - 1.6 * x * x - 0.004 * k
+            fr = Frame(rot_y(0 if not back else math.pi) @ rot_y(-x * 2.2) @ rot_x(-tilt), (x, y, sgn * zz))
+            leaf(p, "plate", w, h, 0.015, fr, nu=2, nv=3, bulge=0.012)
 
 
 def build_fauld():
@@ -254,12 +256,11 @@ def build_fauld():
     above, the centre leaf to 0.58 m (front reference); the back one to 0.56 m."""
     front = Piece("fauld_front")
     # (count, width, height, top y, z, forward tilt) from the top row down; origin at FAULD_Y (1.22 m).
-    leaf_rows(front, [(5, 0.084, 0.215, -0.02, 0.0, 0.1), (4, 0.084, 0.225, -0.13, -0.004, 0.12),
-                      (3, 0.086, 0.235, -0.24, -0.008, 0.14), (2, 0.086, 0.225, -0.35, -0.012, 0.15),
-                      (1, 0.09, 0.23, -0.39, -0.016, 0.1)], dz=0.07)
+    leaf_rows(front, [(4, 0.096, 0.21, 0.03, 0.0, 0.16), (4, 0.096, 0.21, -0.1, -0.006, 0.2),
+                      (3, 0.096, 0.215, -0.23, -0.012, 0.22), (1, 0.1, 0.22, -0.36, -0.018, 0.22)], dz=0.07)
     back = Piece("fauld_back")
-    leaf_rows(back, [(5, 0.084, 0.215, 0.02, 0.0, 0.1), (4, 0.084, 0.225, -0.1, -0.004, 0.13),
-                     (3, 0.086, 0.235, -0.22, -0.008, 0.16), (2, 0.086, 0.21, -0.32, -0.012, 0.18)], back=True, dz=0.03)
+    leaf_rows(back, [(4, 0.096, 0.21, 0.05, 0.0, 0.1), (4, 0.096, 0.205, -0.09, -0.006, 0.12),
+                     (3, 0.096, 0.21, -0.24, -0.012, 0.14), (1, 0.1, 0.2, -0.36, -0.018, 0.15)], back=True, dz=0.0)
     return front, back
 
 
@@ -272,7 +273,7 @@ def build_tasset(s):
     L = Loft([
         dict(y=1.3, rx=0.39, rf=0.27, rb=0.26, cz=0.02, p=2.4),
         dict(y=1.08, rx=0.47, rf=0.3, rb=0.29, cz=0.02, p=2.4),
-        dict(y=0.84, rx=0.57, rf=0.34, rb=0.33, cz=0.02, p=2.4),
+        dict(y=0.84, rx=0.53, rf=0.33, rb=0.32, cz=0.02, p=2.4),
     ], Frame(None, -o))
     c = 0.0 if s > 0 else math.pi          # the outside of the hip
     wide = lambda u: math.sin(math.pi * min(1.0, u / 1.35)) ** 0.7                # noqa: E731
@@ -300,10 +301,10 @@ def build_pauldron(s):
     mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
     cx, cz = 0.095, -0.07
     dome = Loft([
-        dict(y=0.055, rx=0.212, rf=0.242, rb=0.25, cx=cx, cz=cz, p=2.3),
-        dict(y=0.095, rx=0.222, rf=0.252, rb=0.26, cx=cx, cz=cz, p=2.3),
-        dict(y=0.18, rx=0.214, rf=0.245, rb=0.252, cx=cx, cz=cz, p=2.25),
-        dict(y=0.26, rx=0.182, rf=0.215, rb=0.222, cx=cx, cz=cz, p=2.15),
+        dict(y=0.055, rx=0.228, rf=0.242, rb=0.25, cx=cx, cz=cz, p=2.3),
+        dict(y=0.095, rx=0.238, rf=0.252, rb=0.26, cx=cx, cz=cz, p=2.3),
+        dict(y=0.18, rx=0.232, rf=0.245, rb=0.252, cx=cx, cz=cz, p=2.25),
+        dict(y=0.26, rx=0.198, rf=0.215, rb=0.222, cx=cx, cz=cz, p=2.15),
         dict(y=0.32, rx=0.125, rf=0.15, rb=0.158, cx=cx, cz=cz),
         dict(y=0.352, rx=0.06, rf=0.08, rb=0.085, cx=cx, cz=cz),
         dict(y=0.362, rx=0.01, rf=0.01, rb=0.01, cx=cx, cz=cz),
@@ -321,26 +322,29 @@ def build_pauldron(s):
              r=TRIM_R * 0.9, off=0.014, n=20)
     # The arched flange along the inner edge: outline in (z, y), bent to follow the dome's edge,
     # leaning a little toward the head. Its top arc carries a trim line on the outer face.
-    arc = [(0.165, 0.33), (0.145, 0.43), (0.09, 0.5), (0.0, 0.527), (-0.1, 0.532), (-0.2, 0.51),
-           (-0.28, 0.45), (-0.33, 0.35), (-0.345, 0.26)]
-    base = [(-0.3, 0.2), (-0.15, 0.24), (0.0, 0.25), (0.13, 0.27)]
+    # A rounded half-disc: centre (z -0.09, y 0.27), radii 0.255 (z) x 0.26 (y), base buried in the dome.
+    arc = [(-0.09 + 0.255 * math.cos(a), 0.27 + 0.26 * math.sin(a)) for a in np.linspace(deg(8), deg(172), 15)]
+    base = [(-0.3, 0.15), (-0.09, 0.17), (0.12, 0.15)]
     outline = arc + base
     lean = rot_z(s * deg(4))
     yaw = rot_y(deg(22))         # front end swung out: the front view sees a broad fin
 
     def fl(z, y, x=0.0):
         return lean @ mx(yaw @ np.array((-0.04 + x + 1.2 * (z - cz) ** 2, y, z - cz)) + np.array((0, 0, cz)))
-    thick = 0.045
+    thick = 0.032
     n = len(outline)
     verts = [fl(z, y, thick / 2) for z, y in outline] + [fl(z, y, -thick / 2) for z, y in outline]
     faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
     p.add(verts, faces, "plate")
-    inset = [(z * 0.93 + cz * 0.07, y - 0.035) for z, y in arc[:-1]]
+    inset = [(-0.09 + (z + 0.09) * 0.86, 0.27 + (y - 0.27) * 0.86) for z, y in arc[1:-1]]
     pts = [fl(z, y, thick / 2 + 0.002) for z, y in inset]
     tube(p, "trim", pts, r=TRIM_R * 0.85, nrm=[lean @ mx((1, 0, 0))] * len(pts), flat=0.45)
     # Round bosses where the pauldron meets the chest (front) and the back plate.
-    for z, nz in ((0.205, 1.0), (-0.335, -1.0)):
-        c = mx((-0.075, 0.1, z))
+    # Trim down the dome's inner front edge, from the fin to the rondel.
+    path(p, "trim", dome, [(t_at(dome, 0.3), deg(150)), (t_at(dome, 0.22), deg(132)), (t_at(dome, 0.13), deg(118))],
+         r=TRIM_R, n=10)
+    for z, nz in ((0.235, 1.0), (-0.355, -1.0)):
+        c = mx((-0.065, 0.1, z))
         nrm = mx((-0.35, 0.05, nz))
         disc(p, "plate", c, nrm, 0.09, 0.04, seg=16, rondel=True)
     return p
@@ -457,12 +461,13 @@ def build_thigh(s):
     L = Loft([
         dict(y=0.1, rx=0.06, rf=0.06, rb=0.06),
         dict(y=0.05, rx=0.15, rf=0.16, rb=0.15),
-        dict(y=-0.08, rx=0.165, rf=0.172, rb=0.165),
-        dict(y=-0.26, rx=0.155, rf=0.165, rb=0.158),
+        dict(y=-0.08, rx=0.18, rf=0.175, rb=0.168),
+        dict(y=-0.26, rx=0.172, rf=0.168, rb=0.16),
         dict(y=-0.36, rx=0.138, rf=0.148, rb=0.14),
         dict(y=-0.41, rx=0.11, rf=0.115, rb=0.11),
     ]).mesh(p, "plate", seg=16, sub=2)
-    ypath(p, "trim", L, [(-0.34, FRONT + s * 0.5), (-0.2, FRONT + s * 0.52), (-0.02, FRONT + s * 0.55)], n=10)
+    ypath(p, "trim", L, [(-0.33, FRONT + s * 0.3), (-0.18, FRONT + s * 0.3), (-0.04, FRONT + s * 0.3)], n=8)
+    yring(p, "trim", L, -0.04, th0=FRONT - 1.1, th1=FRONT + 1.1, n=10)
     return p
 
 
@@ -472,19 +477,19 @@ def build_shin(s):
     p = Piece(f"shin_{'l' if s > 0 else 'r'}")
     ellipsoid(p, "plate_dark", (0, 0.02, -0.01), (0.14, 0.11, 0.15), seg=12, rings=4)
     cx = s * 0.005
-    cop = Loft([dict(y=-0.1, rx=0.13, rf=0.19, rb=0.0, cx=cx, cz=0.02), dict(y=-0.02, rx=0.168, rf=0.225, rb=0.0, cx=cx, cz=0.02),
-                dict(y=0.08, rx=0.172, rf=0.228, rb=0.0, cx=cx, cz=0.02), dict(y=0.17, rx=0.125, rf=0.205, rb=0.0, cx=cx, cz=0.02),
+    cop = Loft([dict(y=-0.1, rx=0.13, rf=0.19, rb=0.0, cx=cx, cz=0.02), dict(y=-0.02, rx=0.175, rf=0.2, rb=0.0, cx=cx, cz=0.02),
+                dict(y=0.08, rx=0.178, rf=0.203, rb=0.0, cx=cx, cz=0.02), dict(y=0.17, rx=0.125, rf=0.205, rb=0.0, cx=cx, cz=0.02),
                 dict(y=0.215, rx=0.07, rf=0.12, rb=0.0, cx=cx, cz=0.02)])
     patch(p, "plate", cop, 0.0, 4.0, deg(-12), deg(192), off=-0.02, thick=0.02, nt=8, nth=10)
     ring(p, "trim", cop, 0.35, r=TRIM_R, off=0.004, th0=deg(-8), th1=deg(188), n=16)
-    ring(p, "trim", cop, 3.35, r=TRIM_R, off=0.004, th0=deg(-8), th1=deg(188), n=14)
+    ring(p, "trim", cop, 2.9, r=TRIM_R, off=0.004, th0=deg(-8), th1=deg(188), n=14)
     path(p, "plate", cop, [(0.6, FRONT), (2.0, FRONT), (3.2, FRONT)], r=0.007, off=0.0, n=8, flat=None)
     L = Loft([
         dict(y=-0.05, rx=0.145, rf=0.15, rb=0.13),
         dict(y=-0.15, rx=0.148, rf=0.158, rb=0.195),
         dict(y=-0.3, rx=0.138, rf=0.155, rb=0.18),
-        dict(y=-0.42, rx=0.122, rf=0.148, rb=0.142),
-        dict(y=-0.48, rx=0.124, rf=0.15, rb=0.14),
+        dict(y=-0.42, rx=0.132, rf=0.15, rb=0.144),
+        dict(y=-0.48, rx=0.148, rf=0.16, rb=0.15),
     ]).mesh(p, "plate", seg=20, sub=2)
     return p
 
@@ -536,9 +541,9 @@ def lin(h):
 
 
 MATS.update({   # the game's colours (humanoid.ts buildModelledPlate), linear
-    "plate": material("plate", lin("#8a939c"), metallic=0.55, roughness=0.42),
+    "plate": material("plate", lin("#8d959d"), metallic=0.55, roughness=0.42),
     "plate_dark": material("plate_dark", lin("#2b2724"), metallic=0.05, roughness=0.85),
-    "trim": material("trim", lin("#36438c"), metallic=0.25, roughness=0.38),
+    "trim": material("trim", lin("#323b6e"), metallic=0.25, roughness=0.38),
     "glow": material("glow", lin("#a9ccff"), roughness=0.3, emission=lin("#5aa2ff"), strength=2.2),
 })
 

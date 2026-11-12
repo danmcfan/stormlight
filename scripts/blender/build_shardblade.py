@@ -63,8 +63,8 @@ def to_local(x, y):
     return ((x - hand_x) * scale, (centre_y - y) * scale)
 
 reset_scene()
-steel = material("Shardblade steel", (0.86, 0.89, 0.93), metallic=1.0, roughness=0.16)
-grip_mat = material("Shardblade grip", (0.42, 0.45, 0.5), metallic=1.0, roughness=0.35)
+steel = material("Shardblade steel", (0.86, 0.89, 0.93), metallic=0.8, roughness=0.22)
+grip_mat = material("Shardblade grip", (0.7, 0.73, 0.78), metallic=0.85, roughness=0.3)
 gem_mat = material("Sapphire", (0.03, 0.1, 0.6), roughness=0.08, emission=(0.15, 0.4, 1.0), strength=0.6)
 # Engraved: darker steel in the cuts, a faint Stormlight glow.
 etch_mat = material("Etched glow", (0.2, 0.24, 0.3), metallic=0.6, roughness=0.5, emission=(0.35, 0.6, 0.9), strength=0.18)
@@ -151,21 +151,21 @@ strokes.append((f0, -FH, f0, FH, 0.004))
 rng = np.random.default_rng(7)
 z = f0 + 0.03
 while z < f1 - 0.03:
-    if rng.random() < 0.12:            # word gaps
-        z += 0.03
+    if rng.random() < 0.07:            # word gaps
+        z += 0.025
         continue
-    w = rng.uniform(0.012, 0.022)
+    w = rng.uniform(0.014, 0.022)
     kind = rng.integers(4)
-    a, b = -0.6 * FH, 0.6 * FH
+    a, b = -0.75 * FH, 0.75 * FH
     if kind == 0:   # vertical bar
-        strokes.append((z + w / 2, a, z + w / 2, b, 0.003))
+        strokes.append((z + w / 2, a, z + w / 2, b, 0.0045))
     elif kind == 1:  # chevron
-        strokes += [(z, a, z + w / 2, b, 0.003), (z + w / 2, b, z + w, a, 0.003)]
+        strokes += [(z, a, z + w / 2, b, 0.0045), (z + w / 2, b, z + w, a, 0.0045)]
     elif kind == 2:  # bar with a tick
-        strokes += [(z, a, z, b, 0.003), (z, 0, z + w, 0.4 * FH * (1 if rng.random() < 0.5 else -1), 0.003)]
+        strokes += [(z, a, z, b, 0.0045), (z, 0, z + w, 0.5 * FH * (1 if rng.random() < 0.5 else -1), 0.0045)]
     else:            # slanted pair
-        strokes += [(z, a, z + w * 0.6, b, 0.003), (z + w * 0.5, a, z + w, b, 0.003)]
-    z += w + 0.009
+        strokes += [(z, a, z + w * 0.6, b, 0.0045), (z + w * 0.5, a, z + w, b, 0.0045)]
+    z += w + 0.007
 verts, faces = [], []
 for side in (1, -1):
     for z0, y0, z1, y1, wd in strokes:
