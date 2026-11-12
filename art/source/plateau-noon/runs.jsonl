@@ -1,0 +1,1 @@
+{"time": "2026-11-12T19:40:56+00:00", "model": "google/gemini-nano-banana-2.1", "status": "succeeded", "error": null, "inputs": {"prompt": "@art/source/plateau-noon/nb21-v1/plateau-noon.prompt.txt", "aspect_ratio": "16:9", "resolution": "1K", "input_references": []}, "est_cost": 0.039, "cost": 0.039396, "files": ["art/source/plateau-noon/nb21-v1/plateau-noon.jpg"]}
