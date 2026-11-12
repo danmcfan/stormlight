@@ -45,20 +45,24 @@ export class AttackWarnings {
         // In view? Then no warning: you can see it coming.
         const v = this.v.copy(c.position).setY(c.position.y + c.chestHeight);
         v.applyMatrix4(inv); // camera space: -Z forward
-        const inFront = v.z < -0.5;
-        if (inFront) {
+        let a: number;
+        if (v.z < -0.5) {
+          // In front but off the side / top / bottom of the view: point
+          // along its projected direction from the screen centre.
           const ndc = this.v.copy(c.position).setY(c.position.y + c.chestHeight).project(camera);
           if (Math.abs(ndc.x) < 0.82 && Math.abs(ndc.y) < 0.85) continue;
-          v.copy(c.position).setY(c.position.y + c.chestHeight).applyMatrix4(inv);
+          a = Math.atan2(ndc.x * (w / h), ndc.y);
+        } else {
+          // Behind: a compass bearing, so straight behind is the bottom edge.
+          a = Math.atan2(v.x, -v.z);
         }
-        const a = Math.atan2(v.x, -v.z); // 0 = straight ahead, ±π = behind
         const el = this.els[n++];
-        const x = w / 2 + Math.sin(a) * w * 0.43;
-        const y = h / 2 - Math.cos(a) * h * 0.41;
+        const x = w / 2 + Math.sin(a) * w * 0.4;
+        const y = h / 2 - Math.cos(a) * h * (Math.cos(a) < 0 ? 0.33 : 0.4); // stay above the vitals
         const k = f.frame / f.move.windup; // 0 → 1 as the strike nears
         el.classList.remove('hidden');
         el.classList.toggle('heavy', f.move.kind === 'heavy');
-        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${a.toFixed(3)}rad) scale(${(0.85 + k * 0.4).toFixed(3)})`;
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${a.toFixed(3)}rad) scale(${(1.1 + k * 0.5).toFixed(3)})`;
         el.style.setProperty('--k', k.toFixed(3));
         if (this.seen.get(c.id) !== f.attackSerial) { this.seen.set(c.id, f.attackSerial); fresh++; }
       }

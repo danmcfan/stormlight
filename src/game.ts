@@ -325,6 +325,7 @@ export class Game {
     }
     this.lockOn.enemies = this.horde.foes;
     this.lockOn.target = null;
+    this.cam.ignoreCharacters = true;
     this.horde.start();
     this.endTimer = 0;
     this.respawnPlayer();
@@ -340,6 +341,7 @@ export class Game {
     this.warnings.hide();
     this.lockOn.enemies = this.duelFoes;
     this.lockOn.target = null;
+    this.cam.ignoreCharacters = false;
     for (const e of this.enemies) {
       e.c.respawn(e.spawn, e.heading);
       e.c.model.root.visible = true;

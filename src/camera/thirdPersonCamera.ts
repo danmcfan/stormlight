@@ -31,6 +31,9 @@ export class ThirdPersonCamera {
     this.ray = new physics.R.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 });
   }
 
+  /** Camera collision ignores character capsules (horde mode). */
+  ignoreCharacters = false;
+
   snapTo(playerPos: THREE.Vector3, yaw: number): void {
     this.yaw = yaw;
     this.pivot.copy(playerPos).setY(playerPos.y + tuning.camera.pivotHeight);
@@ -79,7 +82,9 @@ export class ThirdPersonCamera {
     let wanted = c.distance;
     this.ray.origin = { x: origin.x, y: origin.y, z: origin.z };
     this.ray.dir = { x: dir.x, y: dir.y, z: dir.z };
-    const hit = this.physics.world.castRay(this.ray, wanted + 0.3, true, undefined, undefined, this.exclude);
+    // In a crowd, bodies behind you mustn't yank the lens in: rocks and cliffs only.
+    const flags = this.ignoreCharacters ? this.physics.R.QueryFilterFlags.EXCLUDE_KINEMATIC : undefined;
+    const hit = this.physics.world.castRay(this.ray, wanted + 0.3, true, flags, undefined, this.exclude);
     if (hit) wanted = Math.max(0.8, hit.timeOfImpact - 0.3);
     // Snap in fast, ease out slowly.
     this.currentDist = wanted < this.currentDist ? wanted : damp(this.currentDist, wanted, 4, dt);

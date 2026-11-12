@@ -97,8 +97,8 @@ export class EyeBurn {
       this.pos[i * 3] += this.vel[i * 3] * dt;
       this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt;
       this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
-      this.size[i] += dt * 0.18;
-      this.alpha[i] = Math.sin(Math.min(1, t * 3) * Math.PI * 0.5) * (1 - t) * 0.75;
+      this.size[i] += dt * 0.3;
+      this.alpha[i] = Math.sin(Math.min(1, t * 3) * Math.PI * 0.5) * (1 - t) * 0.9;
     }
     const g = this.points.geometry;
     g.attributes.position.needsUpdate = true;
@@ -111,7 +111,7 @@ export class EyeBurn {
     this.next = (this.next + 1) % MAX;
     this.pos.set([x, y, z], i * 3);
     this.vel.set([(Math.random() - 0.5) * 0.12, 0.45 + Math.random() * 0.25, (Math.random() - 0.5) * 0.12], i * 3);
-    this.size[i] = 0.05 + 0.03 * strength;
+    this.size[i] = 0.09 + 0.05 * strength;
     this.maxLife[i] = this.life[i] = 0.9 + Math.random() * 0.4;
   }
 }

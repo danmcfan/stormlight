@@ -94,7 +94,9 @@ function syncModeButtons(game: Game): void {
   const horde = document.getElementById('mode-horde')!;
   const duel = document.getElementById('mode-duel')!;
   const inHorde = game.mode === 'horde';
-  horde.textContent = !inHorde ? 'Face the horde' : game.horde.ended ? 'Fight again' : 'Restart the horde';
+  horde.textContent = inHorde ? 'Restart the horde' : 'Face the horde';
+  // After a run ends the main button already says "Fight again".
+  horde.classList.toggle('hidden', inHorde && game.horde.ended);
   duel.classList.toggle('hidden', !inHorde);
   const cta = document.querySelector('.cta');
   if (cta) cta.lastChild!.previousSibling!.textContent = inHorde && game.horde.ended ? 'Fight again' : inHorde ? 'Back into the horde' : 'Take up the Blade';
