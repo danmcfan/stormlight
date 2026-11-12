@@ -2,8 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Shattered Plains — Prototype</title>
+    <meta name="description" content="Shardbearer combat on the Shattered Plains: a browser gameplay prototype." />
+    <meta name="theme-color" content="#0a0f17" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Home-screen web app: full screen, content under the status bar. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Shattered Plains" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -19,8 +32,18 @@
         <h1>The Shattered Plains</h1>
         <p class="sub">Milestone 2 &nbsp;·&nbsp; The duel</p>
         <div class="cta"><i aria-hidden="true"></i>Take up the Blade<i aria-hidden="true"></i></div>
-        <p class="cta-hint">Click to begin</p>
+        <p class="cta-hint"><span class="desk-only">Click to begin</span><span class="touch-only">Tap to begin</span></p>
+        <p class="touch-only touch-legend">Left thumb moves &nbsp;·&nbsp; drag right to look &nbsp;·&nbsp; pinch to zoom<br />Push the stick past its ring to sprint &nbsp;·&nbsp; hold Heavy to charge &nbsp;·&nbsp; swipe Lock to switch target</p>
         <p class="motto">Journey before destination</p>
+      </div>
+    </div>
+
+    <!-- Phones held upright: a gentle nudge to turn sideways. -->
+    <div id="rotate" class="rotate-hint" aria-live="polite">
+      <div class="panel rotate-card">
+        <div class="rotate-phone" aria-hidden="true"><i></i></div>
+        <p>Turn your device sideways</p>
+        <button type="button" id="rotate-dismiss">Continue anyway</button>
       </div>
     </div>
 

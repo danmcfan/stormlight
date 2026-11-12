@@ -20,12 +20,19 @@
   --mono: ui-monospace, Menlo, Consolas, monospace;
   --gutter: 14px;
   --col-width: 248px;
+  /* Edges that clear the notch / Dynamic Island / home indicator. On desktop
+     the insets are 0, so these equal the gutter. */
+  --safe-t: max(var(--gutter), env(safe-area-inset-top));
+  --safe-r: max(var(--gutter), env(safe-area-inset-right));
+  --safe-b: max(var(--gutter), env(safe-area-inset-bottom));
+  --safe-l: max(var(--gutter), env(safe-area-inset-left));
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); }
-body { font-family: var(--sans); color: var(--text); }
-#game { display: block; width: 100vw; height: 100vh; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); overscroll-behavior: none; }
+body { font-family: var(--sans); color: var(--text); -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* The scene runs edge to edge, under the notch and home indicator. */
+#game { display: block; width: 100vw; height: 100vh; height: 100dvh; }
 .hidden { display: none !important; }
 
 /* --- Gem motif: a small glowing diamond ---------------------------------- */
@@ -59,13 +66,13 @@ body { font-family: var(--sans); color: var(--text); }
 
 /* --- HUD layout: two columns that stack their panels --------------------- */
 .hud-col {
-  position: fixed; top: var(--gutter); bottom: var(--gutter);
+  position: fixed; top: var(--safe-t); bottom: var(--safe-b);
   width: var(--col-width); max-width: calc(50vw - var(--gutter) * 1.5);
   display: flex; flex-direction: column; gap: 12px;
   pointer-events: none; z-index: 40;
 }
-.hud-left { left: var(--gutter); }
-.hud-right { right: var(--gutter); }
+.hud-left { left: var(--safe-l); }
+.hud-right { right: var(--safe-r); }
 /* Commands sit at the bottom-left, pushed down by an auto margin. */
 .hud-left .hint { margin-top: auto; }
 
@@ -189,7 +196,7 @@ kbd {
 
 /* --- Combat HUD ------------------------------------------------------------ */
 .vitals {
-  position: fixed; left: 50%; bottom: var(--gutter); transform: translateX(-50%); z-index: 40;
+  position: fixed; left: 50%; bottom: var(--safe-b); transform: translateX(-50%); z-index: 40;
   width: min(380px, calc(100vw - 2 * var(--gutter))); padding: 10px 14px 12px;
 }
 .stance { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
@@ -215,7 +222,7 @@ kbd {
 .bar-poise .bar-ghost { background: transparent; }
 
 .target {
-  position: fixed; left: 50%; top: var(--gutter); transform: translateX(-50%); z-index: 40;
+  position: fixed; left: 50%; top: var(--safe-t); transform: translateX(-50%); z-index: 40;
   width: min(440px, calc(100vw - 2 * (var(--col-width) + var(--gutter) * 2))); min-width: 220px; padding: 9px 14px 11px;
 }
 .target-name { margin: 0 0 7px; text-align: center; font: 600 12px/1 var(--serif); letter-spacing: 0.2em; text-transform: uppercase; color: #f3ecdf; }
@@ -234,3 +241,148 @@ kbd {
 @keyframes fadein { from { opacity: 0; } }
 
 @media (max-width: 900px) { .target { width: calc(100vw - 2 * var(--gutter)); top: auto; bottom: 120px; } }
+
+/* ==========================================================================
+   Touch devices (html.touch): on-screen controls and a thumb-friendly HUD.
+   Desktop never gets this class, so nothing above changes there.
+   ========================================================================== */
+html:not(.touch) .touch-only { display: none; }
+.touch .desk-only { display: none; }
+.touch, .touch body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+.touch { --gutter: 10px; }
+
+/* Title screen: tap to begin, fits a landscape phone. */
+.touch .splash { padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l); }
+.touch-legend { margin: 14px auto 0; max-width: 560px; font-size: 11.5px; line-height: 1.6; color: var(--muted); letter-spacing: 0.03em; }
+@media (max-height: 500px) {
+  .touch .splash h1 { font-size: clamp(26px, 5.4vw, 44px); }
+  .touch .splash .sub { margin: 8px 0 18px; }
+  .touch .ornament { margin-bottom: 8px; }
+  .touch .motto { margin-top: 16px; }
+}
+
+/* HUD: vitals top-left, target top-centre, thumbs keep the bottom corners. */
+.touch .hud-left .hint { display: none; }
+.touch .vitals {
+  left: var(--safe-l); top: var(--safe-t); bottom: auto; transform: none;
+  width: 228px; padding: 7px 10px 9px;
+}
+.touch .stance { margin-bottom: 7px; }
+.touch .stance-key { display: none; }
+.touch .stance-opt { font-size: 9.5px; letter-spacing: 0.14em; }
+.touch .vital-rows { gap: 5px 8px; }
+.touch .target {
+  top: var(--safe-t); bottom: auto;
+  width: min(320px, calc(100vw - 2 * (228px + var(--safe-l) + 12px)));
+  min-width: 180px; padding: 7px 12px 9px;
+}
+.touch .hud-left { top: calc(var(--safe-t) + 86px); width: 228px; }
+.touch .debug-text { font-size: 10.5px; }
+.touch .hud-right { top: calc(var(--safe-t) + 52px); width: 240px; z-index: 45; }
+.touch .hud-right .lil-gui.lil-root { --widget-height: 26px; --font-size: 12px; --input-font-size: 12px; touch-action: pan-y; }
+.touch .hud-right .lil-gui.lil-root > .lil-children { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+
+/* --- On-screen controls --------------------------------------------------- */
+.touch-ui { position: fixed; inset: 0; z-index: 38; touch-action: none; }
+.touch-zone { position: absolute; inset: 0; touch-action: none; }
+
+.stick {
+  --r: 58px;
+  position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.stick.idle {
+  opacity: 0.4;
+  transform: translate(calc(var(--safe-l) + 84px), calc(100vh - var(--safe-b) - 84px));
+  transform: translate(calc(var(--safe-l) + 84px), calc(100dvh - var(--safe-b) - 84px));
+}
+.stick-ring {
+  position: absolute; left: calc(var(--r) * -1); top: calc(var(--r) * -1);
+  width: calc(var(--r) * 2); height: calc(var(--r) * 2); border-radius: 50%;
+  background: radial-gradient(circle, rgba(12, 17, 26, 0.15) 40%, rgba(12, 17, 26, 0.5) 100%);
+  border: 1.5px solid var(--brass-dim);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.3);
+}
+.stick-ring::before {
+  /* A gem at the top of the ring, like the panel corners. */
+  content: ''; position: absolute; left: 50%; top: -4px; margin-left: -3.5px;
+  width: 7px; height: 7px; transform: rotate(45deg); background: var(--storm); box-shadow: 0 0 8px var(--storm-glow);
+}
+.stick-knob {
+  position: absolute; left: -25px; top: -25px; width: 50px; height: 50px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(70, 86, 108, 0.95), rgba(20, 27, 40, 0.95));
+  border: 1.5px solid var(--brass);
+  box-shadow: 0 0 12px rgba(140, 210, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.stick.sprint .stick-ring { border-color: var(--storm); box-shadow: 0 0 22px var(--storm-glow), inset 0 0 16px rgba(140, 210, 255, 0.25); }
+.stick.sprint .stick-knob { box-shadow: 0 0 20px var(--storm-glow); border-color: #e8f7ff; }
+
+.tbtn {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 0; margin: 0; border-radius: 50%; cursor: pointer; touch-action: none;
+  color: var(--storm); font: 600 8px/1 var(--serif); letter-spacing: 0.12em; text-transform: uppercase;
+  background: radial-gradient(circle at 50% 35%, rgba(36, 46, 62, 0.82), rgba(12, 17, 26, 0.78));
+  border: 1.5px solid var(--brass-dim);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.06s, box-shadow 0.12s, border-color 0.12s, background 0.12s;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.tbtn svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(140, 210, 255, 0.35)); }
+.tbtn svg .fill { fill: currentColor; }
+.tbtn span { color: var(--brass); opacity: 0.9; }
+.tbtn.down {
+  transform: scale(0.93);
+  color: #effaff; border-color: var(--storm);
+  background: radial-gradient(circle at 50% 40%, rgba(90, 160, 210, 0.55), rgba(18, 30, 46, 0.85));
+  box-shadow: 0 0 22px var(--storm-glow), inset 0 0 16px rgba(160, 225, 255, 0.4);
+}
+
+/* Right-thumb cluster: Strike in the corner, the rest in an arc around it. */
+.touch-actions {
+  position: absolute; right: var(--safe-r); bottom: var(--safe-b);
+  width: 250px; height: 236px; pointer-events: none;
+}
+.touch-actions .tbtn { pointer-events: auto; }
+.act { --s: 60px; width: var(--s); height: var(--s); left: calc(var(--x) - var(--s) / 2); top: calc(var(--y) - var(--s) / 2); }
+.act-light  { --s: 84px; --x: 200px; --y: 186px; font-size: 9px; }
+.act-light svg { width: 42%; height: 42%; }
+.act-heavy  { --x: 98px;  --y: 204px; }
+.act-dodge  { --x: 114px; --y: 120px; }
+.act-block  { --x: 194px; --y: 90px; }
+.act-lock   { --s: 50px; --x: 34px;  --y: 150px; }
+.act-stance { --s: 46px; --x: 152px; --y: 36px; }
+.act-lock svg, .act-stance svg { width: 42%; height: 42%; }
+
+/* Small utility buttons, top-right. */
+.touch-top { position: absolute; top: var(--safe-t); right: var(--safe-r); display: flex; gap: 8px; }
+.util { position: relative; width: 38px; height: 38px; }
+.util svg { width: 52%; height: 52%; }
+.util-sound .cross { display: none; }
+.util-sound.off .cross { display: inline; }
+.util-sound.off .wave { display: none; }
+.util-sound.off { color: var(--muted); }
+
+/* --- Rotate hint (portrait phones) ---------------------------------------- */
+.rotate-hint {
+  display: none; position: fixed; inset: 0; z-index: 90; align-items: center; justify-content: center;
+  background: rgba(8, 12, 20, 0.82); padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+}
+@media (orientation: portrait) {
+  .touch:not(.portrait-ok) .rotate-hint { display: flex; }
+}
+.rotate-card { pointer-events: auto; text-align: center; padding: 20px 26px 18px; max-width: 280px; }
+.rotate-card p { margin: 14px 0 16px; font: 600 12px/1.4 var(--serif); letter-spacing: 0.16em; text-transform: uppercase; color: var(--brass); }
+.rotate-card button {
+  font: 500 11px/1 var(--sans); letter-spacing: 0.06em; color: var(--muted); background: none;
+  border: 1px solid rgba(148, 163, 181, 0.35); border-radius: 2px; padding: 8px 14px;
+}
+.rotate-phone { margin: 4px auto 0; width: 34px; height: 56px; border: 2px solid var(--storm); border-radius: 7px; box-shadow: 0 0 14px var(--storm-glow); animation: turn 2.4s ease-in-out infinite; position: relative; }
+.rotate-phone i { position: absolute; left: 50%; bottom: 4px; width: 10px; height: 2px; margin-left: -5px; background: var(--storm); border-radius: 1px; }
+@keyframes turn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+@media (orientation: portrait) {
+  /* Narrow screen: stack the utility buttons down the right edge. */
+  .touch .touch-top { flex-direction: column; }
+  .touch .hud-right { top: calc(var(--safe-t) + 190px); }
+}
+/* On the title screen the touch HUD steps aside. */
+.touch:not(.playing) .vitals, .touch:not(.playing) .target { display: none; }
