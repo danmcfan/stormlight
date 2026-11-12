@@ -81,7 +81,10 @@ export interface WeaponDef {
 export interface Moveset {
   light: Record<Stance, string>;
   heavy: Record<Stance, string>;
-  /** Optional shove move (Shardbearers only). */
+  /**
+   * Optional secondary move on the shove input: the Shardbearer's Plate shove,
+   * a Parshendi warrior's quick flank cut.
+   */
   shove?: string;
   guard: Record<Stance, Pose>;
   block: Pose;
@@ -248,6 +251,22 @@ export const moves: Record<string, Move> = {
       { f: 54, yaw: -20, pitch: 15, reach: 0.45 },
     ],
   },
+  // A quick flank cut: short windup, small lunge, less damage. The partner on
+  // a Shardbearer's flank uses it to punish a swing at the other partner.
+  axe_flank: {
+    id: 'axe_flank', name: 'Axe flank cut', kind: 'light',
+    windup: 14, active: 7, recovery: 28,
+    damage: 11, poiseDamage: 18, staminaCost: 12, guardDamage: 18, knockback: 2, hitStop: 4,
+    chainOpen: 99, dodgeCancel: 32, track: 12,
+    lunge: [[8, 20, 1.1]], parryable: true,
+    keys: [
+      { f: 0, yaw: -20, pitch: 15, reach: 0.45 },
+      { f: 14, yaw: -110, pitch: 22, reach: 0.55, twist: -35 },
+      { f: 17, yaw: -20, pitch: 5, reach: 0.68, twist: -4 },
+      { f: 21, yaw: 75, pitch: -8, reach: 0.6, twist: 30 },
+      { f: 49, yaw: -20, pitch: 15, reach: 0.45 },
+    ],
+  },
   axe_h: {
     id: 'axe_h', name: 'Axe overhead', kind: 'heavy',
     windup: 34, active: 8, recovery: 34,
@@ -281,6 +300,7 @@ export const shardbearerMoveset: Moveset = {
 export const parshendiMoveset: Moveset = {
   light: { wind: 'axe_l1', stone: 'axe_l1' },
   heavy: { wind: 'axe_h', stone: 'axe_h' },
+  shove: 'axe_flank',
   guard: {
     wind: { yaw: -20, pitch: 15, reach: 0.45, twist: 0 },
     stone: { yaw: -20, pitch: 15, reach: 0.45, twist: 0 },

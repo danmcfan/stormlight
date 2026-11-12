@@ -69,7 +69,7 @@ export const tuning = {
   },
   horde: {
     /** Warriors in wave 1, added per wave, and the cap (all rounded to pairs). */
-    waveStart: 4,
+    waveStart: 6,
     waveGrowth: 6,
     waveMax: 38,
     /** Most warriors on the plateau at once; the rest of a wave waits to arrive. */
@@ -96,6 +96,15 @@ export const tuning = {
     flankAngle: 55,
     /** Seconds between the feint and the partner's committed strike. */
     feintLead: 0.35,
+    /** Seconds (after the feint lead) a token holder may hover before it must commit. */
+    strikePatience: 1.2,
+    /** A token holder may back off from your swing once per this many seconds. */
+    backOffCooldown: 3,
+    /** Pairs with a warrior this close to you ask for tokens at once (no cooldown). */
+    chasedRange: 3.8,
+    /** Synchronised volleys: two pairs from opposite sides commit together, every this many seconds (range). */
+    volleyMin: 3.5,
+    volleyMax: 6,
     /** Chance a warrior whose partner dies turns berserk (else regroups). */
     berserkChance: 0.5,
     /** Chance a warrior steps back from your windup when close. */

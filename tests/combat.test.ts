@@ -207,7 +207,7 @@ describe('shove (horde crowd control)', () => {
     f.tick(press({ shove: true }));
     expect(f.state).toBe('attack');
     expect(f.move?.shove).toBe(true);
-    const w = new Fighter({ ...stats, shardplate: false }, parshendiMoveset);
+    const w = new Fighter({ ...stats, shardplate: false }, { ...parshendiMoveset, shove: undefined });
     w.tick(press({ shove: true }));
     expect(w.state).toBe('free');
   });

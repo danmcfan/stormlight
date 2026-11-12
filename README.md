@@ -76,17 +76,23 @@ keyboard, or **Start horde** in the tuning panel's Horde folder. The duel stays
 the default; **Return to the duel** (title screen) or **N** goes back.
 
 - **Waves** of Parshendi warriors arrive on the assault plateau, over the
-  bridge or climbing up out of the chasms: 4 in the first wave, 6 more each
+  bridge or climbing up out of the chasms: 6 in the first wave, 6 more each
   wave, up to 38. Between waves Stormlight restores a third of your health.
   Fall and the title screen shows the wave you reached, kills, warriors sent
   into the chasm, your longest kill streak (kills without being hit) and time.
 - **Pairs.** As in the books, warriors fight in pairs: they take flanking
   spots either side of you; one steps in and feints while its partner commits
-  from the side or behind. Kill one and the survivor either goes berserk or
-  joins another pair.
+  from the side or behind. **Swing at one and the other punishes it** with a
+  quick flank cut that lands while you recover, so dodge out of the pincer or
+  shove. Kill one and the survivor either goes berserk or joins another pair;
+  a wave's last two warriors always charge.
 - **Attack tokens.** Only 3 warriors may swing at once; the rest circle in
-  rings, shuffle in and wait. Warriors respect the Blade: they hold just out
-  of reach and strike when you are busy, recovering or turned away.
+  rings, shuffle in and wait. Token holders respect the Blade, but not
+  forever: one may back off from your swing once every few seconds, then must
+  commit, even into your guard. Walk up to a waiting pair and it fights back
+  at once.
+- **Volleys.** Every few seconds two pairs on opposite sides of you commit on
+  the same beat.
 - **Aim assist** (not locked on): a swing turns toward the best warrior in the
   direction you push, within 55° and 5 m.
 - **Shove** (R / Shove) barges everyone in front back a few metres and
@@ -97,8 +103,15 @@ the default; **Return to the duel** (title screen) or **N** goes back.
   stutters; two kills in one swing, or the last kill of a wave, get a moment
   of slow motion. Shardblade kills burn out the eyes: two dark wisps of smoke.
 
-Every number (wave sizes, tokens, rings, aim assist, shove, kill feel) is in
-`tuning.horde` in `src/config.ts` and the tuning panel's **Horde** folder.
+Every number (wave sizes, tokens, rings, patience, volleys, aim assist, shove,
+kill feel) is in `tuning.horde` in `src/config.ts` and the tuning panel's
+**Horde** folder. Add `?seed=123` to the URL to make a horde run repeatable.
+
+**Balance check:** `node scripts/balance/horde.mjs` plays seeded horde runs
+headless with three scripted players (aggressive, careful, idle) and reports
+damage taken, survival and how often you're attacked against the targets.
+`--seeds 1,2`, `--bots aggressive` and `--tune horde.waveStart=8` narrow or
+vary a run.
 
 ## Tuning feel
 

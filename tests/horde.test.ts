@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chooseAimTarget } from '../src/horde/aimAssist';
 import { killFeel, type KillFeelParams } from '../src/horde/killFeel';
 import { allocateTokens } from '../src/horde/tokens';
+import { strikeDecision, type StrikeView } from '../src/horde/strike';
 import { waveSize } from '../src/horde/waves';
 
 describe('attack tokens', () => {
@@ -100,5 +101,41 @@ describe('waves', () => {
     expect(sizes[4]).toBe(38);
     for (const s of sizes) expect(s % 2).toBe(0);
     for (let i = 1; i < sizes.length; i++) expect(sizes[i]).toBeGreaterThanOrEqual(sizes[i - 1]);
+  });
+});
+
+describe('strike decision (when a token holder commits)', () => {
+  const base: StrikeView = {
+    dist: 3.2, facingOff: 0.2, swinging: false, swingingAtOther: false, recovering: false,
+    waited: 0.5, delay: 0.35, patience: 1.2, canBackOff: true, berserk: false, volley: false,
+  };
+  const at = (p: Partial<StrikeView>) => strikeDecision({ ...base, ...p });
+
+  it('a flanker commits at once, with the quick cut, while he swings at someone else', () => {
+    const c = at({ facingOff: 1.6, swinging: true, swingingAtOther: true, waited: 0 });
+    expect(c).toEqual({ action: 'commit', quick: true });
+  });
+  it('a warrior in front of his swing backs off — but only while a retreat is available', () => {
+    expect(at({ swinging: true }).action).toBe('backOff');
+    expect(at({ swinging: true, canBackOff: false }).action).not.toBe('backOff');
+  });
+  it('without a retreat left, it commits once its patience runs out, even into his guard', () => {
+    expect(at({ swinging: true, canBackOff: false, waited: 0.35 + 1.2 }).action).toBe('commit');
+  });
+  it('facing him squarely with no opening, it hovers until patience runs out, then commits', () => {
+    expect(at({ waited: 0.5 }).action).toBe('hover');
+    expect(at({ waited: 2 }).action).toBe('commit');
+  });
+  it('openings: he is recovering, or turned away', () => {
+    expect(at({ recovering: true, waited: 0 }).action).toBe('commit');
+    expect(at({ facingOff: 2.5 })).toEqual({ action: 'commit', quick: true });
+  });
+  it('waits out the feint lead unless punishing or given an opening', () => {
+    expect(at({ waited: 0.1 }).action).toBe('hover');
+  });
+  it('berserkers and volley strikers never hover or back off', () => {
+    for (const p of [{ berserk: true }, { volley: true }]) {
+      expect(at({ ...p, swinging: true, waited: 0 }).action).toBe('commit');
+    }
   });
 });

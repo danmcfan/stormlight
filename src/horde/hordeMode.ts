@@ -11,6 +11,7 @@ import { mergeStaticMeshes } from '../render/crowdMerge';
 import type { Battlefield } from '../world/battlefield';
 import { killFeel, type KillFeel } from './killFeel';
 import { Pair, WarriorBrain } from './pairAI';
+import { hrand, hrange, seedHorde } from './rng';
 import { allocateTokens } from './tokens';
 import { waveSize } from './waves';
 
@@ -91,6 +92,9 @@ export class HordeMode {
   private recentKills: number[] = [];
   private swingKills = new Map<number, number>();
   private pairTimer = 0;
+  private volleyTimer = 0;
+  /** Volleys launched this run (debug readout). */
+  volleys = 0;
   private byCombatant = new Map<Combatant, Warrior>();
   private frustum = new THREE.Frustum();
   private projView = new THREE.Matrix4();
@@ -112,13 +116,19 @@ export class HordeMode {
 
   // --- Run lifecycle ------------------------------------------------------------
 
+  /** Fixed seed for repeatable runs (balance scripts, `?seed=`); null = a fresh one each run. */
+  seed: number | null = null;
+
   start(): void {
     this.stop();
+    seedHorde(this.seed ?? Math.floor(Math.random() * 2 ** 32));
     this.active = true;
     this.ended = false;
     Object.assign(this.stats, { wave: 0, kills: 0, falls: 0, streak: 0, bestStreak: 0, time: 0, remaining: 0 });
     this.recentKills.length = 0;
     this.swingKills.clear();
+    this.volleyTimer = tuning.horde.volleyMin;
+    this.volleys = 0;
     this.nextWave(1.5);
   }
 
@@ -153,6 +163,8 @@ export class HordeMode {
     // Pairs: spread their axes round the Shardbearer, then hand out tokens.
     this.pairTimer -= dt;
     if (this.pairTimer <= 0) { this.pairTimer = 0.5; this.spreadPairs(); }
+    this.lastStand();
+    this.volley(dt, h);
     const grant = allocateTokens(this.pairs.map((p) => ({ id: p.id, want: p.want, held: p.tokens, priority: p.priority() })), h.attackTokens);
     this.tokensInUse = 0;
     for (const p of this.pairs) {
@@ -307,6 +319,43 @@ export class HordeMode {
     }
   }
 
+  /** The wave's last two warriors stop waiting their turn and charge. */
+  private lastStand(): void {
+    if (this.pending > 0 || this.stats.remaining > 2) return;
+    for (const p of this.pairs) if (p.alive.length && !p.berserk) p.goBerserk();
+  }
+
+  /**
+   * Synchronised volleys: every few seconds, two waiting pairs on opposite
+   * sides of the Shardbearer commit on the same beat (one token each), so
+   * dodging out of the pincer and the shove matter.
+   */
+  private volley(dt: number, h: Tuning['horde']): void {
+    this.volleyTimer -= dt;
+    const player = this.ctx.player;
+    if (this.volleyTimer > 0 || !player.alive) return;
+    this.volleyTimer = hrange(h.volleyMin, Math.max(h.volleyMin, h.volleyMax));
+    const held = this.pairs.reduce((n, p) => n + p.tokens, 0);
+    if (h.attackTokens - held < 2) return;
+    const pl = player.position;
+    const ready = this.pairs.filter((p) => p.canVolley()).map((p) => {
+      const m = p.alive[0].c.position;
+      return { p, b: Math.atan2(m.z - pl.z, m.x - pl.x), d: Math.hypot(m.x - pl.x, m.z - pl.z) };
+    }).filter((r) => r.d < 12);
+    if (ready.length < 2) return;
+    ready.sort((a, b) => b.p.priority() - a.p.priority());
+    const a = ready[0];
+    let best = null as typeof a | null, bestSep = (100 * Math.PI) / 180;
+    for (const r of ready.slice(1)) {
+      const sep = Math.abs(Math.atan2(Math.sin(r.b - a.b), Math.cos(r.b - a.b)));
+      if (sep >= bestSep) { bestSep = sep; best = r; }
+    }
+    if (!best) return;
+    a.p.startVolley(player, h);
+    best.p.startVolley(player, h);
+    this.volleys++;
+  }
+
   /** Keep slots on solid ground: pull them in from the rim and out of rocks. */
   private clampSlot(b: WarriorBrain): void {
     const main = this.ctx.field.main;
@@ -354,7 +403,7 @@ export class HordeMode {
     const f = this.ctx.field;
     // A third come over the bridge (unless you're standing on it); the rest
     // climb up out of the chasms.
-    const bridge = Math.random() < 0.3 && pl.distanceTo(f.bridgeNear) > 10;
+    const bridge = hrand() < 0.3 && pl.distanceTo(f.bridgeNear) > 10;
     const rimAngle = bridge ? 0 : this.pickRimAngle();
     for (let i = 0; i < count; i++) {
       const w = this.take();
@@ -378,14 +427,14 @@ export class HordeMode {
     const f = this.ctx.field, main = f.main, pl = this.ctx.player.position;
     let best = 0, bestScore = -Infinity;
     for (let i = 0; i < 12; i++) {
-      const a = Math.random() * Math.PI * 2;
+      const a = hrand() * Math.PI * 2;
       const r = main.radiusAtPolar(a) - 1.6;
       const x = main.center.x + Math.cos(a) * r, z = main.center.z + Math.sin(a) * r;
       if (Math.abs(x - f.bridgeNear.x) < 5 && Math.abs(z - f.bridgeNear.z) < 6) continue;
       if (f.rocks.some((k) => Math.hypot(x - k.x, z - k.z) < k.r + 1.2)) continue;
       const d = Math.hypot(x - pl.x, z - pl.z);
       // Far enough to see them coming, close enough to matter.
-      const score = -Math.abs(d - 20) + Math.random() * 4;
+      const score = -Math.abs(d - 20) + hrand() * 4;
       if (d > 11 && score > bestScore) { bestScore = score; best = a; }
     }
     return best;

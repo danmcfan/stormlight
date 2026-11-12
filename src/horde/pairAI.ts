@@ -1,4 +1,6 @@
 import { noIntent } from '../combat/fighter';
+import { hrand, hrange } from './rng';
+import { FLANK, strikeDecision } from './strike';
 import { angleDiff, headingOf } from '../core/math';
 import type { Combatant, ControlInput } from '../entities/combatant';
 import type { Tuning } from '../config';
@@ -8,7 +10,7 @@ type HordeParams = Tuning['horde'];
 /** What a warrior's pair has told it to do. */
 export type Order = 'hold' | 'feint' | 'strike' | 'retreat';
 
-const rand = (a: number, b: number) => a + Math.random() * (b - a);
+const rand = hrange;
 
 /**
  * One Parshendi warrior's brain. The pair decides *what* (hold a flanking
@@ -37,11 +39,23 @@ export class WarriorBrain {
   private dodgeNow = false;
   private pressLight = false;
   private pressHeavy = false;
+  private pressQuick = false;
+  /** Committed to this strike: no more hovering. */
+  private committed = false;
+  /** Use the quick flank cut. */
+  private quick = false;
+  /** Seconds left of a back-off step, and until another is allowed. */
+  private backOffT = 0;
+  backOffCooldown = 0;
+  /** Part of a synchronised volley: commit at once. */
+  volley = false;
+  /** The other member of the pair (the brain punishes swings at it). */
+  partner: Combatant | null = null;
   /** Separation push from neighbours, set by the horde each think. */
   sepX = 0;
   sepZ = 0;
   /** Accumulated time since the last think (staggered start). */
-  thinkAcc = Math.random();
+  thinkAcc = hrand();
   readonly out: ControlInput = { ...noIntent, moveX: 0, moveY: 0, sprint: false, walk: false, cameraYaw: 0, targetHeading: null };
   private wantFace = false;
   private wantSprint = false;
@@ -50,13 +64,15 @@ export class WarriorBrain {
     if (o === this.order) return;
     this.order = o;
     this.orderT = 0;
-    if (o === 'strike' || o === 'feint') { this.attacked = false; this.done = false; this.comboSent = false; }
+    if (o === 'strike' || o === 'feint') { this.attacked = false; this.done = false; this.comboSent = false; this.committed = false; this.quick = false; this.backOffT = 0; }
+    if (o !== 'strike') this.volley = false;
   }
 
   /** Decide steering and actions (budgeted). */
   think(dt: number, self: Combatant, player: Combatant, p: HordeParams): void {
     const f = self.fighter;
     this.orderT += dt;
+    this.backOffCooldown -= dt;
     const dx = player.position.x - self.position.x, dz = player.position.z - self.position.z;
     const dist = Math.hypot(dx, dz) || 1e-3;
     const tx = dx / dist, tz = dz / dist;
@@ -71,7 +87,7 @@ export class WarriorBrain {
     const pf = player.fighter;
     if (pf.state === 'attack' && pf.move && pf.frame < pf.move.windup && dist < 3.2 && pf.attackSerial !== this.seenSwing) {
       this.seenSwing = pf.attackSerial;
-      if (f.state === 'free' && !(this.order === 'strike' && this.attacked) && Math.random() < p.fearDodge * (this.berserk ? 0.3 : 1)) this.dodgeNow = true;
+      if (f.state === 'free' && !(this.order === 'strike' && this.attacked) && hrand() < p.fearDodge * (this.berserk ? 0.3 : 1)) this.dodgeNow = true;
     }
 
     switch (this.order) {
@@ -109,34 +125,56 @@ export class WarriorBrain {
           if (f.state === 'free') this.done = true;
           wx = -tx; wz = -tz; mag = 0.6;
         } else {
-          // Respect the Blade: hover just outside reach until there's an
-          // opening (it's swinging at someone else, recovering, or turned
-          // away), then commit from lunge range. Berserkers just come.
+          // Respect the Blade, but not forever: see strike.ts for the rules.
           const off = Math.abs(angleDiff(headingOf(-dx, -dz), player.facing));
           const pm = pf.move;
           const swinging = pf.state === 'attack' && !!pm && pf.frame < pm.windup + pm.active;
-          const threatened = swinging && off < 1.1 && dist < 4.4;
-          const busy = (pf.state === 'attack' && !!pm && (pf.frame >= pm.windup + pm.active || off > 1.1))
+          const recovering = (pf.state === 'attack' && !!pm && pf.frame >= pm.windup + pm.active)
             || pf.state === 'hitstun' || pf.state === 'stagger' || pf.state === 'parried' || pf.state === 'blockstun';
-          const opening = this.berserk || off > 1.3 || busy || this.orderT > this.strikeDelay + 2.6;
-          const range = this.heavy ? 3.1 : 2.9;
-          const waiting = this.orderT < this.strikeDelay;
-          if (threatened && !this.berserk) {
+          // Is his swing aimed at someone else (the partner, usually)?
+          let atOther = off > FLANK;
+          const mate = this.partner;
+          if (swinging && mate?.alive) {
+            const mo = Math.abs(angleDiff(headingOf(mate.position.x - player.position.x, mate.position.z - player.position.z), player.facing));
+            if (mo < 0.9 && mate.position.distanceTo(player.position) < 4.6) atOther = true;
+          }
+          if (this.backOffT > 0) {
+            this.backOffT -= dt;
             wx = -tx; wz = -tz; mag = 0.9;
-          } else if (waiting || !opening) {
-            const sx = this.slotX - self.position.x, sz = this.slotZ - self.position.z;
-            const sd = Math.hypot(sx, sz);
-            if (sd > 0.5) { wx = sx / sd; wz = sz / sd; mag = Math.min(1, sd / 2 + 0.3); } else mag = 0;
-            if (dist < range + 0.2) { wx -= tx; wz -= tz; mag = 0.8; }
-          } else if (dist > range) {
-            wx = tx; wz = tz;
-            this.wantSprint = this.berserk || dist > 5;
-            this.wantFace = dist < 4.5;
-          } else if (f.state === 'free' || f.state === 'block') {
-            if (this.heavy) this.pressHeavy = true; else this.pressLight = true;
-            this.comboWanted = !this.heavy && Math.random() < (this.berserk ? 0.8 : 0.45);
-            this.attacked = true;
-            mag = 0;
+          } else if (!this.committed) {
+            const choice = strikeDecision({
+              dist, facingOff: off, swinging, swingingAtOther: atOther, recovering,
+              waited: this.orderT, delay: this.strikeDelay, patience: p.strikePatience,
+              canBackOff: this.backOffCooldown <= 0, berserk: this.berserk, volley: this.volley,
+            });
+            if (choice.action === 'backOff') {
+              this.backOffT = 0.45;
+              this.backOffCooldown = p.backOffCooldown;
+              wx = -tx; wz = -tz; mag = 0.9;
+            } else if (choice.action === 'commit') {
+              this.committed = true;
+              this.quick = choice.quick && !this.heavy;
+            } else {
+              const sx = this.slotX - self.position.x, sz = this.slotZ - self.position.z;
+              const sd = Math.hypot(sx, sz);
+              if (sd > 0.5) { wx = sx / sd; wz = sz / sd; mag = Math.min(1, sd / 2 + 0.3); } else mag = 0;
+              if (dist < 3.1) { wx -= tx; wz -= tz; mag = 0.8; }
+            }
+          }
+          if (this.committed) {
+            const range = this.heavy ? 3.1 : this.quick ? 3.0 : 2.9;
+            if (dist > range) {
+              wx = tx; wz = tz;
+              this.wantSprint = true;
+              this.wantFace = dist < 4.5;
+            } else if (f.state === 'free' || f.state === 'block') {
+              if (this.quick) this.pressQuick = true;
+              else if (this.heavy) this.pressHeavy = true;
+              else this.pressLight = true;
+              this.comboWanted = !this.heavy && !this.quick && hrand() < (this.berserk ? 0.8 : 0.45);
+              this.attacked = true;
+              mag = 0;
+            }
           }
         }
         if (this.orderT > this.strikeDelay + 5 || (this.attacked && f.state !== 'attack' && f.state !== 'free')) this.done = true;
@@ -156,6 +194,7 @@ export class WarriorBrain {
   steerTick(self: Combatant, player: Combatant): ControlInput {
     const o = this.out;
     o.light = this.pressLight; o.heavy = this.pressHeavy; o.heavyHeld = this.pressHeavy;
+    o.shove = this.pressQuick; // a warrior's secondary move is the quick flank cut
     o.dodge = this.dodgeNow;
     if (this.dodgeNow) {
       // Step back away from the Shardbearer.
@@ -163,7 +202,7 @@ export class WarriorBrain {
       const d = Math.hypot(dx, dz) || 1;
       o.moveX = -dx / d; o.moveY = dz / d;
     }
-    this.pressLight = this.pressHeavy = this.dodgeNow = false;
+    this.pressLight = this.pressHeavy = this.pressQuick = this.dodgeNow = false;
     o.sprint = this.wantSprint || this.berserk;
     o.targetHeading = this.wantFace && player.alive
       ? headingOf(player.position.x - self.position.x, player.position.z - self.position.z) : null;
@@ -173,8 +212,10 @@ export class WarriorBrain {
   reset(): void {
     this.order = 'hold';
     this.orderT = 0;
-    this.attacked = this.done = this.berserk = false;
-    this.pressLight = this.pressHeavy = this.dodgeNow = false;
+    this.attacked = this.done = this.berserk = this.committed = this.quick = this.volley = false;
+    this.pressLight = this.pressHeavy = this.pressQuick = this.dodgeNow = false;
+    this.backOffT = this.backOffCooldown = 0;
+    this.partner = null;
     this.sepX = this.sepZ = 0;
     this.out.block = false;
     this.out.moveX = this.out.moveY = 0;
@@ -200,7 +241,7 @@ export class Pair<M extends PairMember = PairMember> {
   readonly id = nextPairId++;
   members: M[] = [];
   /** Angle around the player (world polar, radians) this pair works from. */
-  axis = Math.random() * Math.PI * 2;
+  axis = hrand() * Math.PI * 2;
   phase: PairPhase = 'gather';
   tokens = 0;
   /** Tokens wanted right now (read by the token allocator). */
@@ -208,18 +249,31 @@ export class Pair<M extends PairMember = PairMember> {
   waited = 0;
   cooldown = rand(0.5, 1.5);
   berserk = false;
+  /** The Shardbearer is right on top of one of us. */
+  chased = false;
   /** Which waiting ring (0 = innermost) the horde has put this pair on. */
   ring = 0;
   private engageT = 0;
   private striker: M | null = null;
   private feinter: M | null = null;
-  private wobble = Math.random() * 10;
+  private wobble = hrand() * 10;
 
   get alive(): M[] { return this.members.filter((m) => m.c.alive); }
 
   /** Token priority: waited longer, nearer, angrier first. */
   priority(): number {
-    return this.waited + (this.berserk ? 3 : 0);
+    return this.waited + (this.berserk ? 3 : 0) + (this.chased ? 4 : 0);
+  }
+
+  /** Ready to be sent into a volley (waiting, off cooldown, no tokens yet). */
+  canVolley(): boolean {
+    return this.phase === 'gather' && this.cooldown <= 0 && this.tokens === 0 && this.alive.length > 0;
+  }
+
+  /** Commit now as half of a synchronised volley (holds one token). */
+  startVolley(player: Combatant, p: HordeParams): void {
+    this.tokens = 1;
+    this.engage(this.alive, player, p, true);
   }
 
   update(dt: number, player: Combatant, p: HordeParams): void {
@@ -235,6 +289,16 @@ export class Pair<M extends PairMember = PairMember> {
       m.brain.slotZ = pz + Math.sin(a) * radius;
     };
 
+    // Partners watch each other's backs.
+    for (const m of alive) m.brain.partner = alive.find((o) => o !== m)?.c ?? null;
+    // Come at a pair and it fights back now, cooldown or not.
+    if (this.phase !== 'engage' && player.alive
+        && alive.some((m) => Math.hypot(m.c.position.x - px, m.c.position.z - pz) < p.chasedRange)) {
+      this.cooldown = Math.min(this.cooldown, 0);
+      this.phase = 'gather';
+      this.chased = true;
+    } else this.chased = false;
+
     switch (this.phase) {
       case 'gather':
       case 'rest': {
@@ -248,7 +312,7 @@ export class Pair<M extends PairMember = PairMember> {
           if (Math.hypot(m.c.position.x - m.brain.slotX, m.c.position.z - m.brain.slotZ) < 3.5) near++;
         });
         if (this.phase === 'rest' && this.cooldown <= 0) this.phase = 'gather';
-        const ready = this.phase === 'gather' && this.cooldown <= 0 && player.alive && (near > 0 || this.waited > 3);
+        const ready = this.phase === 'gather' && this.cooldown <= 0 && player.alive && (near > 0 || this.waited > 3 || this.chased);
         this.want = ready ? Math.min(2, alive.length) : 0;
         if (ready) this.waited += dt;
         if (ready && this.tokens > 0) this.engage(alive, player, p);
@@ -262,7 +326,7 @@ export class Pair<M extends PairMember = PairMember> {
         // A second token turns the feint into a real follow-up.
         if (fe?.c.alive && fe.brain.order === 'feint' && this.tokens >= 2 && this.engageT > p.feintLead + 0.45) {
           fe.brain.setOrder('strike');
-          fe.brain.heavy = Math.random() < 0.3;
+          fe.brain.heavy = hrand() < 0.3;
           fe.brain.strikeDelay = 0;
         }
         const strikers = alive.filter((m) => m.brain.order === 'strike');
@@ -274,7 +338,7 @@ export class Pair<M extends PairMember = PairMember> {
     }
   }
 
-  private engage(alive: M[], player: Combatant, p: HordeParams): void {
+  private engage(alive: M[], player: Combatant, p: HordeParams, volley = false): void {
     this.phase = 'engage';
     this.engageT = 0;
     this.waited = 0;
@@ -285,8 +349,10 @@ export class Pair<M extends PairMember = PairMember> {
     this.feinter = sorted.length > 1 ? sorted[sorted.length - 1] : null;
     const s = this.striker.brain;
     s.setOrder('strike');
-    s.heavy = Math.random() < (this.berserk ? 0.45 : 0.3);
-    s.strikeDelay = this.feinter ? p.feintLead : 0;
+    s.heavy = hrand() < (this.berserk ? 0.45 : 0.3);
+    s.strikeDelay = this.feinter && !volley ? p.feintLead : 0;
+    s.volley = volley;
+    if (volley) s.heavy = false; // volleys are quick, on the beat
     this.feinter?.brain.setOrder('feint');
     for (const m of sorted.slice(1, -1)) m.brain.setOrder('hold');
   }
@@ -298,11 +364,18 @@ export class Pair<M extends PairMember = PairMember> {
     this.striker = this.feinter = null;
   }
 
+  /** Fight with nothing held back: shorter rests, first call on tokens, no hovering. */
+  goBerserk(): void {
+    this.berserk = true;
+    for (const m of this.alive) m.brain.berserk = true;
+    this.cooldown = Math.min(this.cooldown, 0.3);
+  }
+
   /** A partner fell: the survivor either goes berserk or is free to regroup. */
   onMemberDied(p: HordeParams): 'berserk' | 'regroup' | 'none' {
     const alive = this.alive;
     if (alive.length !== 1 || this.berserk) return 'none';
-    if (Math.random() < p.berserkChance) {
+    if (hrand() < p.berserkChance) {
       this.berserk = true;
       alive[0].brain.berserk = true;
       this.cooldown = Math.min(this.cooldown, 0.3);

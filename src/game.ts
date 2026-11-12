@@ -683,7 +683,7 @@ export class Game {
       poise: `${f.poise.toFixed(0)} / ${f.stats.maxPoise}`,
       horde: this.mode === 'horde' ? (() => {
         const n = this.horde.counts();
-        return `${n.alive} alive · ${n.pairs} pairs · tokens ${this.horde.tokensInUse}/${tuning.horde.attackTokens} · pool ${n.pool}`;
+        return `${n.alive} alive · ${n.pairs} pairs · tokens ${this.horde.tokensInUse}/${tuning.horde.attackTokens} · volleys ${this.horde.volleys} · pool ${n.pool}`;
       })() : undefined,
     });
   }

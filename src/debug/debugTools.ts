@@ -100,6 +100,11 @@ export class DebugTools {
     hd.add(h, 'ringGap', 1, 8, 0.1).name('ring spacing');
     hd.add(h, 'flankAngle', 0, 90, 1).name('pair flank (°)');
     hd.add(h, 'feintLead', 0, 2, 0.05).name('feint lead (s)');
+    hd.add(h, 'strikePatience', 0, 5, 0.1).name('strike patience (s)');
+    hd.add(h, 'backOffCooldown', 0, 10, 0.1).name('back-off cooldown (s)');
+    hd.add(h, 'chasedRange', 0, 8, 0.1).name('chased: engage within');
+    hd.add(h, 'volleyMin', 1, 30, 0.5).name('volley every min (s)');
+    hd.add(h, 'volleyMax', 1, 30, 0.5).name('volley every max (s)');
     hd.add(h, 'berserkChance', 0, 1, 0.05).name('berserk chance');
     hd.add(h, 'fearDodge', 0, 1, 0.05).name('flinch chance');
     hd.add(h, 'thinkRate', 2, 60, 1).name('AI thinks / s');
