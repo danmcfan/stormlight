@@ -7,6 +7,7 @@ import { Input } from './core/input';
 import { headingOf } from './core/math';
 import { Physics } from './core/physics';
 import { DebugTools } from './debug/debugTools';
+import { PerfMonitor } from './debug/perfMonitor';
 import { Parshendi } from './enemies/parshendi';
 import { Player } from './player/player';
 import { buildBattlefield } from './world/battlefield';
@@ -24,11 +25,8 @@ export class Game {
   readonly lockOn: LockOnSystem;
   private env: Environment;
   private debug = new DebugTools();
+  readonly perf = new PerfMonitor();
   private walkToggle = false;
-  private frames = 0;
-  private fpsTime = 0;
-  private fps = 0;
-  private frameMs = 0;
   private tmp = new THREE.Vector3();
 
   constructor(canvas: HTMLCanvasElement, readonly physics: Physics) {
@@ -85,6 +83,7 @@ export class Game {
     if (inp.consumePress('KeyC')) this.walkToggle = !this.walkToggle;
     if (inp.consumePress('Backquote')) this.debug.toggle();
     if (inp.consumePress('KeyH')) document.getElementById('hint')?.classList.toggle('hidden');
+    if (inp.consumePress('KeyF')) this.perf.toggle();
 
     const axes = inp.moveAxes();
     const target = this.lockOn.target;
@@ -102,7 +101,13 @@ export class Game {
     this.physics.world.step();
   }
 
-  render(dt: number, alpha: number): void {
+  /**
+   * @param dt     clamped frame delta used for animation (seconds)
+   * @param alpha  fixed-step interpolation factor
+   * @param rawDt  real time since the previous frame (seconds), for the perf monitor
+   * @param simMs  time spent in this frame's fixed sim steps (ms)
+   */
+  render(dt: number, alpha: number, rawDt: number, simMs: number): void {
     const t0 = performance.now();
     const m = this.input.takeMouse();
     const locked = !!this.lockOn.target;
@@ -117,15 +122,10 @@ export class Game {
 
     this.renderer.render(this.scene, this.cam.camera);
 
-    this.frames++;
-    this.fpsTime += dt;
-    this.frameMs = performance.now() - t0;
-    if (this.fpsTime >= 0.25) { this.fps = this.frames / this.fpsTime; this.frames = 0; this.fpsTime = 0; }
+    this.perf.record(rawDt * 1000, simMs + performance.now() - t0);
     const speed = this.player.speed;
     const p = this.player.position;
     this.debug.show({
-      fps: this.fps,
-      frameMs: this.frameMs,
       state: !this.player.grounded ? 'falling' : speed < 0.1 ? 'idle' : speed > tuning.movement.jogSpeed + 0.2 ? 'sprint' : locked ? 'strafe' : 'move',
       speed,
       pos: p,

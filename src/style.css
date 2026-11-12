@@ -29,3 +29,16 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #e8
   background: rgba(8,12,18,0.7); border-radius: 4px; pointer-events: none; white-space: pre;
 }
 .debug.hidden { display: none; }
+
+.perf {
+  position: fixed; top: 12px; right: 12px; z-index: 1001; padding: 6px 8px 8px; pointer-events: none;
+  background: rgba(8,12,18,0.72); border-radius: 4px; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; color: #cbd5e1;
+}
+.perf.hidden { display: none; }
+.perf-label { margin-bottom: 4px; white-space: nowrap; }
+.perf-label b { color: #e8eef5; font-size: 13px; }
+.perf-label .warn { color: #facc15; }
+.perf-label .bad { color: #f87171; }
+.perf canvas { display: block; background: rgba(255,255,255,0.04); }
+/* Keep the tuning panel clear of the monitor. */
+.lil-gui.autoPlace { top: 118px !important; max-height: calc(100% - 130px) !important; }

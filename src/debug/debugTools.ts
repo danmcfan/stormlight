@@ -2,8 +2,6 @@ import GUI from 'lil-gui';
 import { defaultTuning, tuning } from '../config';
 
 export interface DebugInfo {
-  fps: number;
-  frameMs: number;
   state: string;
   speed: number;
   pos: { x: number; y: number; z: number };
@@ -75,7 +73,6 @@ export class DebugTools {
     if (!this.visible) return;
     const f = (n: number, d = 2) => n.toFixed(d).padStart(7);
     this.el.textContent =
-      `fps        ${info.fps.toFixed(0)} (${info.frameMs.toFixed(1)} ms)\n` +
       `state      ${info.state}${info.walkToggle ? ' (walk)' : ''}\n` +
       `speed      ${f(info.speed)} m/s\n` +
       `pos        ${f(info.pos.x, 1)}${f(info.pos.y, 1)}${f(info.pos.z, 1)}\n` +

@@ -19,8 +19,10 @@ async function boot(): Promise<void> {
   let last = performance.now();
   let acc = 0;
   const frame = (now: number) => {
-    const dt = Math.min(0.1, (now - last) / 1000);
+    const rawDt = (now - last) / 1000;
+    const dt = Math.min(0.1, rawDt);
     last = now;
+    const simStart = performance.now();
     acc += dt;
     let steps = 0;
     while (acc >= SIM_DT && steps < 5) {
@@ -29,7 +31,7 @@ async function boot(): Promise<void> {
       steps++;
     }
     if (steps === 5) acc = 0;
-    game.render(dt, acc / SIM_DT);
+    game.render(dt, acc / SIM_DT, rawDt, performance.now() - simStart);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

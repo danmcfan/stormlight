@@ -26,6 +26,7 @@ Open the printed URL (usually http://localhost:5173) and click to take control.
 | Q / Middle mouse | Lock on / release |
 | Flick mouse while locked | Switch target left/right |
 | ` (backquote) | Debug readout + live tuning panel |
+| F | Show/hide the FPS graph (top right) |
 | H | Hide the help panel |
 | Esc | Release the mouse |
 
