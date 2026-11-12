@@ -39,6 +39,8 @@ Other rules from the guide:
 
 - Add nothing the idea doesn't need.
 - Give each image **one contrast**.
+- The approved style reference is `art/source/plateau-noon/nb21-v2/plateau-noon.jpg`;
+  pass it as Image 1 (look only) on every run.
 - Label every reference image's role.
 - Use no quality claims ("masterpiece", "8K").
 
@@ -58,6 +60,9 @@ have worked, and fixes still to test:
 | Bridge | Plain wooden span carried by bridge crews: no ropes, rails or posts. To test: "a long bridge about fifteen paces across, its far end resting on the plateau's rim, support beams hidden underneath" | "narrow wooden bridge" gave a rope suspension bridge; "flat span … bolted to two beams" gave a short bench with protruding legs |
 | Windspren | "one thin ribbon of white light curls through the air" ✅ | |
 | Crem | "dry pale crust in the cracks of the rock" | Barely visible so far |
+| Shardplate | "thick and seamless: broad interlocking plates that overlap at every joint with no gaps, massive rounded pauldrons"; "fully closed, smooth and rounded helm with a single narrow horizontal slit"; "orange dust in its seams" ✅ | |
+| Stormlight | To test: "bright white-blue light streaming from the crack like glowing steam, lit from within" | "faint wisps of white-blue glowing smoke" gave plain grey smoke |
+| Shardblade | To test: "no plain crossguard: the hilt flows straight into the blade; the back edge carved into waves and hooks; nearly as tall as the warrior" | "nearly as tall as a man … mirror-bright, etched with curling lines" gave an ordinary knight's broadsword with a cross-guard |
 
 ## Log
 
@@ -65,3 +70,4 @@ have worked, and fixes still to test:
 |---|---|---|
 | `art/source/plateau-noon/nb21-v1` | Good composition; photographic; rope bridge; melon rockbuds | $0.039 |
 | `art/source/plateau-noon/nb21-v2` | **Painterly and bright: the look to follow.** Rockbuds and chrysalis right; bridge too short, reads as a bench | $0.041 |
+| `art/source/shardbearer-closeup/nb21-v1` | Style matches v2 (reference works). Plate convincing; Stormlight reads as grey smoke; Blade looks like a generic knight's sword | $0.039 |
