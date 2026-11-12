@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
 const SEGMENTS = 16;
+/** Metres the blade tip can plausibly move between two rendered frames. */
+const MAX_JUMP = 2.5;
 
 /**
  * Ribbon behind a weapon during a swing: the last few blade positions as a
@@ -35,10 +37,18 @@ export class BladeTrail {
     this.mesh.renderOrder = 10;
   }
 
+  clear(): void {
+    this.tips.length = this.bases.length = this.ages.length = 0;
+  }
+
   /** Call every rendered frame. `emit` while the swing is live. */
   update(dt: number, emit: boolean, tip: THREE.Vector3, base: THREE.Vector3): void {
     for (let i = 0; i < this.ages.length; i++) this.ages[i] += dt;
     while (this.ages.length && this.ages[this.ages.length - 1] > this.life) { this.ages.pop(); this.tips.pop(); this.bases.pop(); }
+    // A tip that jumps further than any swing could in one frame means the
+    // fighter was teleported (respawn): start a fresh trail instead of
+    // stretching a ribbon across the gap.
+    if (this.tips.length && this.tips[0].distanceTo(tip) > MAX_JUMP) this.clear();
     if (emit) {
       this.tips.unshift(tip.clone()); this.bases.unshift(base.clone()); this.ages.unshift(0);
       if (this.tips.length > SEGMENTS) { this.tips.pop(); this.bases.pop(); this.ages.pop(); }
