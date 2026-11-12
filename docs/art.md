@@ -14,8 +14,8 @@ asset. Look: **painterly and bright**. Everything is made by us.
   with prompt and billed cost, to `art/source/<slug>/runs.jsonl`.
 - **Shape.** 16:9 for scenes and style frames; 1:1 for character and prop
   references.
-- **Reference images** live in `art/references/` (gitignored: the repo is
-  public and they are other people's work). Shape-only references may be
+- **Reference images** live in `art/references/` (see its README for credits;
+  they belong to their artists). Shape-only references may be
   passed in, labelled "for shape only… copy no single one"; never pass
   references with lettering or signatures.
 - **Fan and official art** inform the *words* of a prompt (shapes,
