@@ -3,7 +3,12 @@
 A browser prototype of Shardbearer combat on the Shattered Plains. Graphics are
 deliberately rough: the goal is to get the *feel* right first.
 
-## Run it
+## Play it
+
+**https://danmcfan.github.io/stormlight/**. Every push to `main` deploys automatically
+(see `.github/workflows/deploy.yml`).
+
+## Run it locally
 
 ```bash
 npm install
