@@ -6,6 +6,7 @@ import { headingOf } from '../core/math';
 import type { Physics } from '../core/physics';
 import { Combatant, type ControlInput } from '../entities/combatant';
 import { BladeTrail } from '../fx/trail';
+import { CrowdInstancer } from '../render/crowdInstancer';
 import { mergeStaticMeshes } from '../render/crowdMerge';
 import type { Battlefield } from '../world/battlefield';
 import { killFeel, type KillFeel } from './killFeel';
@@ -43,6 +44,13 @@ interface Warrior {
   far: boolean;
   lastSerial: number;
   counted: boolean;
+  // Crowd instancing (see render/crowdInstancer.ts).
+  root: THREE.Object3D;
+  meshes: THREE.Mesh[];
+  flash: number;
+  show: boolean;
+  /** Seconds the blade trail stays drawn after a swing. */
+  trailT: number;
 }
 
 export interface HordeStats {
@@ -90,7 +98,17 @@ export class HordeMode {
   /** Warriors currently allowed to swing (tokens in use), for the debug readout. */
   tokensInUse = 0;
 
-  constructor(private ctx: HordeContext) {}
+  private crowd = new CrowdInstancer(64);
+
+  constructor(private ctx: HordeContext) {
+    ctx.scene.add(this.crowd.group);
+  }
+
+  /** Hit flash for a warrior (drawn through its instance colour). */
+  flash(c: Combatant): void {
+    const w = this.byCombatant.get(c);
+    if (w) w.flash = 1;
+  }
 
   // --- Run lifecycle ------------------------------------------------------------
 
@@ -263,26 +281,30 @@ export class HordeMode {
   }
 
   /**
-   * Keep pairs on separate sides of the Shardbearer: sort them by their
-   * current bearing and nudge each axis toward an even spread.
+   * Keep pairs on separate sides of the Shardbearer, in rings: the nearest
+   * few pairs wait on the inner ring, the rest further out. Within a ring,
+   * pairs keep their order round the Shardbearer and spread out evenly.
    */
   private spreadPairs(): void {
     const pl = this.ctx.player.position;
-    const live = this.pairs.filter((p) => p.alive.length);
-    if (!live.length) return;
-    const bearing = (p: Pair<Warrior>) => {
+    const per = Math.max(1, tuning.horde.pairsPerRing);
+    const live = this.pairs.filter((p) => p.alive.length).map((p) => {
       let x = 0, z = 0;
       for (const m of p.alive) { x += m.c.position.x; z += m.c.position.z; }
-      return Math.atan2(z / p.alive.length - pl.z, x / p.alive.length - pl.x);
-    };
-    const sorted = live.map((p) => ({ p, b: bearing(p) })).sort((a, b) => a.b - b.b);
-    const step = (Math.PI * 2) / sorted.length;
-    const base = sorted[0].b;
-    sorted.forEach(({ p }, i) => {
-      const target = base + i * step;
-      const d = Math.atan2(Math.sin(target - p.axis), Math.cos(target - p.axis));
-      p.axis += d * 0.35;
-    });
+      x = x / p.alive.length - pl.x; z = z / p.alive.length - pl.z;
+      return { p, b: Math.atan2(z, x), d: Math.hypot(x, z) - (p.phase === 'engage' ? 100 : 0) };
+    }).sort((a, b) => a.d - b.d);
+    for (let r = 0; r * per < live.length; r++) {
+      const ring = live.slice(r * per, (r + 1) * per).sort((a, b) => a.b - b.b);
+      const step = (Math.PI * 2) / ring.length;
+      ring.forEach(({ p, b }, i) => {
+        p.ring = r;
+        const target = ring[0].b + i * step + (r % 2) * step * 0.5;
+        const d = Math.atan2(Math.sin(target - p.axis), Math.cos(target - p.axis));
+        p.axis += d * 0.35;
+        if (i === 0 && Math.abs(b - p.axis) > Math.PI) p.axis = b; // fresh arrivals
+      });
+    }
   }
 
   /** Keep slots on solid ground: pull them in from the rim and out of rocks. */
@@ -407,7 +429,11 @@ export class HordeMode {
         movement: this.ctx.movement, gravity: () => tuning.movement.gravity,
       });
       mergeStaticMeshes(c.model.root);
-      w = { c, brain: new WarriorBrain(), trail: new BladeTrail(new THREE.Color('#5a4030'), 0.12), pair: null, inUse: false, climb: null, waypoint: null, far: false, lastSerial: 0, counted: false };
+      w = {
+        c, brain: new WarriorBrain(), trail: new BladeTrail(new THREE.Color('#5a4030'), 0.12), pair: null, inUse: false,
+        climb: null, waypoint: null, far: false, lastSerial: 0, counted: false,
+        root: c.model.root, meshes: this.crowd.register(c.model.root), flash: 0, show: false, trailT: 0,
+      };
       this.ctx.scene.add(c.model.root, w.trail.mesh);
       this.pool.push(w);
       this.byCombatant.set(c, w);
@@ -424,7 +450,9 @@ export class HordeMode {
     w.lastSerial = w.c.fighter.attackSerial;
     w.c.model.root.visible = true;
     w.trail.clear();
-    w.trail.mesh.visible = true;
+    w.trail.mesh.visible = false;
+    w.show = true;
+    w.flash = 0;
     if (!this.foes.includes(w.c)) this.foes.push(w.c);
   }
 
@@ -436,6 +464,7 @@ export class HordeMode {
     w.c.body.teleport(PARK);
     w.c.model.root.visible = false;
     w.trail.mesh.visible = false;
+    w.show = false;
     const i = this.foes.indexOf(w.c);
     if (i >= 0) this.foes.splice(i, 1);
   }
@@ -443,11 +472,12 @@ export class HordeMode {
   // --- Rendering ------------------------------------------------------------------------
 
   /**
-   * Animate warriors. Off-screen ones skip their (IK-heavy) animation;
-   * distant ones animate every other frame and stop casting shadows.
+   * Animate warriors and hand their part matrices to the crowd instancer.
+   * Off-screen ones skip their (IK-heavy) animation; distant ones animate
+   * every other frame.
    */
   render(dt: number, alpha: number, movement: Tuning['movement'], camera: THREE.Camera, updateTrail: (t: BladeTrail, c: Combatant, dt: number) => void): void {
-    if (!this.active) return;
+    if (!this.active) { this.crowd.update(this.pool); return; }
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const pl = this.ctx.player.position;
@@ -458,18 +488,22 @@ export class HordeMode {
       if (!w.inUse) continue;
       i++;
       const c = w.c;
-      const far = c.position.distanceToSquared(pl) > lod2;
-      if (far !== w.far) {
-        w.far = far;
-        c.model.root.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = !far && !o.userData.noShadow; });
-      }
+      w.far = c.position.distanceToSquared(pl) > lod2;
       this.sphere.center.copy(c.position).setY(c.position.y + 1);
       const visible = this.frustum.intersectsSphere(this.sphere);
       const settled = !c.alive && c.deadTime > 1.3;
-      const animate = visible && !settled && (!far || ((i & 1) === 0) === frameParity);
+      const animate = visible && !settled && (!w.far || ((i & 1) === 0) === frameParity);
       c.render(dt, alpha, movement, animate);
-      updateTrail(w.trail, c, dt);
+      // Final world matrices for the instancer (the IK leaves forearms stale).
+      if (!settled || w.flash > 0) c.model.root.updateMatrixWorld(true);
+      w.flash = Math.max(0, w.flash - dt * 7);
+      // Trails only while swinging (each one is a draw call).
+      const swinging = c.alive && c.fighter.state === 'attack';
+      w.trailT = swinging ? 0.3 : Math.max(0, w.trailT - dt);
+      w.trail.mesh.visible = w.trailT > 0;
+      if (w.trail.mesh.visible) updateTrail(w.trail, c, dt);
     }
+    this.crowd.update(this.pool);
   }
 
   /** Counts for the debug readout. */

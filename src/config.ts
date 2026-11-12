@@ -89,6 +89,9 @@ export const tuning = {
     /** Radius the waiting warriors circle at, and how close they shuffle in. */
     holdRadius: 6.5,
     closeRadius: 4.6,
+    /** Pairs per waiting ring; outer rings sit this much further out. */
+    pairsPerRing: 5,
+    ringGap: 3.2,
     /** Degrees either side of a pair's axis each partner flanks from. */
     flankAngle: 55,
     /** Seconds between the feint and the partner's committed strike. */

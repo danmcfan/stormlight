@@ -88,6 +88,8 @@ export class DebugTools {
     hd.add(h, 'tokenCooldown', 0, 6, 0.1).name('token cooldown (s)');
     hd.add(h, 'holdRadius', 3, 14, 0.1).name('circle radius');
     hd.add(h, 'closeRadius', 2.5, 10, 0.1).name('close-in radius');
+    hd.add(h, 'pairsPerRing', 1, 12, 1).name('pairs per ring');
+    hd.add(h, 'ringGap', 1, 8, 0.1).name('ring spacing');
     hd.add(h, 'flankAngle', 0, 90, 1).name('pair flank (°)');
     hd.add(h, 'feintLead', 0, 2, 0.05).name('feint lead (s)');
     hd.add(h, 'berserkChance', 0, 1, 0.05).name('berserk chance');

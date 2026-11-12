@@ -372,6 +372,7 @@ export class Game {
       if (!def.fighter.receiveShove(48)) continue;
       def.knockback(att.position.x, att.position.z, h.shoveForce * (1.15 - 0.3 * dist / h.shoveRange), h.shoveDecay);
       def.model.hitFlash();
+      if (this.mode === 'horde') this.horde.flash(def);
       this.tmp.copy(def.position).setY(def.position.y + 0.3);
       this.sparks.burst(this.tmp, 8, DUST, 2.5, 0.5, 6, 0.5);
       n++;
@@ -445,6 +446,7 @@ export class Game {
         shake(shakeN);
         def.knockback(att.position.x, att.position.z, move.knockback * c.knockbackScale * (outcome === 'kill' ? 1.6 : 1));
         def.model.hitFlash();
+        if (this.mode === 'horde') this.horde.flash(def);
         const shard = att.opts.moveset.weapon.shardblade;
         this.sfx.hit(heavy, shard, g);
         // A Shardblade doesn't cut flesh: the soul burns, shedding light.

@@ -208,6 +208,8 @@ export class Pair<M extends PairMember = PairMember> {
   waited = 0;
   cooldown = rand(0.5, 1.5);
   berserk = false;
+  /** Which waiting ring (0 = innermost) the horde has put this pair on. */
+  ring = 0;
   private engageT = 0;
   private striker: M | null = null;
   private feinter: M | null = null;
@@ -238,7 +240,7 @@ export class Pair<M extends PairMember = PairMember> {
       case 'rest': {
         // Circle at a distance; now and then shuffle in close and wait.
         const breathe = 0.5 + 0.5 * Math.sin(this.wobble * 0.9 + this.id);
-        const r = p.closeRadius + (p.holdRadius - p.closeRadius) * (this.waited > 1.2 ? breathe : 1);
+        const r = p.closeRadius + (p.holdRadius - p.closeRadius) * (this.waited > 1.2 && this.ring === 0 ? breathe : 1) + this.ring * p.ringGap;
         let near = 0;
         alive.forEach((m, i) => {
           slot(m, i, r);
