@@ -43,6 +43,9 @@ Other rules from the guide:
   pass it as Image 1 (look only) on every run.
 - Label every reference image's role.
 - Use no quality claims ("masterpiece", "8K").
+- **Describe what is there, not what isn't.** The model tends to ignore "no X"
+  and draw the familiar X anyway (e.g. "no crossguard" still gave a
+  crossguard). Name the replacement shape instead.
 
 Once a frame is approved, pass it as **Image 1** with:
 `Image 1 sets the look only: match its painted brushwork, soft painted edges and finish. Copy nothing else from it.`
@@ -61,8 +64,8 @@ have worked, and fixes still to test:
 | Windspren | "one thin ribbon of white light curls through the air" ✅ | |
 | Crem | "dry pale crust in the cracks of the rock" | Barely visible so far |
 | Shardplate | "thick and seamless: broad interlocking plates that overlap at every joint with no gaps, massive rounded pauldrons"; "fully closed, smooth and rounded helm with a single narrow horizontal slit"; "orange dust in its seams" ✅ | |
-| Stormlight | To test: "bright white-blue light streaming from the crack like glowing steam, lit from within" | "faint wisps of white-blue glowing smoke" gave plain grey smoke |
-| Shardblade | To test: "no plain crossguard: the hilt flows straight into the blade; the back edge carved into waves and hooks; nearly as tall as the warrior" | "nearly as tall as a man … mirror-bright, etched with curling lines" gave an ordinary knight's broadsword with a cross-guard |
+| Stormlight | "bright white-blue light streams upward like glowing steam, lit from within", plus in the light line: "glows brighter than anything else in the frame" ✅ | "faint wisps of white-blue glowing smoke" gave plain grey smoke |
+| Shardblade | To test: "the hilt and blade are one continuous piece of metal; where a crossguard would be, the blade itself flares out into two curved hooks" | v1: "nearly as tall as a man … etched with curling lines" gave an ordinary broadsword. v2: "no plain crossguard: the hilt flows straight into the blade; back edge carved into waves and hooks" gave wavy flared edges ✅ but still a cross-guard and leather grip ❌ |
 
 ## Log
 
@@ -71,3 +74,4 @@ have worked, and fixes still to test:
 | `art/source/plateau-noon/nb21-v1` | Good composition; photographic; rope bridge; melon rockbuds | $0.039 |
 | `art/source/plateau-noon/nb21-v2` | **Painterly and bright: the look to follow.** Rockbuds and chrysalis right; bridge too short, reads as a bench | $0.041 |
 | `art/source/shardbearer-closeup/nb21-v1` | Style matches v2 (reference works). Plate convincing; Stormlight reads as grey smoke; Blade looks like a generic knight's sword | $0.039 |
+| `art/source/shardbearer-closeup/nb21-v2` | Stormlight now glows ✅. Blade has wavy flared edges but still a cross-guard and leather grip; blade cropped by the frame | $0.039 |
