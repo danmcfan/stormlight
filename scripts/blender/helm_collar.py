@@ -20,6 +20,7 @@ HELM_MPP); the top of the helm is at 2.37 m, sheet row 140.
 """
 import math
 
+import bpy  # noqa: F401  (mathutils needs bpy imported first)
 import numpy as np
 from mathutils import Vector
 from mathutils.geometry import delaunay_2d_cdt
@@ -395,12 +396,20 @@ class Region:
             self.flipped = False
         self.loop = loop
         self.n = len(loop)
+        self._uvloop = [self.uv(p) for p in loop]
 
     def uv(self, p):
-        return (p[1] * self.R, p[0])
+        return (-p[1] * self.R, p[0])      # -phi: counter-clockwise here = counter-clockwise seen from outside
 
     def yphi(self, uv):
-        return (uv[1], uv[0] / self.R)
+        return (uv[1], -uv[0] / self.R)
+
+    def span(self, sp):
+        """A (first, last) index range given for the loop as passed in -> for the stored loop."""
+        return (self.n - 1 - sp[1], self.n - 1 - sp[0]) if self.flipped else tuple(sp)
+
+    def contains(self, y, phi):
+        return in_poly(self.uv((y, phi)), self._uvloop)
 
     def P(self, p, off=None):
         return self.h.point(p[0], p[1], self.off if off is None else off)
@@ -434,7 +443,7 @@ class Region:
         inner = {}            # loop index -> inner band point (y, phi)
         poly = []             # interior polygon, as ("L", i) loop points and ("I", i) inner points
         spans = []
-        for (i0, i1) in trims:
+        for (i0, i1) in [self.span(t) for t in trims]:
             idx = list(range(i0, i1 + 1)) if i1 >= i0 else list(range(i0, self.n)) + list(range(0, i1 + 1))
             spans.append(idx)
         in_span = {}
@@ -474,9 +483,9 @@ class Region:
         st = [self.uv(p) for p in steiner]
         if grid:
             dphi, dy, margin = grid
-            us = [p[0] for p in outer_uv]
-            vs = [p[1] for p in outer_uv]
-            for a in np.arange(math.floor(min(us) / self.R / dphi) * dphi, max(us) / self.R + dphi, dphi):
+            us = [p[1] for p in outer_yp]
+            vs = [p[0] for p in outer_yp]
+            for a in np.arange(math.floor(min(us) / dphi) * dphi, max(us) + dphi, dphi):
                 for yv in np.arange(math.floor(min(vs) / dy) * dy, max(vs) + dy, dy):
                     q = np.array(self.uv((yv, a)))
                     if not in_poly(q, outer_uv) or any(in_poly(q, h) for h in holes_uv):
@@ -501,9 +510,9 @@ class Region:
 
     def wall(self, piece, base=0.0, mat="plate", span=None):
         """The plate's edge: a strip from its surface down to `base` above the hull, facing out."""
-        idx = list(range(self.n)) + [0] if span is None else (
-            list(range(span[0], span[1] + 1)) if span[1] >= span[0]
-            else list(range(span[0], self.n)) + list(range(0, span[1] + 1)))
+        if span is not None:
+            span = self.span(span)
+        idx = list(range(self.n)) + [0] if span is None else list(range(span[0], span[1] + 1))
         A = np.array([self.P(self.loop[i % self.n]) for i in idx])
         B = np.array([self.P(self.loop[i % self.n], base) for i in idx])
         V = np.vstack([A, B])
@@ -528,3 +537,101 @@ def dome(piece, mat, c, nrm, r, seg=6):
     F = [(k, (k + 1) % seg, seg + (k + 1) % seg, seg + k) for k in range(seg)]
     F += [(seg + k, seg + (k + 1) % seg, 2 * seg) for k in range(seg)]
     piece.put(V, F, mat, lambda q: (q - c) + nrm * r * 0.6)
+
+
+def hull_grid(piece, hull, rows, n, mat, off=0.0, ref=None, keep=None, phi0=0.0, cap=None):
+    """Quads on a hull between rows (each a height or a function of phi), n columns round.
+    keep(y, phi) -> False drops a sample (a face goes when all its samples are dropped).
+    cap: 'top' / 'bottom' closes that end with a fan to the section centre."""
+    phis = [phi0 + TAU * j / n for j in range(n)]
+    Y = [[(r(a) if callable(r) else r) for a in phis] for r in rows]
+    V = [hull.point(Y[i][j], phis[j], off) for i in range(len(rows)) for j in range(n)]
+    F = []
+    for i in range(len(rows) - 1):
+        for j in range(n):
+            j2 = (j + 1) % n
+            if keep:
+                a0, a1 = phis[j], phis[j] + TAU / n
+                smp = [(Y[i][j] * (1 - v) + Y[i + 1][j] * v) * (1 - u) + (Y[i][j2] * (1 - v) + Y[i + 1][j2] * v) * u
+                       for u in (0, 0.5, 1) for v in (0, 0.5, 1)]
+                ang = [a0 + (a1 - a0) * u for u in (0, 0.5, 1) for v in (0, 0.5, 1)]
+                if not any(keep(yy, aa) for yy, aa in zip(smp, ang)):
+                    continue
+            F.append((i * n + j, i * n + j2, (i + 1) * n + j2, (i + 1) * n + j))
+    if cap:
+        i = 0 if cap == "top" else len(rows) - 1
+        yc = float(np.mean(Y[i]))
+        V.append(np.array([0.0, yc, hull.sec(yc)[3]]))
+        F += [(i * n + j, i * n + (j + 1) % n, len(V) - 1) for j in range(n)]
+    piece.put(V, F, mat, ref)
+    return V
+
+
+# --- Helm sheet measurements (sheet pixels; see the module docstring) ---------------------
+
+# row, front-view half-width, side-view front column, side-view back column. Rows from 490 down are
+# hidden by the collar in the front view and continue the cheek line; the slit's notch (rows 375-412)
+# is bridged here (it is cut into the visor instead).
+SIL = [
+    (150, 35, 686, 815), (160, 70, 660, 839), (170, 91, 640, 857), (180, 105.5, 623, 872),
+    (190, 117.5, 611, 882), (200, 126.5, 600, 893), (210, 133.5, 591, 900), (220, 139, 583, 908),
+    (230, 144, 575, 914), (240, 148, 569, 919), (250, 151, 563, 924), (260, 155, 558, 928),
+    (270, 156.5, 553, 932), (280, 158.5, 549, 935), (290, 160, 546, 937), (300, 161.5, 543, 939),
+    (310, 168, 540, 940), (320, 171, 538, 941), (330, 172.5, 537, 942), (340, 173, 535, 942),
+    (350, 173.5, 535, 941), (360, 173.5, 535, 942), (370, 174, 536, 941), (380, 172, 535.5, 940),
+    (390, 168.5, 534.5, 937), (400, 167, 533, 936), (410, 165, 531.5, 935), (420, 165, 531, 934),
+    (430, 165.5, 531, 935), (440, 166.5, 532, 941), (450, 168.5, 534, 946), (460, 171.5, 535, 953),
+    (470, 173, 537, 964), (480, 174, 538, 962), (490, 170.5, 540, 958), (500, 166, 543, 955),
+    (520, 162, 547, 952), (540, 159, 553, 950), (560, 157, 559, 950), (580, 154, 566, 950),
+    (600, 151, 573, 950), (620, 148, 580, 950), (640, 146, 588, 950),
+]
+# Blue trim centrelines, traced from the sheet (compare_metrics.ref_trim_mask, skeletonised).
+FRONT_TRIM = [   # the line on the image's left, crown to chin
+    (241, 150), (238, 164), (235, 178), (233, 192), (230, 206), (225, 220), (220, 233), (213, 245), (204, 256),
+    (193, 266), (183, 276), (172, 285), (160, 293), (148, 300), (135, 307), (123, 314), (111, 321), (107, 335),
+    (106, 349), (106, 364), (107, 378), (109, 392), (112, 406), (122, 416), (133, 425), (144, 434), (154, 444),
+    (162, 456), (170, 468), (175, 481), (180, 495), (184, 508), (188, 522), (191, 536), (194, 550), (196, 564),
+    (198, 578), (202, 592)]
+SIDE_TRIM_UP = [(618, 194), (617, 208), (615, 222), (613, 236), (614, 250), (619, 264), (628, 275), (639, 284),
+                (651, 292), (665, 297), (678, 301), (693, 304), (707, 307), (721, 309), (735, 311), (750, 311),
+                (764, 311), (778, 310), (791, 315), (798, 323)]
+SIDE_TRIM_PIVOT = [(798, 323), (802, 334), (803, 345), (801, 357), (796, 368), (790, 381), (785, 393)]
+SIDE_TRIM_LOW = [(785, 393), (776, 400), (760, 402), (740, 406), (720, 412), (701, 420), (682, 431), (670, 440),
+                 (659, 450), (649, 460), (642, 470), (638, 480), (633, 490), (630, 500), (628, 510), (626, 520),
+                 (624, 535), (623, 550), (622, 570), (622, 590), (621, 600)]
+LAME_TOP = [(789, 472), (935, 433)]                       # side view: the neck guard lame's upper edge
+LAME_BOT = [(782, 508), (805, 514), (820, 517), (874, 503), (927, 485), (962, 476)]   # and its lower edge
+RIVETS_SKULL = [(810, 453), (866, 437), (914, 420)]       # side view, above the lame
+RIVET_PIVOT = (777, 337)
+RIVET_CHEEK = (761, 505)
+CHEEK_REAR = 783                                          # side-view column of the cheek plate's rear edge
+
+VISOR_T, CHEEK_T, LAME_T, RIDGE_T = 0.008, 0.004, 0.003, 0.004     # plate heights above the skull
+HELM_BAND = 0.010                                         # enamel band width on the helm
+
+
+def helm_hull():
+    a = np.array(SIL, float)
+    py = a[:, 0]
+    side_t = np.where(py <= 300, 0.0, np.where(py < 400, 8.0, 4.5))        # visor / cheek over the skull
+    front_t = np.interp(py, [190, 210], [4.5, 9.0])                        # crown ridge, then the visor
+    back_t = np.where(py <= 425, 4.5, 3.5)                                 # crown ridge, then the lame
+    cz = np.interp(py, [140, 160, 180, 200, 220, 240, 260, 280, 300], [.0807, .080, .076, .069, .060, .051, .044, .041, .040])
+    pf = np.interp(py, [160, 180, 197, 220, 245, 283, 300, 340, 370, 410, 440, 460],
+                   [2.0, 1.75, 1.5, 1.38, 1.33, 1.42, 1.48, 1.45, 1.38, 1.3, 1.23, 1.21])
+    pb = np.interp(py, [160, 250], [2.0, 2.15])
+    ys = np.append(fy(py), HELM_TOP - RIDGE_T)
+    rx = np.append((a[:, 1] - side_t) * MPP, 0.0)
+    zf = np.append(sz(a[:, 2] + front_t), cz[0])
+    zb = np.append(sz(a[:, 3] - back_t), cz[0])
+    return Hull(ys, rx, zf, zb, np.append(cz, cz[0]), np.append(pf, 2.0), np.append(pb, 2.0))
+
+
+# The helm's lower edge by polar angle (degrees from the front): the chin's V, the cheek plates, the lame.
+_YBOT = pchip([0, 23, 48.5, 75, 85, 93, 99, 119, 144, 180],
+              [-0.055, -0.040, -0.013, 0.017, 0.028, 0.037, 0.032, 0.045, 0.061, 0.0695])
+
+
+def helm_bottom(phi):
+    a = abs((math.degrees(phi) + 180) % 360 - 180)
+    return float(_YBOT(a))

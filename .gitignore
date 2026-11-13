@@ -13,3 +13,5 @@ art/renders/ingame/*.png
 # Working comparison sheets of the helm rebuild (copies live in art/renders/helm-rebuild/)
 art/renders/compare/*-helm[0-9][0-9]*
 art/renders/compare/scores-helm[0-9][0-9]*
+art/renders/helm-rebuild/status.md
+art/renders/helm-rebuild/progress/
