@@ -134,6 +134,21 @@ export interface ModelTotals {
   costUsd: number
 }
 
+/** A job the lead queued to run as a subagent. */
+export interface QueueJob {
+  jobId: string
+  label: string
+  model?: string
+  note?: string
+  state: 'queued' | 'running' | 'finished' | 'cancelled'
+  /** Epoch ms. */
+  queuedAt?: number
+  startedAt?: number
+  endedAt?: number
+  /** 1-based among queued jobs, in queue order. */
+  position?: number
+}
+
 export interface SwarmSnapshot {
   /** Epoch ms. */
   generatedAt: number
@@ -157,5 +172,13 @@ export interface SwarmSnapshot {
     note: string
     /** Model id -> percentage points of each window, summed over its agents. */
     byModel: Record<string, { fiveHour?: number; sevenDay?: number }>
+  }
+  /** Present only when a queue file with events exists. */
+  queue?: {
+    maxConcurrent: number
+    /** Subagents with status 'running' in this snapshot. */
+    running: number
+    /** Queued by position, then running, then the last 20 finished or cancelled. */
+    jobs: QueueJob[]
   }
 }

@@ -26,6 +26,8 @@ import { componentForPath, relativeToCwd } from './components'
 
 export const RUNNING_WINDOW_MS = 45_000
 export const DONE_QUIET_MS = 10 * 60_000
+/** Records this much newer than a completion mean the agent was resumed (e.g. via SendMessage). */
+export const RESUME_SLACK_MS = 2_000
 export const MAX_TOOL_CALLS = 200
 
 /** Split appended bytes into complete lines; the unterminated tail is returned as `rest`. */
@@ -322,8 +324,8 @@ export class AgentAcc {
       for (const key of [taskId, toolId]) {
         if (!key) continue
         const prev = this.completions.get(key)
-        // Same notification re-logged later (e.g. queue "remove"): keep the first time.
-        if (prev && prev.status === c.status && ts >= prev.at) continue
+        // Same notification logged twice (queue + attachment): keep the first time. A later one is a new completion.
+        if (prev && prev.status === c.status && ts >= prev.at && ts - prev.at < 30_000) continue
         this.completions.set(key, c)
       }
     }
@@ -428,7 +430,7 @@ export function buildSnapshot(sessions: SessionInput[], now: number): SwarmSnaps
       let endedAt: number | undefined
       if (isMain) {
         status = age < RUNNING_WINDOW_MS ? 'running' : 'idle'
-      } else if (completion) {
+      } else if (completion && a.lastActivityAt <= completion.at + RESUME_SLACK_MS) {
         status = completion.status
         endedAt = completion.at
       } else if (a.finishedTurn && age >= 3_000) {

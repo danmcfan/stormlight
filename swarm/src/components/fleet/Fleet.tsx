@@ -6,6 +6,8 @@ import { AgentTable } from './AgentTable'
 import { FilterBar, RoundSelector } from './Filters'
 import { buildRows, type Filters, type SortKey } from './rows'
 import { Totals } from './Totals'
+import { PlanUsageSummary } from '../plan/PlanUsageSummary'
+import { QueuePanel } from '../queue/QueuePanel'
 
 export function Fleet() {
   const swarm = useSwarm()
@@ -76,6 +78,10 @@ function FleetBody(props: { snapshot: SwarmSnapshot }) {
   return (
     <>
       <Totals snapshot={props.snapshot} />
+      <Show when={props.snapshot.plan}>
+        <PlanUsageSummary snapshot={props.snapshot} />
+      </Show>
+      <QueuePanel snapshot={props.snapshot} />
       <RoundSelector
         snapshot={props.snapshot}
         now={now()}

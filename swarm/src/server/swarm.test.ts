@@ -233,6 +233,35 @@ describe('task-notification completions (real record shapes)', () => {
   })
 })
 
+describe('resumed subagents', () => {
+  const note = (id: string, tool: string) =>
+    `<task-notification><task-id>${id}</task-id><tool-use-id>${tool}</tool-use-id><status>completed</status></task-notification>`
+  it('runs again when records follow the completion, and ends on a newer completion', () => {
+    const main = new AgentAcc('s1', null)
+    main.ingestLine(asst({ msgId: 'p1', at: 0, tools: [spawn('tu1', 'one')] }))
+    const sub = new AgentAcc('s1', 'aaa')
+    sub.meta = { toolUseId: 'tu1' }
+    sub.ingestLine(asst({ msgId: 'a1', at: 10 }))
+    const enq = (at: number) =>
+      main.ingestLine(JSON.stringify({ type: 'queue-operation', operation: 'enqueue', timestamp: iso(at), content: note('aaa', 'tu1') }))
+    const snap = (now: number) => buildSnapshot([{ id: 's1', main, subs: [sub], components: [] }], T0 + now * 1000).agents.find((x) => x.id === 'aaa')!
+    enq(11)
+    expect(snap(20).status).toBe('done')
+    // Resumed: new records well after the completion.
+    sub.ingestLine(JSON.stringify({ type: 'user', timestamp: iso(100), message: { content: 'continue' } }))
+    sub.ingestLine(asst({ msgId: 'a2', at: 105, tools: [{ id: 'z', name: 'Bash', input: { command: 'ls' } }] }))
+    const resumed = snap(110)
+    expect(resumed.status).toBe('running')
+    expect(resumed.endedAt).toBeUndefined()
+    // Finishes again: a newer notification ends it.
+    sub.ingestLine(asst({ msgId: 'a3', at: 120 }))
+    enq(121)
+    const again = snap(130)
+    expect(again.status).toBe('done')
+    expect(again.endedAt).toBe(T0 + 121_000)
+  })
+})
+
 describe('store (incremental reading)', () => {
   it('reads appended bytes only and handles a partial last line', () => {
     const root = mkdtempSync(join(tmpdir(), 'swarm-root-'))

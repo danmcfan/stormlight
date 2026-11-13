@@ -23,6 +23,7 @@ import type { Component, SwarmSnapshot } from '../lib/types'
 import { AgentAcc, buildSnapshot, splitLines, type AgentMeta, type SessionInput } from './parse'
 import { scanComponents } from './components'
 import { PlanReader, applyPlan } from './plan'
+import { QueueReader, applyQueue } from './queue'
 
 const POLL_MS = 1000
 const DISCOVER_MS = 3000
@@ -70,6 +71,7 @@ export class SwarmStore {
   private listeners = new Set<(s: SwarmSnapshot) => void>()
   private scans = new Map<string, { at: number; components: Component[] }>()
   private plan = new PlanReader()
+  private queue = new QueueReader()
   private snapshot: SwarmSnapshot | undefined
   private snapshotKey = ''
   private lastBuild = 0
@@ -138,6 +140,7 @@ export class SwarmStore {
       }
       this.readAll()
       if (this.plan.poll()) this.dirty = true
+      if (this.queue.poll()) this.dirty = true
     } catch {
       // never let a bad file take the poller down
     }
@@ -156,7 +159,7 @@ export class SwarmStore {
       const cwd = main?.cwd ?? subs.find((a) => a.cwd)?.cwd
       inputs.push({ id: s.id, main, subs, components: cwd ? this.componentsFor(cwd, now) : [] })
     }
-    const snap = applyPlan(buildSnapshot(inputs, now), this.plan.readings)
+    const snap = applyQueue(applyPlan(buildSnapshot(inputs, now), this.plan.readings), this.queue.events)
     const key = JSON.stringify({ ...snap, generatedAt: 0 })
     const changed = key !== this.snapshotKey || !this.snapshot
     this.snapshot = snap

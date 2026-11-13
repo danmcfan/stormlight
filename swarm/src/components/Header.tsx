@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/solid-router'
 import { useSwarm } from '../lib/useSwarm'
+import { QueueBadge } from './queue/QueueBadge'
 
 export default function Header() {
   const swarm = useSwarm()
@@ -18,6 +19,7 @@ export default function Header() {
             Graph
           </Link>
         </div>
+        <QueueBadge snapshot={swarm.snapshot()} />
         <div class="live" data-connected={swarm.connected() ? '' : undefined} role="status">
           <span class="dot" data-status={swarm.connected() ? 'running' : 'error'} aria-hidden="true" />
           {swarm.connected() ? 'Live' : 'Disconnected'}
