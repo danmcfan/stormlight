@@ -1,5 +1,6 @@
 import { For, Show, createSignal, onSettled } from 'solid-js'
 import type { QueueJob, SwarmSnapshot } from '../../lib/types'
+import { Gem } from '../frame/Gem'
 import { formatDuration, shortModel } from '../fleet/format'
 import { queueCounts } from './format'
 import './queue.css'
@@ -9,7 +10,13 @@ function JobRow(props: { job: QueueJob; now: number }) {
   const since = () => (j().state === 'running' ? j().startedAt : j().queuedAt)
   return (
     <li class="queue-job" data-state={j().state}>
-      <span class="queue-pos mono">{j().state === 'queued' ? `#${j().position}` : ''}</span>
+      <span class="queue-pos mono">
+        <Show when={j().state === 'running'} fallback={`#${j().position}`}>
+          <span class="st" data-status="running" aria-hidden="true">
+            <Gem />
+          </span>
+        </Show>
+      </span>
       <span class="queue-label">
         {j().label}
         <Show when={j().note}>
@@ -40,9 +47,9 @@ export function QueuePanel(props: { snapshot: SwarmSnapshot }) {
   const active = () => props.snapshot.queue?.jobs.filter((j) => j.state === 'queued' || j.state === 'running') ?? []
 
   return (
-    <section class="queue-panel" aria-label="Agent queue">
+    <section class="queue-panel" aria-labelledby="queue-title">
       <header class="queue-head">
-        <h2>Queue</h2>
+        <h2 class="ptitle" id="queue-title">Queue</h2>
         <Show when={props.snapshot.queue}>
           {(q) => (
             <span class="queue-summary">

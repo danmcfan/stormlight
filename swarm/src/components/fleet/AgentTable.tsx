@@ -3,24 +3,27 @@ import { formatCost, formatDuration, formatRelative, formatTokens, shortModel } 
 import { agentDuration, type Row, type SortKey } from './rows'
 import { StatusDot } from './StatusDot'
 import { AgentPlanCell } from '../plan/AgentPlanCell'
+import { Icon } from '../frame/Gem'
+import { modelFamily } from '../graph/model'
 
 interface Col {
   key: SortKey | null
   label: string
   num?: boolean
   hideSm?: boolean
+  hideMd?: boolean
 }
 
 const COLS: Col[] = [
   { key: 'status', label: 'Status' },
   { key: 'label', label: 'Agent' },
-  { key: 'kind', label: 'Kind', hideSm: true },
+  { key: 'kind', label: 'Kind', hideSm: true, hideMd: true },
   { key: 'model', label: 'Model', hideSm: true },
   { key: 'round', label: 'Round', num: true },
-  { key: 'started', label: 'Started', hideSm: true },
+  { key: 'started', label: 'Started', hideSm: true, hideMd: true },
   { key: 'duration', label: 'Time', num: true },
   { key: 'turns', label: 'Turns', num: true },
-  { key: 'input', label: 'In', num: true, hideSm: true },
+  { key: 'input', label: 'In', num: true, hideSm: true, hideMd: true },
   { key: 'output', label: 'Out', num: true },
   { key: 'cacheRead', label: 'Cache read', num: true, hideSm: true },
   { key: 'cost', label: 'Est. cost', num: true },
@@ -49,7 +52,7 @@ export function AgentTable(props: {
               {(c) => (
                 <th
                   scope="col"
-                  class={`${c.num ? 'num' : ''} ${c.hideSm ? 'hide-sm' : ''}`}
+                  class={`${c.num ? 'num' : ''} ${c.hideSm ? 'hide-sm' : ''} ${c.hideMd ? 'hide-md' : ''}`}
                   aria-sort={ariaSort(c)}
                 >
                   <Show when={c.key} fallback={c.label}>
@@ -101,16 +104,21 @@ export function AgentTable(props: {
                       {a().label}
                     </button>
                   </td>
-                  <td class="hide-sm">{a().kind}</td>
-                  <td class="hide-sm mono">{shortModel(a().model)}</td>
+                  <td class="hide-sm hide-md">{a().kind}</td>
+                  <td class="hide-sm">
+                    <span class="model">
+                      <Icon name={modelFamily(a().model)} />
+                      {shortModel(a().model)}
+                    </span>
+                  </td>
                   <td class="num">{row().round ?? '–'}</td>
-                  <td class="hide-sm">{formatRelative(a().startedAt, props.now)}</td>
+                  <td class="hide-sm hide-md">{formatRelative(a().startedAt, props.now)}</td>
                   <td class="num">{formatDuration(agentDuration(a(), props.now))}</td>
                   <td class="num">{a().turns}</td>
-                  <td class="num hide-sm">{formatTokens(a().usage.input)}</td>
+                  <td class="num hide-sm hide-md">{formatTokens(a().usage.input)}</td>
                   <td class="num">{formatTokens(a().usage.output)}</td>
                   <td class="num hide-sm">{formatTokens(a().usage.cacheRead)}</td>
-                  <td class="num">{formatCost(a().costUsd)}</td>
+                  <td class="num cost">{formatCost(a().costUsd)}</td>
                   <td class="hide-sm">
                     <AgentPlanCell agent={a()} />
                   </td>

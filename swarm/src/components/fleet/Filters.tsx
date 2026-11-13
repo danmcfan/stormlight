@@ -6,6 +6,7 @@ import {
   SegmentedControlItem,
 } from '@ui-sdk/solid/segmented-control'
 import { Select, SelectContent, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@ui-sdk/solid/select'
+import { Socket } from '../frame/Gem'
 import type { SwarmSnapshot } from '../../lib/types'
 import { formatCost, formatDuration, shortModel } from './format'
 import { agentDuration, type Filters } from './rows'
@@ -49,23 +50,30 @@ export function RoundSelector(props: {
   return (
     <div class="rounds">
       <SegmentedControl
+        class="seg"
         aria-label="Round"
         value={props.value}
         onValueChange={(v) => v && props.onChange(v)}
       >
         <SegmentedControlIndicator />
         <SegmentedControlItem value="all">
-          <span class="round-name">All</span>
-          <span class="round-stats">
-            {totalAgents()} agents · {formatCost(totalCost())} · {formatDuration(span())}
+          <Socket />
+          <span class="round-text">
+            <span class="round-name">All</span>
+            <span class="round-stats">
+              {totalAgents()} agents · {formatCost(totalCost())} · {formatDuration(span())}
+            </span>
           </span>
         </SegmentedControlItem>
         <For each={rounds()} keyed={(r) => r.index}>
           {(r) => (
             <SegmentedControlItem value={String(r().index)}>
-              <span class="round-name">Round {r().index}</span>
-              <span class="round-stats">
-                {r().agents} agents · {formatCost(r().costUsd)} · {formatDuration(r().durationMs)}
+              <Socket />
+              <span class="round-text">
+                <span class="round-name">Round {r().index}</span>
+                <span class="round-stats">
+                  {r().agents} agents · {formatCost(r().costUsd)} · {formatDuration(r().durationMs)}
+                </span>
               </span>
             </SegmentedControlItem>
           )}

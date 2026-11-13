@@ -54,7 +54,8 @@ export function PlanUsageSummary(props: { sessionId?: string; snapshot?: SwarmSn
   }
 
   return (
-    <section class="plan-summary" aria-label="Plan usage">
+    <section class="plan-summary" aria-labelledby="plan-title">
+      <h2 class="ptitle" id="plan-title">Plan usage</h2>
       <Show when={plan()} fallback={<p class="note">No plan readings yet.</p>}>
         <div class="plan-meters">
           <WindowMeter label="5-hour window" usage={session()?.plan?.fiveHour} fallback={plan()!.latest?.fiveHour} now={now()} />

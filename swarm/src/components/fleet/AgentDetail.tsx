@@ -31,6 +31,8 @@ import {
 import { splitCost } from './pricing'
 import { agentDuration } from './rows'
 import { StatusDot } from './StatusDot'
+import { Orbs } from '../frame/SphereFrame'
+import { Icon, Socket, toolIcon } from '../frame/Gem'
 
 export function AgentDetail(props: {
   snapshot: SwarmSnapshot
@@ -49,6 +51,9 @@ export function AgentDetail(props: {
     >
       <DrawerBackdrop />
       <DrawerContent class="detail" initialFocus="content">
+        <div class="detail-orbs" aria-hidden="true">
+          <Orbs corners={['tl', 'bl']} />
+        </div>
         <Show when={agent()} fallback={<DrawerTitle>Agent not found</DrawerTitle>}>
           {(a) => <Body agent={a()} snapshot={props.snapshot} now={props.now} />}
         </Show>
@@ -81,7 +86,10 @@ function Body(props: { agent: Agent; snapshot: SwarmSnapshot; now: number }) {
     <>
       <div class="detail-head">
         <DrawerTitle>{a().label}</DrawerTitle>
-        <DrawerClose>Close</DrawerClose>
+        <DrawerClose class="gem-btn">
+          <Socket />
+          Close
+        </DrawerClose>
       </div>
       <DrawerDescription>
         {a().kind === 'main' ? 'Main agent' : `Subagent${round() ? `, round ${round()!.index}` : ''}`} ·{' '}
@@ -175,7 +183,9 @@ function Body(props: { agent: Agent; snapshot: SwarmSnapshot; now: number }) {
               <For each={calls()} keyed={(c) => c.id}>
                 {(c) => (
                   <TimelineItem>
-                    <TimelineMarker />
+                    <TimelineMarker>
+                      <Icon name={toolIcon(c().name)} />
+                    </TimelineMarker>
                     <TimelineConnector />
                     <TimelineTitle>{c().name}</TimelineTitle>
                     <TimelineTime datetime={new Date(c().at).toISOString()}>{formatClock(c().at)}</TimelineTime>

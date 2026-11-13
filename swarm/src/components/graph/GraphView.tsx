@@ -1,11 +1,9 @@
 import { For, Show, createEffect, createMemo, createSignal, onSettled } from 'solid-js'
-import { Button } from '@ui-sdk/solid/button'
 import { SegmentedControl, SegmentedControlIndicator, SegmentedControlItem } from '@ui-sdk/solid/segmented-control'
 import { Switch, SwitchThumb } from '@ui-sdk/solid/switch'
 import type { SwarmSnapshot } from '../../lib/types'
 import { createLayout, type Layout } from './layout'
 import {
-  FAMILY_COLOR,
   STATUS_LABEL,
   buildGraph,
   labelOffsets,
@@ -20,6 +18,9 @@ import {
   type ModelFamily,
 } from './model'
 import Panel from './Panel'
+import { GemButton } from '../ui/GemButton'
+import { Gem, Socket, type GemFamily } from '../frame/Gem'
+import { SphereFrame } from '../frame/SphereFrame'
 import './graph.css'
 
 interface View {
@@ -274,8 +275,9 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
   const families: ModelFamily[] = ['opus', 'sonnet', 'haiku', 'other']
 
   return (
-    <div ref={pageEl} class={['graph-page', { 'has-sel': selected() !== null }]}>
-      <div class="graph-canvas" >
+    <div ref={pageEl} class={['graph-page', 'shell', { 'has-sel': selected() !== null }]}>
+      <SphereFrame joined flush glow={0.85} class="graph-frame">
+      <div class="graph-canvas">
         <svg
           ref={svgEl}
           class="graph-svg"
@@ -294,16 +296,30 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                   const t = () => pos(l().target)
                   const hot = () => l().kind !== 'tree' && isRecent(l().lastAt, now())
                   const incident = () => selected() === l().source || selected() === l().target
+                  const x1 = () => s()[0]
+                  const y1 = () => s()[1]
+                  const x2 = () => t()[0]
+                  const y2 = () => t()[1]
+                  const run = () => ({ '--dx': `${x2() - x1()}px`, '--dy': `${y2() - y1()}px` })
                   return (
-                    <line
-                      class={['edge', l().kind, { hot: hot(), dim: selected() !== null && !incident(), lit: incident() }]}
-                      x1={s()[0]}
-                      y1={s()[1]}
-                      x2={t()[0]}
-                      y2={t()[1]}
-                      stroke-width={l().kind === 'touch' ? edgeWidth(l().count) : l().kind === 'spawn' ? 1.6 : 1}
-                      style={hot() ? { 'stroke-opacity': 0.55 + 0.45 * recency(l().lastAt, now()) } : undefined}
-                    />
+                    <g class={['link', { dim: selected() !== null && !incident() }]}>
+                      <Show when={hot()}>
+                        <line class="edge-glow" x1={x1()} y1={y1()} x2={x2()} y2={y2()} stroke-width={edgeWidth(l().count) + 5} />
+                      </Show>
+                      <line
+                        class={['edge', l().kind, { hot: hot(), lit: incident() }]}
+                        x1={x1()}
+                        y1={y1()}
+                        x2={x2()}
+                        y2={y2()}
+                        stroke-width={l().kind === 'touch' ? edgeWidth(l().count) : l().kind === 'spawn' ? 1.6 : 1}
+                        style={hot() ? { 'stroke-opacity': 0.55 + 0.45 * recency(l().lastAt, now()) } : undefined}
+                      />
+                      <Show when={hot()}>
+                        <circle class="spark" r="5" cx={x1()} cy={y1()} fill="url(#spark)" style={run()} />
+                        <circle class="spark s2" r="5" cx={x1()} cy={y1()} fill="url(#spark)" style={run()} />
+                      </Show>
+                    </g>
                   )
                 }}
               </For>
@@ -313,7 +329,8 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                 {(n) => {
                   const p = () => pos(n().id)
                   const hot = () => isRecent(n().lastAt, now()) && (n().kind === 'component' || n().status === 'running')
-                  const color = () => (n().family ? FAMILY_COLOR[n().family!] : undefined)
+                  const family = (): GemFamily => n().family ?? 'other'
+                  const sphere = () => (family() === 'other' ? '#orb' : `#orb-${family()}`)
                   const showLabel = () =>
                     n().kind === 'agent' || n().r >= 9 || view().k > 1.2 || (neighbors()?.has(n().id) ?? false) || hover()?.id === n().id
                   return (
@@ -338,28 +355,43 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                       aria-label={`${n().kind === 'agent' ? 'Agent' : 'Component'} ${n().label}`}
                       onKeyDown={(e) => onNodeKey(e, n().id)}
                     >
+                      <circle class="focus-ring" r={n().r * (n().kind === 'agent' ? 1.2 : 1) + 5} />
                       <Show when={hot()}>
-                        <circle class="halo" r={n().r + 7} />
-                      </Show>
-                      <Show when={n().status === 'running'}>
-                        <polygon class="ring" points={hex(n().r + 5)} style={{ stroke: color() }} />
+                        <circle class="halo" r={n().r * (n().kind === 'agent' ? 2.1 : 1.9)} fill="url(#halo)" />
                       </Show>
                       <Show
                         when={n().kind === 'agent'}
-                        fallback={<circle class="shape comp" r={n().r} style={{ '--depth': Math.min(n().depth ?? 0, 4) }} />}
+                        fallback={
+                          <>
+                            <Show when={hot()}>
+                              <polygon class="comp-glow" points={hex(n().r)} />
+                            </Show>
+                            <polygon class="shape comp" points={hex(n().r)} style={{ '--depth': Math.min(n().depth ?? 0, 4) }} />
+                            <Show when={hot()}>
+                              <circle class="comp-core" r={Math.max(2.5, n().r * 0.22)} />
+                            </Show>
+                          </>
+                        }
                       >
-                        <polygon class="shape" points={hex(n().r)} style={{ fill: color(), stroke: color() }} />
-                        <Show when={n().main}>
-                          <circle class="core" r={n().r * 0.38} />
+                        <Show when={n().status === 'error'}>
+                          <circle class="err-ring" r={n().r * 1.2 + 2} />
                         </Show>
+                        <use
+                          class="sphere"
+                          href={sphere()}
+                          x={-n().r * 1.2}
+                          y={-n().r * 1.2}
+                          width={n().r * 2.4}
+                          height={n().r * 2.4}
+                        />
                       </Show>
                       <Show when={showLabel()}>
-                        <text class="lbl" y={n().r + 12 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
+                        <text class="n-lbl" y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 12 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
                           {trunc(n().label, 22)}
                         </text>
                       </Show>
                       <Show when={n().activity}>
-                        <text class="act" y={n().r + 24 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
+                        <text class="act" y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 24 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
                           {n().activity}
                         </text>
                       </Show>
@@ -395,33 +427,39 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
         </Show>
 
         <div class="graph-toolbar">
-          <SegmentedControl aria-label="Round" value={round()} onValueChange={(v) => v && setRound(v)}>
+          <SegmentedControl class="seg compact" aria-label="Round" value={round()} onValueChange={(v) => v && setRound(v)}>
             <SegmentedControlIndicator />
-            <SegmentedControlItem value="all">All</SegmentedControlItem>
-            <For each={rounds()}>{(i) => <SegmentedControlItem value={String(i)}>Round {i}</SegmentedControlItem>}</For>
+            <SegmentedControlItem value="all">
+              <Socket />
+              All
+            </SegmentedControlItem>
+            <For each={rounds()}>
+              {(i) => (
+                <SegmentedControlItem value={String(i)}>
+                  <Socket />
+                  Round {i}
+                </SegmentedControlItem>
+              )}
+            </For>
           </SegmentedControl>
           <label class="graph-switch">
             <Switch checked={showUntouched()} onCheckedChange={(v) => setShowUntouched(v)}>
               <SwitchThumb />
             </Switch>
-            Untouched components
+            Untouched<span class="hide-sm"> components</span>
           </label>
-          <Button
-            class="graph-btn"
+          <GemButton
+            class="fit"
             onClick={() => {
               autoFit = true
               fit()
             }}
           >
-            Fit to view
-          </Button>
+            <span class="btn-text">Fit to view</span>
+          </GemButton>
           <div class="graph-zoom">
-            <Button class="graph-btn" aria-label="Zoom in" onClick={() => zoomCenter(1.3)}>
-              +
-            </Button>
-            <Button class="graph-btn" aria-label="Zoom out" onClick={() => zoomCenter(1 / 1.3)}>
-              −
-            </Button>
+            <GemButton icon="plus" aria-label="Zoom in" onClick={() => zoomCenter(1.3)} />
+            <GemButton icon="minus" aria-label="Zoom out" onClick={() => zoomCenter(1 / 1.3)} />
           </div>
         </div>
 
@@ -429,24 +467,26 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
           <For each={families}>
             {(f) => (
               <span>
-                <svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true">
-                  <polygon points={hex(6)} fill={FAMILY_COLOR[f]} />
-                </svg>
+                <Gem family={f} />
                 {f}
               </span>
             )}
           </For>
           <span>
-            <i class="lg-run" />
+            <span class="st" data-status="running" aria-hidden="true">
+              <Gem />
+            </span>
             running
           </span>
           <span>
-            <i class="lg-done" />
+            <span class="st" data-status="idle" aria-hidden="true">
+              <Gem />
+            </span>
             done
           </span>
           <span>
-            <svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true">
-              <circle r="5.5" class="lg-comp" />
+            <svg class="lg-hex" viewBox="-9 -9 18 18" aria-hidden="true">
+              <polygon points={hex(7)} />
             </svg>
             directory
           </span>
@@ -473,6 +513,7 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
           onClose={() => setSelected(null)}
         />
       </Show>
+      </SphereFrame>
     </div>
   )
 }

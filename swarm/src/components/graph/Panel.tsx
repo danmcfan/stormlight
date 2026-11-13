@@ -1,8 +1,8 @@
 import { For, Show } from 'solid-js'
-import { Button } from '@ui-sdk/solid/button'
+import { GemButton } from '../ui/GemButton'
+import { Gem } from '../frame/Gem'
 import type { Agent, Component, SwarmSnapshot } from '../../lib/types'
 import {
-  FAMILY_COLOR,
   STATUS_LABEL,
   agentNodeId,
   componentNodeId,
@@ -43,13 +43,17 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
   return (
     <div class="gp-frag">
       <div class="gp-tags">
-        <span class="gp-chip" style={{ '--chip': FAMILY_COLOR[modelFamily(a().model)] }}>
-          {shortModel(a().model)}
+        <span class="chip">
+          <Gem family={modelFamily(a().model)} />
+          <span class="mono">{shortModel(a().model)}</span>
         </span>
-        <span class="gp-chip" data-status={a().status}>
+        <span class="chip" data-status={a().status}>
+          <span class="st" data-status={a().status} aria-hidden="true">
+            <Gem kind={a().status === 'done' ? 'set' : a().status === 'error' ? 'dead' : 'live'} />
+          </span>
           {STATUS_LABEL[a().status]}
         </span>
-        <span class="gp-chip muted">{a().kind}</span>
+        <span class="chip">{a().kind}</span>
       </div>
       <Show when={a().description}>
         <p class="gp-desc">{a().description}</p>
@@ -165,7 +169,7 @@ function ComponentDetails(props: { comp: Component; snapshot: SwarmSnapshot; now
           {(x) => (
             <li>
               <button type="button" class="gp-link" onClick={() => props.onSelect(agentNodeId(x.a.id))}>
-                <span class="gp-dot" style={{ background: FAMILY_COLOR[modelFamily(x.a.model)] }} />
+                <Gem class="gp-gem" family={modelFamily(x.a.model)} />
                 {x.a.label}
               </button>
               <span class="gp-sub">{x.n}x</span>
@@ -202,9 +206,7 @@ export default function Panel(props: PanelProps) {
       <header class="gp-head">
         <div class="gp-grip" aria-hidden="true" />
         <h3>{agent()?.label ?? comp()?.label ?? 'Not found'}</h3>
-        <Button class="gp-close" aria-label="Close details" onClick={props.onClose}>
-          x
-        </Button>
+        <GemButton icon="close" class="gp-close" aria-label="Close details" onClick={props.onClose} />
       </header>
       <div class="gp-body">
         <Show when={agent()}>{(a) => <AgentDetails agent={a()} snapshot={props.snapshot} now={props.now} onSelect={props.onSelect} />}</Show>

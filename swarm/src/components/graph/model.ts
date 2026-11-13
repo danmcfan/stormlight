@@ -5,10 +5,10 @@ export const RECENT_MS = 10_000
 export type ModelFamily = 'opus' | 'sonnet' | 'haiku' | 'other'
 
 export const FAMILY_COLOR: Record<ModelFamily, string> = {
-  opus: '#c084fc',
-  sonnet: '#38bdf8',
-  haiku: '#4ade80',
-  other: '#fbbf24',
+  opus: '#9a8cff',
+  sonnet: '#6cc4ff',
+  haiku: '#5be3f0',
+  other: '#8ea3c6',
 }
 
 export const STATUS_LABEL: Record<AgentStatus, string> = {
