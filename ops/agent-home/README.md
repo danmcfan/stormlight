@@ -8,14 +8,12 @@ session) can change it without root. The base caps all of it at 6 GB.
   `claude-rc.service` keeps `claude remote-control` running in `~/stormlight`.
   Open the Code tab in the Claude desktop or mobile app (or claude.ai/code)
   and pick the `agent-box` environment.
-- **Cursor CLI**: `~/.local/bin/cursor-agent`. From Rex (or any terminal):
-
-  ```bash
-  ssh agent@agent-box.tail6da63a.ts.net -t tmux new -A -s cursor
-  ```
-
-  then `cursor-agent` in `~/stormlight`. tmux keeps it running if you
-  disconnect; the same command reattaches.
+- **Cursor CLI**: `~/.local/bin/cursor-agent`. Model:
+  `cursor-agent --model deepseek-v41-flash-1017-medium` (or pick it inside).
+- **Rex server**: `~/.nix-profile/bin/rex`, started by the `rex.socket` user
+  unit. Sessions live on the box and keep running when you disconnect. On the
+  Mac: Rex > Add Remote Host… with `ssh://agent@agent-box.tail6da63a.ts.net`
+  (the CLI equivalent: `rex hosts add agent-box ssh://agent@agent-box.tail6da63a.ts.net`).
 
 Set up or update: `~/stormlight/ops/agent-home/setup.sh` as agent.
 Logs: `journalctl --user -u claude-rc -f`.
