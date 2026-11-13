@@ -198,11 +198,60 @@ def build_tasset(s):
     return p
 
 
+def band(p, mat, loft, y, r=TRIM_R, th0=0.0, th1=TAU, n=None, **kw):
+    """A trim band at a local height on a loft (rings take t, which drifts as sections move)."""
+    ring(p, mat, loft, t_at(loft, y), r=r, th0=th0, th1=th1, n=n, **kw)
+
+
+def rim(p, mat, loft, yf, n=40, r=TRIM_R, off=0.0):
+    """A closed band round a loft whose height varies with angle: yf(th) -> local y.
+
+    The pauldron's rim is cut high over the outside of the arm and low at the front and back, so it
+    reads as a rising line in the front view rather than the horizontal ring a flat section gives.
+    """
+    ths = np.linspace(0, TAU, n, endpoint=False)
+    pts = [loft.surf(t_at(loft, yf(th)), th, off) for th in ths]
+    nrm = [loft.normal(t_at(loft, yf(th)), th) for th in ths]
+    tube(p, mat, pts, r=r, closed=True, nrm=nrm, flat=FLAT)
+
+
+# The references draw the arms out from the body, and compare_reference.py poses the model to
+# match (POSE arm 45, elbow -37), so trim read off the front reference is in that posed frame.
+REF_ARM, REF_ELBOW = deg(45), deg(-37)
+ELBOW = (SHOULDER[0] + UPPER_ARM * math.sin(REF_ARM), WAIST_Y + SHOULDER[1] - UPPER_ARM * math.cos(REF_ARM))
+ELBOW_ROLL = REF_ARM + REF_ELBOW                                   # the vambrace hangs 8 deg out
+WRIST = (ELBOW[0] + LOWER_ARM * math.sin(ELBOW_ROLL), ELBOW[1] - LOWER_ARM * math.cos(ELBOW_ROLL))
+
+
+def posed(pts, o, roll):
+    """Front-view reference points (x, h in world metres) -> (x, y) in a piece whose origin is at
+    `o` and which the compare pose rolls `roll` about +z. proj/ref_path ignore rotation, so the
+    arm pieces (which are posed) need this first."""
+    c, s = math.cos(roll), math.sin(roll)
+    return [(c * (x - o[0]) + s * (h - o[1]), -s * (x - o[0]) + c * (h - o[1])) for x, h in pts]
+
+
+def posed_path(p, mat, loft, pts, o, roll, **kw):
+    """Trim along reference points read off the front view, in the piece's own (posed) frame."""
+    path(p, mat, loft, [(t_at(loft, y), th_for(loft, t_at(loft, y), x, "front")) for x, y in posed(pts, o, roll)], **kw)
+
+
+def th_near(loft, t, x, z):
+    """The loft angle whose section point is closest to local (x, z), for trim that both the front
+    and the side reference pin down (a line on the outer face, at a known depth)."""
+    ths = np.linspace(0, TAU, 361)
+    pts = np.array([loft.local(t, th) for th in ths])
+    return float(ths[int(np.argmin((pts[:, 0] - x) ** 2 + (pts[:, 2] - z) ** 2))])
+
+
 def build_pauldron(s):
     """Pauldron (front/side/back references, plate-pauldron sheet): an upright dome whose outer face
-    drops nearly straight over the arm, a trimmed rim, two lames below it wrapping the outside of the
-    arm, an arched flange (the "horn" seen from the front) along its inner edge, and round bosses
-    where it meets the chest and back. Built for the left side and mirrored. Origin: the shoulder."""
+    drops nearly straight over the arm, a rim trim band 2 cm above its lower edge (x +-0.73 at
+    h 1.80 in the front view), two lames below it wrapping the outside of the arm with trim along
+    their lower edges (out to x 0.71 at h 1.70 and 0.70 at 1.62), an arched flange (the "horn") along
+    its inner edge, and round bosses where it meets the chest and back. The lames stop at x 0.70
+    below 1.68: the reference's pauldron pinches in over the elbow there.
+    Built for the left side and mirrored. Origin: the shoulder."""
     p = Piece(f"pauldron_{'l' if s > 0 else 'r'}")
     M = Frame(np.diag([s, 1.0, 1.0]))
     mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
@@ -210,23 +259,42 @@ def build_pauldron(s):
     dome = Loft([
         dict(y=0.055, rx=0.228, rf=0.242, rb=0.25, cx=cx, cz=cz, p=2.3),
         dict(y=0.095, rx=0.238, rf=0.252, rb=0.26, cx=cx, cz=cz, p=2.3),
-        dict(y=0.18, rx=0.232, rf=0.245, rb=0.252, cx=cx, cz=cz, p=2.25),
-        dict(y=0.26, rx=0.198, rf=0.215, rb=0.222, cx=cx, cz=cz, p=2.15),
-        dict(y=0.32, rx=0.125, rf=0.15, rb=0.158, cx=cx, cz=cz),
-        dict(y=0.352, rx=0.06, rf=0.08, rb=0.085, cx=cx, cz=cz),
+        dict(y=0.18, rx=0.228, rf=0.234, rb=0.24, cx=cx, cz=cz, p=2.25),
+        dict(y=0.26, rx=0.186, rf=0.192, rb=0.198, cx=cx, cz=cz, p=2.15),
+        dict(y=0.32, rx=0.116, rf=0.128, rb=0.134, cx=cx, cz=cz),
+        dict(y=0.352, rx=0.055, rf=0.07, rb=0.075, cx=cx, cz=cz),
         dict(y=0.362, rx=0.01, rf=0.01, rb=0.01, cx=cx, cz=cz),
     ], M).mesh(p, "plate", seg=26, sub=2)
-    ring(p, "trim", dome, t_at(dome, 0.085), r=TRIM_R)
-    # Lames: partial bands round the outside of the arm, each tucked under the one above,
-    # lower edge flared and trimmed.
-    # The lower edges curve: lowest over the outside of the arm, rising toward front and back.
-    for y0, y1, k in ((-0.03, 0.07, 0.0), (-0.11, -0.01, 0.014)):
+    # The dome's trim is one continuous outline, as the front reference draws it: up the inner edge
+    # (x 0.34 from h 1.97 down to 1.88), out along the rim to x 0.44 at h 1.73, then sweeping out and
+    # up over the outside of the arm to x 0.70 at h 1.82 — the band the brief measures at +-0.73
+    # around h 1.80. Local y = world h - 1.70, local x = world x - 0.42 (the shoulder).
+    o = (s * 0.42, 1.70)
+    arch = [(0.320, 1.945), (0.322, 1.910), (0.330, 1.880), (0.355, 1.850), (0.395, 1.815),
+            (0.428, 1.790)]
+    q = posed([(s * ax, ah) for ax, ah in arch], o, 0.0)
+    if s < 0:
+        q = [(-ax, ay) for ax, ay in q]
+    path(p, "trim", dome, [(t_at(dome, y), th_for(dome, t_at(dome, y), x, "left" if s > 0 else "right"))
+                           for x, y in q], r=TRIM_R, n=20)
+    # The rim proper: an arc along the dome's lower edge from the front (x 0.42, h 1.74) round the
+    # outside of the arm (x 0.71 at h 1.82, the band the brief measures at +-0.73 round h 1.80) to
+    # the back. In the dome's own angles th 0 is the outside of the arm and +-80 deg the front and
+    # back edges, so the band is lowest at the edges and highest over the outside.
+    rim(p, "trim", dome, lambda th: 0.030 + 0.062 * math.cos(th) ** 3, n=44)
+    # Lames: partial bands round the outside of the arm, each tucked under the one above, the lower
+    # edge flared and trimmed. Over the *outside* of the arm the reference's lames are a straight
+    # wall in the front view (x 0.70-0.73, nearly vertical); their lower edges dip in the side view
+    # and hook up at the front and back, so `edge` is a t that is greatest over the outside.
+    for y0, y1, k in ((-0.03, 0.07, 0.0), (-0.105, -0.005, 0.012)):
         lame = Loft([dict(y=y1, rx=0.2 - k, rf=0.228 - k, rb=0.235 - k, cx=cx + 0.005, cz=cz, p=2.2),
-                     dict(y=y0, rx=0.218 - k, rf=0.244 - k, rb=0.25 - k, cx=cx + 0.005, cz=cz, p=2.2)], M)
-        edge = lambda v: 0.62 + 0.36 * math.sin(math.pi * v) ** 0.8          # noqa: E731
-        patch(p, "plate", lame, 0.0, edge, deg(-112), deg(112), off=0.0, thick=0.014, nt=2, nth=16)
-        path(p, "trim", lame, [(edge(v) - 0.08, deg(-108) + deg(216) * v) for v in np.linspace(0.02, 0.98, 12)],
-             r=TRIM_R * 0.9, off=0.014, n=20)
+                     dict(y=y0, rx=0.205 - k, rf=0.236 - k, rb=0.243 - k, cx=cx + 0.005, cz=cz, p=2.2)], M)
+        # Side view: the lame's lower edge sits at h 1.72 / 1.62 from the outer face round to the
+        # front, and rides up to 1.78 / 1.68 where the next lame tucks under at the front and back.
+        edge = lambda v: 0.34 + 0.52 * math.sin(math.pi * v) ** 0.55          # noqa: E731
+        patch(p, "plate", lame, 0.0, edge, deg(-112), deg(112), off=0.0, thick=0.014, nt=3, nth=18)
+        path(p, "trim", lame, [(edge(v) - 0.075, deg(-108) + deg(216) * v) for v in np.linspace(0.02, 0.98, 14)],
+             r=TRIM_R * 0.9, off=0.014, n=22)
     # The arched flange along the inner edge: outline in (z, y), bent to follow the dome's edge,
     # leaning a little toward the head. Its top arc carries a trim line on the outer face.
     # A rounded half-disc: centre (z -0.09, y 0.27), radii 0.255 (z) x 0.26 (y), base buried in the dome.
@@ -246,8 +314,8 @@ def build_pauldron(s):
     inset = [(-0.09 + (z + 0.09) * 0.86, 0.27 + (y - 0.27) * 0.86) for z, y in arc[1:-1]]
     pts = [fl(z, y, thick / 2 + 0.002) for z, y in inset]
     tube(p, "trim", pts, r=TRIM_R * 0.85, nrm=[lean @ mx((1, 0, 0))] * len(pts), flat=0.45)
-    # Round bosses where the pauldron meets the chest (front) and the back plate.
-    # Trim down the dome's inner front edge, from the fin to the rondel.
+    # Trim down the dome's inner front edge, from the fin to the rondel (reference: the vertical
+    # line at x 0.32-0.37 running h 1.68 down to 1.56 on the inner side of the arm).
     path(p, "trim", dome, [(t_at(dome, 0.3), deg(150)), (t_at(dome, 0.22), deg(132)), (t_at(dome, 0.13), deg(118))],
          r=TRIM_R, n=10)
     for z, nz in ((0.235, 1.0), (-0.355, -1.0)):
@@ -279,12 +347,19 @@ def build_upperarm(s):
 
 def build_forearm(s):
     """Couter (round elbow cop with a disc on the outside) + a heavy vambrace flared toward the
-    elbow, trim bands at both ends and the stepped line down the outside. Origin: the elbow."""
+    elbow, with the reference's two trim bands and the stepped line down the outside. Origin: the
+    elbow.
+
+    Front reference: the vambrace is widest at its top (x 0.48-0.86 at h 1.40) and tapers to the
+    wrist; the bands ring it at 1.38-1.42 and 1.11-1.15 (centres 1.40 and 1.13); the stepped line
+    jogs from x 0.58 at h 1.36 out to 0.65 at 1.26, then drops straight to the lower band."""
     p = Piece(f"forearm_{'l' if s > 0 else 'r'}")
-    # The elbow cop rides high: the references draw the elbow well up under the lames.
-    ellipsoid(p, "plate", (s * 0.012, 0.04, -0.01), (0.125, 0.115, 0.12), seg=16, rings=6)
-    disc(p, "plate", (s * 0.135, 0.09, -0.03), (s, 0.15, -0.3), 0.07, 0.04, seg=16)
-    disc(p, "plate", (s * 0.155, 0.094, -0.036), (s, 0.15, -0.3), 0.045, 0.03, seg=16)
+    # The elbow cop rides high: the references draw the elbow well up under the lames, inside the
+    # vambrace's own width (the front reference is 0.70 wide at h 1.57 and 0.73 at 1.62, both of
+    # which the vambrace's flared top already fills), so the cop is small and the disc sits on it.
+    ellipsoid(p, "plate", (s * 0.01, 0.035, -0.01), (0.1, 0.105, 0.105), seg=14, rings=5)
+    disc(p, "plate", (s * 0.098, 0.075, -0.02), (s, 0.15, -0.3), 0.052, 0.032, seg=14)
+    disc(p, "plate", (s * 0.114, 0.079, -0.025), (s, 0.15, -0.3), 0.034, 0.024, seg=12)
     L = Loft([
         dict(y=0.02, rx=0.155, rf=0.145, rb=0.145),
         dict(y=-0.05, rx=0.168, rf=0.152, rb=0.152),
@@ -292,73 +367,100 @@ def build_forearm(s):
         dict(y=-0.31, rx=0.138, rf=0.126, rb=0.126),
         dict(y=-0.345, rx=0.132, rf=0.122, rb=0.122),
     ]).mesh(p, "plate", seg=22, sub=2)
-    ring(p, "trim", L, 0.55, r=TRIM_R)
-    ring(p, "trim", L, 3.45, r=TRIM_R)
-    outer = 0.0 if s > 0 else math.pi   # loft angle facing away from the body
-    path(p, "trim", L, [(0.75, outer + s * 0.32), (1.5, outer + s * 0.32), (1.8, outer - s * 0.05),
-                        (3.25, outer - s * 0.05)], r=TRIM_R * 0.9, n=14)
+    band(p, "trim", L, -0.05, r=TRIM_R)          # centred on h 1.40 in the compare pose
+    band(p, "trim", L, -0.3, r=TRIM_R)           # centred on h 1.13, just above the wrist
+    # The stepped line down the outer face, read off the front reference: x 0.58 at h 1.36,
+    # stepping out to 0.65 at 1.26 and 0.655 at 1.15. th_for's "front" face solves local x from a
+    # front-view reading, which is the measurement the brief gives.
+    pts = [(0.578, 1.36), (0.600, 1.322), (0.640, 1.285), (0.648, 1.22), (0.655, 1.15)]
+    q = posed(pts, (ELBOW[0], ELBOW[1]), ELBOW_ROLL)
+    if s < 0:
+        q = [(-x, y) for x, y in q]
+    path(p, "trim", L, [(t_at(L, y), th_for(L, t_at(L, y), x, "front")) for x, y in q], r=TRIM_R * 0.9, n=18)
     return p
 
 
 HAND_K = 1.25      # fist scale (the references draw huge gauntlets)
 GRIP_Y = -0.17 * HAND_K   # the grip passes through the fist this far below the wrist (humanoid.ts PLATE_HAND)
+# The fingers, in the gauntlet's own frame in *metres* (+x out of the back of the hand, y down the
+# arm; the wrist is the origin), converted from the front reference's silhouette per 2 cm of height:
+#   local y  outer x  inner x        (the piece is rolled 8 deg, so world h ~= 1.096 + y)
+#   -0.117   +0.084   -0.058         h 0.94: 0.18 m across the knuckles
+#   -0.198   +0.060   -0.057         h 0.86
+#   -0.260   +0.041   -0.070         h 0.84
+#   -0.301   +0.012   -0.095         h 0.80
+#   -0.334   -0.032   -0.099         h 0.76
+#   -0.350   -0.053   -0.077         h 0.74, the tips
+# So the knuckle row is 0.14 m wide, the fingers lean inboard as they drop (the drawing curls them
+# under the palm), the middle ones are longest, and the tips gather into a 4 cm band at h 0.73-0.75.
+FINGERS = ((0.085, -0.050, -0.330), (0.045, -0.068, -0.350),
+           (0.005, -0.082, -0.345), (-0.035, -0.096, -0.310))
+KNUCKLE_Y = -0.117
 
 
 def build_gauntlet(s):
-    """Heavy gauntlet (plate-gauntlet sheet): a short flared cuff, a back-of-hand plate with a
-    trimmed lower edge, a row of knuckle domes, four fingers of three plates curled round the
-    grip, a thumb of two plates over them, dark leather at the palm. The back of the hand faces
-    out (+x on the left hand), the thumb forward. Origin: the wrist; the grip runs through the
-    fist along z, GRIP_Y below the wrist."""
+    """Heavy gauntlet (plate-gauntlet sheet, front reference): a flared cuff with the enamel band
+    under its lower rim, a plate over the back of the hand with the sheet's inked border, knuckle
+    domes, four fingers of three plates hanging across the hand and curling in under the palm to
+    the tips at h 0.73, a thumb of two plates down the inner side to h 0.86, dark leather at the
+    palm. The back of the hand faces out (+x on the left hand). Origin: the wrist; the grip runs
+    through the fist, GRIP_Y below the wrist."""
     p = Piece(f"gauntlet_{'l' if s > 0 else 'r'}")
-    M = Frame(np.diag([s, 1.0, 1.0]) * HAND_K)
-    mx = lambda v: np.array([s * v[0], v[1], v[2]]) * HAND_K   # noqa: E731
+    mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
     cuff = Loft([
-        dict(y=0.05, rx=0.13, rf=0.122, rb=0.122),
-        dict(y=0.0, rx=0.128, rf=0.118, rb=0.118),
-        dict(y=-0.045, rx=0.1, rf=0.105, rb=0.1),
-    ], M).mesh(p, "plate", seg=22, sub=1)
-    ring(p, "trim", cuff, 0.15, r=TRIM_R * 0.85)
-    # Hand: dark leather body, a plate over its back.
+        dict(y=0.036, rx=0.098, rf=0.088, rb=0.086),
+        dict(y=-0.004, rx=0.094, rf=0.084, rb=0.082),
+        dict(y=-0.032, rx=0.082, rf=0.076, rb=0.074),
+    ]).mesh(p, "plate", seg=22, sub=1)
+    band(p, "trim", cuff, -0.007, r=TRIM_R * 0.85, n=26)  # the enamel band under the cuff (h ~1.09)
+    # Hand: dark leather core from the cuff to the knuckles, a plate over its back, trim round the
+    # plate's border (the sheet inks the whole plate).
     hand = Loft([
-        dict(y=-0.02, rx=0.06, rf=0.092, rb=0.085, cx=0.0, p=2.6),
-        dict(y=-0.08, rx=0.062, rf=0.1, rb=0.09, cx=0.005, p=2.8),
-        dict(y=-0.14, rx=0.055, rf=0.098, rb=0.088, cx=0.01, p=2.6),
-    ], M).mesh(p, "plate_dark", seg=16, sub=1)
-    edge = patch(p, "plate", hand, 0.0, 2.0, deg(-75), deg(75), off=0.0, thick=0.014, nt=3, nth=8)
-    tube(p, "trim", [e for e in edge if e[1] < -0.12][:9], r=0.006)
-    # Knuckle domes and fingers: each finger three plates wrapping the grip axis (along z).
-    gx, gy = -0.005, GRIP_Y / HAND_K
-    zs = (-0.066, -0.022, 0.022, 0.066)
-    for k, z in enumerate(zs):
-        ellipsoid(p, "plate", mx((0.05, -0.145, z)), tuple(HAND_K * np.array((0.024, 0.022, 0.021))), seg=8, rings=4)
-        rad = 0.056 - 0.003 * abs(k - 1.5)
-        angs = [deg(a) for a in (26, -28, -88, -140)]     # down round the grip from the knuckles
-        pts = [mx((gx + rad * math.cos(a), gy + rad * math.sin(a), z)) for a in angs]
+        dict(y=-0.03, rx=0.079, rf=0.072, rb=0.075, cx=-0.004, p=2.6),
+        dict(y=-0.075, rx=0.077, rf=0.082, rb=0.085, cx=-0.004, p=2.8),
+        dict(y=-0.118, rx=0.066, rf=0.082, rb=0.078, cx=-0.006, p=2.6),
+    ]).mesh(p, "plate_dark", seg=16, sub=1)
+    edge = patch(p, "plate", hand, 0.0, 2.0, deg(-84), deg(84), off=0.0, thick=0.012, nt=3, nth=8)
+    # The sheet inks the whole back-of-hand plate, and the side reference reads that border as two
+    # lines down the hand (z -0.21 and +0.17). Run the enamel round the plate's edge as a band on
+    # the hand loft, just outside the plate, so it reads from the front and from the side.
+    loop = [(0.0, th) for th in np.linspace(deg(-84), deg(84), 13)]
+    loop += [(2.0, th) for th in np.linspace(deg(84), deg(-84), 5)[1:]]
+    path(p, "trim", hand, loop, r=0.0065, off=0.019, n=26)
+    # Knuckle domes and the four fingers: three plates each, curling from the knuckle to the tip.
+    # They sit across the back of the hand (x) and spread a little along z so the hand reads from
+    # the side too; the reference side view is only 0.2 m deep at the fingers.
+    for k, (fx, tx, ty) in enumerate(FINGERS):
+        zz = (k - 1.5) * 0.021
+        pts = [mx((fx, KNUCKLE_Y, zz)),
+               mx((fx * 0.94 + tx * 0.06, KNUCKLE_Y - 0.072, zz * 1.2)),
+               mx((fx * 0.55 + tx * 0.45, KNUCKLE_Y - 0.140, zz * 1.35)),
+               mx((tx, ty, zz * 1.4))]
+        ellipsoid(p, "plate", pts[0] + mx((0.004, -0.01, 0.0)),
+                  tuple((0.023, 0.026, 0.032)), seg=8, rings=4)
         for i in range(3):
-            a0, a1 = pts[i], pts[i + 1]
-            d = a1 - a0
-            ln = np.linalg.norm(d)
-            R = np.column_stack([np.cross(d / ln, [0, 0, 1]), -d / ln, [0, 0, 1]])
-            w = (0.019 - 0.002 * i) * HAND_K
-            Loft([dict(y=0.004, rx=w, rf=w * 1.05, rb=w * 1.05, p=2.6),
-                  dict(y=-ln - 0.004, rx=w * 0.92, rf=w, rb=w, p=2.6)],
-                 Frame(R, a0)).mesh(p, "plate", seg=6, sub=1)
-    # Dark leather inside the curled fingers (the grip fills it in game; empty, it reads as a hole).
-    pad = Loft([dict(y=0.075, rx=0.034, rf=0.034, rb=0.034), dict(y=-0.075, rx=0.034, rf=0.034, rb=0.034)],
-               Frame(rot_x(math.pi / 2) * HAND_K, mx((gx, gy, 0.0)))).mesh(p, "plate_dark", seg=10, sub=1)
-    # Thumb: from the inside front of the hand, across the front of the fingers.
-    th = [mx((-0.035, -0.05, 0.075)), mx((-0.06, -0.13, 0.098)), mx((-0.035, -0.2, 0.09))]
+            d = pts[i + 1] - pts[i]
+            l = np.linalg.norm(d)
+            R = np.column_stack([np.cross(d / l, [0, 0, 1]), -d / l, [0, 0, 1]])
+            w = 0.025 - 0.0025 * i
+            Loft([dict(y=0.005, rx=w, rf=w * 1.15, rb=w * 1.15, p=2.6),
+                  dict(y=-l - 0.005, rx=w * 0.9, rf=w, rb=w, p=2.6)],
+                 Frame(R, pts[i])).mesh(p, "plate", seg=6, sub=1)
+    # Dark leather behind the fingers (the grip fills it in game; empty, it reads as a hole).
+    Loft([dict(y=0.05, rx=0.05, rf=0.026, rb=0.026), dict(y=-0.14, rx=0.042, rf=0.026, rb=0.026)],
+         Frame(rot_x(math.pi / 2), mx((-0.02, -0.175, 0.0)))).mesh(p, "plate_dark", seg=10, sub=1)
+    # Thumb: two plates down the inner side from the cuff to h 0.86, the reference's inner lobe.
+    th = [mx((-0.068, -0.02, 0.0)), mx((-0.112, -0.095, 0.0)), mx((-0.128, -0.175, 0.0))]
     for i in range(2):
         a0, a1 = th[i], th[i + 1]
         d = a1 - a0
-        ln = np.linalg.norm(d)
-        up = np.cross(d / ln, [1, 0, 0])
+        l = np.linalg.norm(d)
+        up = np.cross(d / l, [1, 0, 0])
         up /= np.linalg.norm(up)
-        R = np.column_stack([np.cross(-d / ln, up), -d / ln, up])
-        k = HAND_K
-        Loft([dict(y=0.006, rx=(0.026 - 0.004 * i) * k, rf=0.024 * k, rb=0.024 * k, p=2.5),
-              dict(y=-ln, rx=(0.022 - 0.004 * i) * k, rf=0.02 * k, rb=0.02 * k, p=2.5)], Frame(R, a0)).mesh(p, "plate", seg=6, sub=1)
+        R = np.column_stack([np.cross(-d / l, up), -d / l, up])
+        Loft([dict(y=0.008, rx=0.03 - 0.002 * i, rf=0.036 - 0.002 * i, rb=0.027, p=2.5),
+              dict(y=-l, rx=0.026 - 0.002 * i, rf=0.032 - 0.002 * i, rb=0.024, p=2.5)],
+             Frame(R, a0)).mesh(p, "plate", seg=6, sub=1)
     return p
 
 
