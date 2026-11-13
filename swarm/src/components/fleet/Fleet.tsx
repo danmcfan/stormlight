@@ -10,11 +10,13 @@ import { Totals } from './Totals'
 import { PlanUsageSummary } from '../plan/PlanUsageSummary'
 import { QueuePanel } from '../queue/QueuePanel'
 import { SphereFrame } from '../frame/SphereFrame'
+import { LeadPanel } from '../lead/LeadPanel'
 
 export function Fleet() {
   const swarm = useSwarm()
   return (
     <main class="page shell">
+      <LeadPanel />
       <Show when={swarm.snapshot()} fallback={<Loading connected={swarm.connected()} />}>
         {(snap) => (
           <Show when={snap().agents.length > 0} fallback={<Empty snapshot={snap()} />}>

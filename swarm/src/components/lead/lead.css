@@ -1,0 +1,90 @@
+.lead-panel {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  min-width: 0;
+}
+.lead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+}
+.lead-head .ptitle {
+  flex: 1 1 auto;
+  margin-bottom: 4px;
+}
+.lead-meta,
+.lead-time {
+  color: var(--ink-3);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.lead-form {
+  display: grid;
+  gap: 0.5rem;
+}
+.lead-input {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--ui-radius);
+  background: rgba(5, 8, 26, 0.85);
+  color: var(--ink);
+  /* 16px stops iOS Safari zooming in on focus. */
+  font: 16px/1.45 var(--num);
+}
+.lead-input:focus {
+  outline: 2px solid var(--ui-ring);
+  outline-offset: 1px;
+}
+.lead-input::placeholder {
+  color: var(--ink-3);
+}
+.lead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.lead-error {
+  margin: 0;
+  color: var(--bad);
+  font-size: 0.85rem;
+}
+.lead-run {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--rule);
+}
+.lead-run[data-state='done'],
+.lead-run[data-state='failed'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.lead-prompt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-2);
+}
+.lead-run[data-state='running'] .lead-prompt {
+  color: var(--blue-hi);
+}
+.lead-reply {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.lead-run[data-state='failed'] .lead-reply {
+  color: var(--bad);
+}
+.lead-history summary {
+  cursor: pointer;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+}
