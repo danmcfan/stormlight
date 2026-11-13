@@ -138,7 +138,10 @@ other.
 - **Image-to-3D** (`trellis_part.py`, tried in round 2): Trellis meshes of the
   part sheets have good shapes but, cut to a game budget, they come out lumpy
   and their trim (traced from the texture) breaks up; the helm and gauntlet
-  scored and looked worse than the scripted pieces. Use them to measure.
+  scored and looked worse than the scripted pieces. Use them to measure. A pauldron head-to-head (`pauldron_variants.py`,
+  `PAULDRON_VARIANT=trellis|hybrid`) found the same, even fitted to the same box and carrying the
+  scripted trim: lower scores in front and back, and a blind judge ranked the scripted piece
+  first 3/3 (`art/rounds/2026-11-13-pauldron.md`).
 - **Materials:** Principled BSDF only (exports to glTF PBR). Glow is emission:
   Stormlight blue `(0.5, 0.82, 1.0)`.
 - **Storage:** GLBs and renders are Git LFS (`.gitattributes`); the Pages

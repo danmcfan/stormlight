@@ -820,11 +820,21 @@ MATS.update({   # the game's colours (humanoid.ts buildModelledPlate), linear
     "glow": material("glow", lin("#a9ccff"), roughness=0.3, emission=lin("#5aa2ff"), strength=2.2),
 })
 
+import os  # noqa: E402
+from pauldron_variants import VARIANTS  # noqa: E402
+_V = os.environ.get("PAULDRON_VARIANT", "scripted")
+
+
+def _pauldron(s):
+    p = build_pauldron(s)
+    return p if _V == "scripted" else VARIANTS[_V](p, s)
+
+
 pieces = []
 helm, crest = build_helm(enemy_crest=True)
 pieces += [helm, crest, build_gorget(), build_breastplate(), build_abdomen(), build_belt(), *build_fauld()]
 for s in (1, -1):
-    pieces += [build_pauldron(s), build_upperarm(s), build_forearm(s), build_gauntlet(s),
+    pieces += [_pauldron(s), build_upperarm(s), build_forearm(s), build_gauntlet(s),
                build_tasset(s), build_thigh(s), build_shin(s), build_boot(s)]
 
 objs = {pc.name: pc.build() for pc in pieces}
