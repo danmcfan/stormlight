@@ -1,5 +1,5 @@
 {
-  description = "agent-box: NixOS host for Claude Code agents + the swarm dashboard (tailnet only)";
+  description = "agent-box: NixOS host for Claude Code and Cursor CLI (tailnet only)";
 
   # Current stable NixOS (26.05 when this was written; Hostinger's template is
   # the same release). To move to a new release, change this one line, run

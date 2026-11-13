@@ -13,7 +13,7 @@ pass. Scripts are in `package.json`.
 | **generates images** (concept art, references, textures) | `docs/art.md` |
 | builds or changes a **3D model** | `docs/3d-pipeline.md` |
 | changes **gameplay** (controls, combat, horde mode) | `README.md` for how it plays; every feel number is in `src/config.ts` |
-| works in **`swarm/`** (the Solid 2 agent-swarm app, separate from the game) | `swarm/AGENTS.md` |
+| changes the **agent box** (the VPS that runs Claude Code and Cursor CLI) | `ops/nixos/README.md` |
 
 ## Shipping a change
 

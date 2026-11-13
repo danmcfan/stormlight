@@ -1,0 +1,21 @@
+# Claude Code Remote Control for ~/stormlight: drive it from the Claude desktop
+# and mobile apps or claude.ai/code. Installed by setup.sh as a user unit, so
+# agent can edit and restart it without root.
+[Unit]
+Description=Claude Code Remote Control (stormlight)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/stormlight
+Environment=PATH=%h/.local/bin:/run/wrappers/bin:/run/current-system/sw/bin
+# remote-control is a TUI, so script(1) gives it a terminal.
+ExecStart=/run/current-system/sw/bin/script -qfec "%h/.local/bin/claude remote-control --name agent-box --spawn=same-dir --capacity 3 --permission-mode bypassPermissions" /dev/null
+Restart=always
+RestartSec=10
+# Inside user-1000.slice's 6G cap; this keeps one runaway session from
+# taking all of it from Cursor.
+MemoryHigh=3G
+MemoryMax=4G
+
+[Install]
+WantedBy=default.target

@@ -8,12 +8,6 @@
   # SSH only over Tailscale. Verified `ssh agent@agent-box` over the tailnet first.
   agentBox.publicSsh = false;
 
-  # Dashboard in dev mode with the lead agent, on the tailnet only.
-  agentBox.swarmDev = {
-    enable = true;
-    tailnetIp = "100.69.34.120";
-  };
-
   # SSH public keys allowed to log in as `agent` and `root`.
   agentBox.authorizedKeys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJk74y4vUcpM2sqWbMQffZhkt8bHgqxljVQ+6SpGTTZb danmcfan33@gmail.com"
