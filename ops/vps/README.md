@@ -1,5 +1,8 @@
 # Running agents and the swarm dashboard on one VPS
 
+> This is the Ubuntu path (`bootstrap.sh`). For a NixOS box (Hostinger template)
+> use [`ops/nixos`](../nixos/README.md); sections 2 and 5 below are shared.
+
 One Linux box runs Claude Code and its agents (in `~agent/stormlight`) and the
 swarm dashboard, which reads the transcripts the agents write to
 `~agent/.claude/projects`. Everything is reachable only over Tailscale.

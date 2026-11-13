@@ -52,6 +52,7 @@ jobs:
           # Tailscale SSH authenticates by node identity; no keys are involved.
           tailscale ssh "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
+          export PATH="/run/wrappers/bin:/run/current-system/sw/bin:$PATH" # NixOS: see ops/nixos
           cd /srv/swarm
           git fetch origin main
           git merge --ff-only origin/main
