@@ -13,8 +13,11 @@ export function useSwarm(): {
   const [snapshot, setSnapshot] = createSignal<SwarmSnapshot | undefined>(undefined)
   const [connected, setConnected] = createSignal(false)
 
-  if (!isServer) {
+  // Registered unconditionally: onSettled creates an owner, and owners take hydration
+  // ids, so server and client must both create it. The callback never runs on the server.
+  {
     onSettled(() => {
+      if (isServer) return
       let es: EventSource | undefined
       let retry: ReturnType<typeof setTimeout> | undefined
       let delay = 500
