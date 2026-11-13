@@ -201,7 +201,12 @@ in
       wants = [ "tailscaled.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ config.services.tailscale.package ];
-      script = "tailscale serve --bg --https=443 http://127.0.0.1:${toString swarmPort}";
+      # With swarmDev on, HTTPS fronts the dev server; otherwise the built app.
+      script =
+        if cfg.swarmDev.enable then
+          "tailscale serve --bg --https=443 http://${cfg.swarmDev.tailnetIp}:${toString cfg.swarmDev.port}"
+        else
+          "tailscale serve --bg --https=443 http://127.0.0.1:${toString swarmPort}";
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -268,6 +273,9 @@ in
         # Run each lead prompt as its own user unit, outside this service's
         # cgroup, so restarting the dashboard never kills the lead.
         SWARM_LEAD_DETACH = "systemd";
+        # The page is used through https://agent-box.<tailnet>.ts.net (tailscale
+        # serve on 443), so the hot-reload socket must connect back on 443 too.
+        SWARM_HMR_CLIENT_PORT = "443";
         XDG_RUNTIME_DIR = "/run/user/1000";
         DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
       };
