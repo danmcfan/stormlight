@@ -322,3 +322,22 @@ describe('store (incremental reading)', () => {
     store.stop()
   })
 })
+
+describe('main agent labels', () => {
+  const label = (lines: object[]) => {
+    const main = new AgentAcc('s1', null)
+    for (const l of lines) main.ingest(l)
+    return buildSnapshot([{ id: 's1', main, subs: [], components: [] }], T0 + 60_000).agents[0].label
+  }
+  const prompt = (text: string) => ({ type: 'user', timestamp: iso(1), message: { content: text } })
+
+  it('uses the session title Claude Code writes today', () => {
+    expect(label([prompt('Fix it'), { type: 'agent-name', agentName: 'Fix login' }, { type: 'custom-title', customTitle: 'Login fix' }])).toBe('Login fix')
+  })
+  it('falls back to the first real prompt, skipping commands and notifications', () => {
+    expect(label([prompt('<command-name>/clear</command-name>'), prompt('Audit the dashboard for mobile')])).toBe('Audit the dashboard for mobile')
+  })
+  it('says Main when there is nothing better', () => {
+    expect(label([])).toBe('Main')
+  })
+})

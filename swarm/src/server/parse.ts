@@ -168,6 +168,8 @@ export class AgentAcc {
   meta: AgentMeta = {}
   cwd?: string
   title?: string
+  /** First real prompt, the label fallback for sessions without a title. */
+  firstPrompt?: string
   model = ''
   startedAt = 0
   lastActivityAt = 0
@@ -215,6 +217,8 @@ export class AgentAcc {
     if (!rec || typeof rec !== 'object') return
     this.version++
     if (rec.type === 'ai-title' && typeof rec.aiTitle === 'string') this.title = rec.aiTitle
+    if (rec.type === 'agent-name' && typeof rec.agentName === 'string' && rec.agentName.trim()) this.title = rec.agentName
+    if (rec.type === 'custom-title' && typeof rec.customTitle === 'string' && rec.customTitle.trim()) this.title = rec.customTitle
     if (typeof rec.cwd === 'string' && !this.cwd) this.cwd = rec.cwd
     const ts = typeof rec.timestamp === 'string' ? Date.parse(rec.timestamp) : NaN
     if (Number.isFinite(ts)) {
@@ -282,6 +286,10 @@ export class AgentAcc {
 
   private ingestUser(rec: any, ts: number) {
     const content = rec.message?.content
+    if (this.firstPrompt === undefined && !rec.isMeta) {
+      const text = flattenText(content).trim()
+      if (text && !text.startsWith('<')) this.firstPrompt = oneLine(text, 60)
+    }
     // A new user message after an end_turn means the agent resumed.
     this.finishedTurn = false
     if (Array.isArray(content)) {
@@ -465,7 +473,7 @@ export function buildSnapshot(sessions: SessionInput[], now: number): SwarmSnaps
         parentId,
         kind: isMain ? 'main' : 'subagent',
         label: isMain
-          ? (a.title ?? 'Main')
+          ? (a.title ?? a.firstPrompt ?? 'Main')
           : (description ?? link?.info.subagentType ?? a.meta.agentType ?? `agent-${shortId(a.agentId ?? '')}`),
         description,
         model: a.model || a.meta.model || 'unknown',

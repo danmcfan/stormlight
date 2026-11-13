@@ -331,8 +331,15 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                   const hot = () => isRecent(n().lastAt, now()) && (n().kind === 'component' || n().status === 'running')
                   const family = (): GemFamily => n().family ?? 'other'
                   const sphere = () => (family() === 'other' ? '#orb' : `#orb-${family()}`)
+                  // Zoomed out, only the nodes that matter get a label; zoomed in, all do.
+                  const focus = () => (neighbors()?.has(n().id) ?? false) || hover()?.id === n().id || selected() === n().id
                   const showLabel = () =>
-                    n().kind === 'agent' || n().r >= 9 || view().k > 1.2 || (neighbors()?.has(n().id) ?? false) || hover()?.id === n().id
+                    focus() ||
+                    view().k > 1.4 ||
+                    (n().kind === 'agent' && (n().status === 'running' || n().main || view().k > 1)) ||
+                    (n().kind === 'component' && n().r >= 14)
+                  // Labels keep one on-screen size at any zoom.
+                  const fs = (px: number) => `${px / Math.max(view().k, 0.2)}px`
                   return (
                     <g
                       class={[
@@ -386,12 +393,22 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                         />
                       </Show>
                       <Show when={showLabel()}>
-                        <text class="n-lbl" y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 12 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
-                          {trunc(n().label, 22)}
+                        <text
+                          class="n-lbl"
+                          y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 13 / Math.max(view().k, 0.2) + (labelDy().get(n().id) ?? 0)}
+                          text-anchor="middle"
+                          style={{ 'font-size': fs(n().kind === 'agent' ? 13 : 12), 'stroke-width': fs(4) }}
+                        >
+                          {trunc(n().label, focus() ? 40 : 24)}
                         </text>
                       </Show>
                       <Show when={n().activity}>
-                        <text class="act" y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 24 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
+                        <text
+                          class="act"
+                          y={n().r * (n().kind === 'agent' ? 1.2 : 1) + 28 / Math.max(view().k, 0.2) + (labelDy().get(n().id) ?? 0)}
+                          text-anchor="middle"
+                          style={{ 'font-size': fs(11.5), 'stroke-width': fs(3.5) }}
+                        >
                           {n().activity}
                         </text>
                       </Show>
