@@ -231,6 +231,13 @@ class Hull:
         cz = self.sec(y)[3]
         return y, math.atan2(p[0], p[2] - cz)
 
+    def param_off(self, q, off, n):
+        """(y, phi) whose point at height `off` above the hull is q (n: a first guess of the normal there)."""
+        yp = self.param(np.asarray(q, float) - np.asarray(n, float) * off)
+        for _ in range(3 if off else 0):
+            yp = self.param(q - self.normal(*yp) * off)
+        return yp
+
     def drop(self, q, n, lo=-0.06, hi=0.06):
         """Slide a point along n onto the hull: (y, phi) and the surface point."""
         q, n = np.asarray(q, float), np.asarray(n, float)
@@ -433,8 +440,7 @@ class Region:
         else:
             v, k = self.inward(i)
         q = self.P(self.loop[i]) + v * d * k
-        nrm = self.h.normal(*self.loop[i])
-        return self.h.param(q - nrm * self.off)
+        return self.h.param_off(q, self.off, self.h.normal(*self.loop[i]))
 
     def build(self, piece, mat="plate", trims=(), band=0.009, holes=(), steiner=(), lines=(), grid=None,
               trim_mat="trim"):
@@ -672,7 +678,7 @@ def offset_line(B, yp, off, d):
     for i, (y, a) in enumerate(yp):
         t = unit(P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)])
         n = B.normal(y, a)
-        out.append(B.param(P[i] + np.cross(n, t) * d - n * off))
+        out.append(B.param_off(P[i] + np.cross(n, t) * d, off, n))
     return np.array(out)
 
 
@@ -688,7 +694,7 @@ def make_helm(enemy_crest=False):
 
     # --- Visor: the plate inside the trim line, with the eye slit cut through it ---
     C = visor_edge(B)                              # trim centreline, +x side, apex -> chin
-    A = offset_line(B, C, VISOR_T, -half)          # the plate's edge (outside of the band)
+    A = offset_line(B, C, VISOR_T, half)           # the plate's edge (outside of the band)
     A[-1, 0] = helm_bottom(A[-1, 1])
     m = len(A)
     e = A[-1][1]
@@ -734,9 +740,9 @@ def make_helm(enemy_crest=False):
     back = [q[0] for q in r2]
     p.put(back, [(i, i + 1, 2 * NS - 2 - i, 2 * NS - 1 - i) for i in range(NS - 1)], "plate_dark", (0, 0, 1))
     # A thin line of Stormlight deep in the slit.
-    gx = np.linspace(-0.07, 0.07, 7)
-    gy = lambda x: 0.5 * (top2(x) + bot2(x)) - 0.002               # noqa: E731
-    p.strip([vis(x, gy(x) + 0.0022, depth=0.0205)[0] for x in gx], [vis(x, gy(x) - 0.0022, depth=0.0205)[0] for x in gx],
+    gx = np.linspace(-0.06, 0.06, 7)
+    gy = lambda x: 0.5 * (top2(x) + bot2(x)) - 0.003               # noqa: E731
+    p.strip([vis(x, gy(x) + 0.0013, depth=0.0212)[0] for x in gx], [vis(x, gy(x) - 0.0013, depth=0.0212)[0] for x in gx],
             "glow", (0, 0, 1))
 
     # --- Cheek plates: behind the visor's lower edge, back to the ear, down to the jaw ---
