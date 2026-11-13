@@ -148,6 +148,13 @@ in
 
     security.sudo.extraRules = [
       {
+        # The rescue page restarts the dashboard as agent; nothing else.
+        users = [ "agent" ];
+        commands = [
+          { command = "${sw}/systemctl restart swarm-dev"; options = [ "NOPASSWD" ]; }
+        ];
+      }
+      {
         users = [ "deploy" ];
         commands = [
           { command = "${sw}/systemctl restart swarm"; options = [ "NOPASSWD" ]; }
@@ -274,6 +281,35 @@ in
         RestartSec = 5;
         NoNewPrivileges = true;
         PrivateTmp = true;
+      };
+    };
+
+    # ---- rescue page (when the dashboard is broken) ---------------------------
+    # Runs rescue.mjs from the Nix store, so edits to the checkout can't break
+    # it: dashboard health, prompt the lead, stash/revert, restart the dashboard.
+    # http://agent-box.<tailnet>.ts.net:5180, tailnet only.
+    systemd.services.swarm-rescue = lib.mkIf cfg.swarmDev.enable {
+      description = "Swarm rescue page (works when the dashboard doesn't)";
+      after = [ "network-online.target" "tailscaled.service" "user@1000.service" ];
+      wants = [ "network-online.target" "tailscaled.service" "user@1000.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [ nodejs_22 claude-code git git-lfs coreutils config.systemd.package "/run/wrappers" ];
+      environment = {
+        HOME = "/home/agent";
+        RESCUE_HOST = cfg.swarmDev.tailnetIp;
+        RESCUE_PORT = "5180";
+        RESCUE_REPO = "/home/agent/stormlight";
+        RESCUE_DASHBOARD = "http://${cfg.swarmDev.tailnetIp}:${toString cfg.swarmDev.port}";
+        XDG_RUNTIME_DIR = "/run/user/1000";
+        DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
+      };
+      serviceConfig = {
+        User = "agent";
+        Group = "users";
+        WorkingDirectory = "/home/agent";
+        ExecStart = "${pkgs.nodejs_22}/bin/node ${./rescue.mjs}";
+        Restart = "always";
+        RestartSec = 3;
       };
     };
 
