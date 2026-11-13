@@ -737,14 +737,16 @@ def make_helm(enemy_crest=False):
     visor.wall(p, base=-0.001)
     mid = lambda c: np.array([c[0] * 0.8, 0.5 * (top2(c[0]) + bot2(c[0])), c[2]]) - c   # noqa: E731
     p.strip([q[0] for q in r0], [q[0] for q in r1], "plate", closed=True)
-    p.strip([q[0] for q in r1], [q[0] for q in r2], "plate", ref=mid, closed=True)
+    # The recess's walls are dark too, not bare steel: the drawing's slit reads as one black
+    # slot, and lit walls made it look shallow from straight on.
+    p.strip([q[0] for q in r1], [q[0] for q in r2], "plate_dark", ref=mid, closed=True)
     back = [q[0] for q in r2]
     p.put(back, [(i, i + 1, 2 * NS - 2 - i, 2 * NS - 1 - i) for i in range(NS - 1)], "plate_dark", (0, 0, 1))
-    # A thin line of Stormlight deep in the slit.
-    gx = np.linspace(-0.06, 0.06, 7)
+    # A thin line of Stormlight deep in the slit, well clear of the back so it cannot z-fight.
+    gx = np.linspace(-0.06, 0.06, 9)
     gy = lambda x: 0.5 * (top2(x) + bot2(x)) - 0.003               # noqa: E731
-    p.strip([vis(x, gy(x) + 0.0013, depth=0.0212)[0] for x in gx], [vis(x, gy(x) - 0.0013, depth=0.0212)[0] for x in gx],
-            "glow", (0, 0, 1))
+    p.strip([vis(x, gy(x) + 0.0011, depth=0.0165)[0] for x in gx],
+            [vis(x, gy(x) - 0.0011, depth=0.0165)[0] for x in gx], "glow", (0, 0, 1))
 
     # --- Cheek plates: behind the visor's lower edge, back to the ear, down to the jaw ---
     kp = max((i for i in range(m) if A[i][0] < 0.15), key=lambda i: A[i][1])      # the pivot's lower corner
