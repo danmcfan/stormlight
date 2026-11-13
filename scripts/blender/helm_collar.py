@@ -859,20 +859,32 @@ def make_helm(enemy_crest=False):
 # The collar, measured in the body references and the part sheet. Heights are world metres;
 # they are converted to the collar's own frame below, because the piece's origin is the waist.
 # Rows: world y, half-width, front/back centre offset, depth forward, depth back.
-# The collar tapers in from a wide base on the shoulders to a narrow waist, then flares again
-# at its rim (docs/models/shardplate.md: rim ±0.25 at 2.07-2.16, the V down to 1.93).
+#
+# The collar sits ON the breastplate rather than inside it. The breastplate's front reaches
+# z ≈ +0.39 at 1.90 m and its top is 1.99 m, so every collar row up to there has to stand
+# proud of it; a row that crosses from inside to outside tears a seam across the chest where
+# the two surfaces intersect. Hence the generous depths at the base, tapering as it rises
+# clear of the chest at ~1.99 m, then the waist and the rim flare
+# (docs/models/shardplate.md: rim ±0.25 at 2.07-2.16, the V down to 1.93).
 GORGET = [
-    (1.800, 0.370, 0.030, 0.330, 0.300),   # the base, sitting on the shoulders
-    (1.940, 0.370, 0.040, 0.300, 0.280),
-    (2.010, 0.300, 0.050, 0.270, 0.255),
+    (1.860, 0.372, 0.030, 0.372, 0.318),   # the base, laying over the breastplate's top
+    (1.940, 0.362, 0.038, 0.362, 0.300),
+    (2.000, 0.320, 0.046, 0.310, 0.272),   # clear of the chest from here up
     (2.070, 0.262, 0.050, 0.262, 0.245),
     (2.120, 0.258, 0.050, 0.262, 0.244),   # the waist
-    (2.155, 0.272, 0.050, 0.276, 0.256),   # the rim, trim along it
+    (2.155, 0.276, 0.050, 0.282, 0.260),   # the rim, trim along it
 ]
 GORGET_Y0 = WAIST_Y        # the piece's origin is the waist
 GORGET_BAND = 0.011
 GORGET_V_DEPTH = 0.225     # how far the front V drops below the rim (to 1.93)
 GORGET_V_WIDTH = 30.0      # half-angle of the V at the rim, degrees
+# The rim's height by polar angle. The drawing's collar is high at the sides, dips to the
+# chin at the front (a V, cut below), and rolls down slightly at the back so the helm's nape
+# clears it. Keep the back dip modest: the reference's back rim still carries its trim bands
+# at 2.10-2.16 m, so a deep drop deletes trim that the drawing has (it cost 0.06 of trim F
+# when tried at 0.085). Angles in degrees from the front.
+GORGET_RIM_BACK_DROP = 0.028   # the back of the rim sits this far below its sides
+GORGET_RIM_BACK_HALF = 70.0    # half-angle where the back dip starts
 
 
 def gorget_hull():
@@ -900,11 +912,16 @@ def make_gorget():
     band0 = band * 0.8
 
     def rim_y(a):
-        a = abs((math.degrees(a) + 180) % 360 - 180)
-        if a >= GORGET_V_WIDTH:
+        """The rim's height at polar angle `a`: a V at the front, high at the sides, lower at
+        the back. The back drop is what stops it reading as a level stovepipe."""
+        d = abs((math.degrees(a) + 180) % 360 - 180)
+        if d <= GORGET_V_WIDTH:
+            u = d / GORGET_V_WIDTH             # 0 at the centre of the V, 1 at its shoulder
+            return y_hi - GORGET_V_DEPTH * (1.0 - u) ** 1.6
+        if d <= GORGET_RIM_BACK_HALF:
             return y_hi
-        u = a / GORGET_V_WIDTH                 # 0 at the centre of the V, 1 at its shoulder
-        return y_hi - GORGET_V_DEPTH * (1.0 - u) ** 1.6
+        u = min(1.0, (d - GORGET_RIM_BACK_HALF) / (180.0 - GORGET_RIM_BACK_HALF))
+        return y_hi - GORGET_RIM_BACK_DROP * (u ** 1.5)
 
     def inner_y(a):
         """The second, inset trim band, following the V."""
@@ -916,7 +933,6 @@ def make_gorget():
     ylo = lambda a: y_lo                        # noqa: E731
     inner = inner_y
     rim = rim_y
-    mid1_lo = blend(ylo, inner, 0.0)            # bottom band -> inner band
     # Rows from the bottom band's inner edge up to the inner trim band.
     seg_a = [blend(lambda a: y_lo + band, lambda a: inner(a) - band0, t) for t in (0, 0.34, 0.67, 1)]
     seg_b = [blend(lambda a: inner(a), lambda a: rim(a) - band, t) for t in (0, 0.25, 0.5, 0.75, 1)]
@@ -935,13 +951,14 @@ def make_gorget():
     p.strip(ring(rim), ring(rim, -0.016), "plate", _radial_out(), closed=True)
     p.strip(ring(ylo), ring(ylo, -0.014), "plate", _radial_out(), closed=True)
 
-    # Dark padded neck inside the collar (shows in the V, and under the helm).
-    pad = Hull([y_lo - 0.03, 2.00 - GORGET_Y0, 2.10 - GORGET_Y0, y_hi + 0.02],
+    # Dark padded neck inside the collar (shows in the V, and under the helm). It starts at the
+    # raised base now, so it fills the V without poking through the breastplate.
+    pad = Hull([y_lo - 0.02, 2.00 - GORGET_Y0, 2.10 - GORGET_Y0, y_hi + 0.02],
                [0.150, 0.150, 0.148, 0.140],
                [0.210, 0.210, 0.205, 0.200],
                [-0.145, -0.145, -0.140, -0.135],
                [0.04] * 4, [1.9] * 4, [1.9] * 4)
-    hull_grid(p, pad, [y_hi + 0.02, 2.10 - GORGET_Y0, 2.00 - GORGET_Y0, y_lo - 0.03], 18,
+    hull_grid(p, pad, [y_hi + 0.02, 2.10 - GORGET_Y0, 2.00 - GORGET_Y0, y_lo - 0.02], 18,
               "plate_dark", cap="bottom")
     return p
 

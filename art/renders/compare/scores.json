@@ -598,7 +598,7 @@
  },
  "helm-front": {
   "iou": 0.982,
-  "lines_f": 0.94,
+  "lines_f": 0.971,
   "trim_f": 0.998,
   "detail": {
    "trim": {
@@ -609,10 +609,10 @@
     "model_to_ref_cm": 0.1
    },
    "lines": {
-    "f": 0.94,
-    "precision": 0.964,
-    "recall": 0.917,
-    "ref_to_model_cm": 0.4,
+    "f": 0.971,
+    "precision": 0.96,
+    "recall": 0.982,
+    "ref_to_model_cm": 0.2,
     "model_to_ref_cm": 0.3
    },
    "trim_cover": {
@@ -830,26 +830,26 @@
  },
  "plate-front": {
   "iou": 0.902,
-  "lines_f": 0.705,
-  "trim_f": 0.549,
+  "lines_f": 0.717,
+  "trim_f": 0.568,
   "detail": {
    "trim": {
-    "f": 0.549,
-    "precision": 0.559,
-    "recall": 0.539,
-    "ref_to_model_cm": 3.5,
-    "model_to_ref_cm": 3.3
+    "f": 0.568,
+    "precision": 0.575,
+    "recall": 0.562,
+    "ref_to_model_cm": 3.4,
+    "model_to_ref_cm": 3.2
    },
    "lines": {
-    "f": 0.705,
-    "precision": 0.875,
-    "recall": 0.59,
-    "ref_to_model_cm": 3.0,
+    "f": 0.717,
+    "precision": 0.876,
+    "recall": 0.606,
+    "ref_to_model_cm": 2.9,
     "model_to_ref_cm": 1.3
    },
    "trim_cover": {
-    "ref": 0.0954,
-    "model": 0.0767
+    "ref": 0.0958,
+    "model": 0.078
    }
   },
   "worst_bands": [
@@ -1401,21 +1401,21 @@
   ]
  },
  "plate-side": {
-  "iou": 0.893,
-  "lines_f": 0.682,
-  "trim_f": 0.505,
+  "iou": 0.888,
+  "lines_f": 0.685,
+  "trim_f": 0.509,
   "detail": {
    "trim": {
-    "f": 0.505,
+    "f": 0.509,
     "precision": 0.489,
-    "recall": 0.523,
-    "ref_to_model_cm": 3.6,
+    "recall": 0.529,
+    "ref_to_model_cm": 3.5,
     "model_to_ref_cm": 4.5
    },
    "lines": {
-    "f": 0.682,
+    "f": 0.685,
     "precision": 0.842,
-    "recall": 0.574,
+    "recall": 0.577,
     "ref_to_model_cm": 3.2,
     "model_to_ref_cm": 1.5
    },
@@ -1426,15 +1426,15 @@
   },
   "worst_bands": [
    "at 0.62 m the model's back edge is 0.12 m inside the reference",
+   "at 2.02 m the model's front edge is 0.09 m outside the reference",
+   "at 1.93 m the model's front edge is 0.08 m outside the reference",
+   "at 1.88 m the model's front edge is 0.07 m outside the reference",
    "at 2.23 m the model's back edge is 0.07 m outside the reference",
-   "at 2.02 m the model's front edge is 0.06 m outside the reference",
+   "at 1.98 m the model's front edge is 0.06 m outside the reference",
+   "at 2.08 m the model's front edge is 0.05 m outside the reference",
    "at 1.82 m the model's front edge is 0.04 m outside the reference",
    "at 1.82 m the model's back edge is 0.05 m outside the reference",
-   "at 1.88 m the model's front edge is 0.04 m outside the reference",
-   "at 0.17 m the model's front edge is 0.04 m inside the reference",
-   "at 1.88 m the model's back edge is 0.04 m outside the reference",
-   "at 1.77 m the model's back edge is 0.04 m outside the reference",
-   "at 0.33 m the model's back edge is 0.04 m outside the reference"
+   "at 0.17 m the model's front edge is 0.04 m inside the reference"
   ],
   "profile": [
    {
@@ -1851,7 +1851,7 @@
      0.352
     ],
     "model": [
-     -0.375,
+     -0.403,
      0.394
     ]
    },
@@ -1862,7 +1862,7 @@
      0.342
     ],
     "model": [
-     -0.346,
+     -0.403,
      0.333
     ]
    },
@@ -1873,7 +1873,7 @@
      0.329
     ],
     "model": [
-     -0.336,
+     -0.384,
      0.346
     ]
    },
@@ -1884,7 +1884,7 @@
      0.326
     ],
     "model": [
-     -0.32,
+     -0.349,
      0.346
     ]
    },
@@ -1895,7 +1895,7 @@
      0.307
     ],
     "model": [
-     -0.304,
+     -0.317,
      0.333
     ]
    },
@@ -1917,7 +1917,7 @@
      0.23
     ],
     "model": [
-     -0.278,
+     -0.281,
      0.262
     ]
    },
@@ -1974,26 +1974,26 @@
  },
  "plate-back": {
   "iou": 0.887,
-  "lines_f": 0.567,
-  "trim_f": 0.493,
+  "lines_f": 0.55,
+  "trim_f": 0.472,
   "detail": {
    "trim": {
-    "f": 0.493,
-    "precision": 0.541,
-    "recall": 0.453,
-    "ref_to_model_cm": 5.4,
-    "model_to_ref_cm": 4.3
+    "f": 0.472,
+    "precision": 0.496,
+    "recall": 0.451,
+    "ref_to_model_cm": 5.1,
+    "model_to_ref_cm": 4.5
    },
    "lines": {
-    "f": 0.567,
-    "precision": 0.711,
-    "recall": 0.472,
-    "ref_to_model_cm": 4.3,
-    "model_to_ref_cm": 2.1
+    "f": 0.55,
+    "precision": 0.661,
+    "recall": 0.471,
+    "ref_to_model_cm": 4.1,
+    "model_to_ref_cm": 2.4
    },
    "trim_cover": {
-    "ref": 0.086,
-    "model": 0.0506
+    "ref": 0.0864,
+    "model": 0.0526
    }
   },
   "worst_bands": [
