@@ -317,10 +317,10 @@ def compare(name, ref_img, imgs, fit, ren_mpp, axis_px, edge_names):
         rx0, ry0, rw, rh = (lambda b: (rx0 + b[0], ry0 + b[1], b[2], b[3]))(crop_box(ref_mask[ry0:ry0 + rh, rx0:rx0 + rw]))
         mx0, my0, mw, mh = (lambda b: (mx0 + b[0], my0 + b[1], b[2], b[3]))(crop_box(ren_mask[my0:my0 + mh, mx0:mx0 + mw]))
     elif fit == "h":
-        # Fit on the ground-to-hip span, not the total height: the total is the helm's top,
-        # so editing the helm used to rescale the whole comparison and move every body score.
-        # The hip line is a fixed landmark (the reference's waist is halfway up its height in
-        # both views), so it stays put while any piece above it changes.
+        # Fits on total model height. Note this is sensitive to the helm: its top is the
+        # tallest point, so editing the helm rescales the whole body comparison. Read the
+        # per-height profile (which is in metres) rather than the IoU alone when comparing
+        # runs that changed the helm.
         k = rh / mh
     else:
         k = rw / mw

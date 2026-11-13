@@ -34,6 +34,14 @@ Blender itself to inspect or hand-edit it.
    together, then slid sideways to the best overlap. The helm views compare the
    helm alone at a fixed scale (the helm sheet draws a much deeper collar than
    the body views). `--fast` (4 samples) is enough for scores while iterating.
+
+   **The plate views fit on total model height, so editing the helm moves their
+   scores.** The helm's top is the model's tallest point; change it and every
+   body view is rescaled, which can swing `plate-front` IoU by ~1.5% with no
+   body geometry touched. Judge body work by `--views` and the per-height
+   profile (metres), or by comparing runs against a baseline taken on the same
+   helm. Comparing a body score across a helm change reads as a regression that
+   isn't one.
    It also writes, per view:
    - `<view>-profile.png`: both silhouettes' extents every 5 cm of height in
      metres from the body axis, and the error per band; `scores.json` lists the
