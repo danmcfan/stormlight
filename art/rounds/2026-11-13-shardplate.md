@@ -12,8 +12,8 @@ Caps: 3 rounds, 2 h (started 2026-11-13 10:06).
 Baseline: commit `46519c6`, `art/renders/compare/scores.json` —
 front 0.902 / 0.717 / 0.549, side 0.888 / 0.684 / 0.511, back 0.887 / 0.550 / 0.472
 (IoU / lines F / trim F).
-Best so far: round 1, commit `8005afc` — front 0.914 / 0.781 / 0.734,
-side 0.895 / 0.679 / 0.470, back 0.906 / 0.623 / 0.637.
+Best so far: round 1, commit `c94e833` — front 0.916 / 0.824 / 0.764,
+side 0.908 / 0.689 / 0.471, back 0.911 / 0.663 / 0.634.
 
 ## Decisions
 - 10:15 Hired three builders in separate worktrees, one per piece group, rather
@@ -41,8 +41,9 @@ Exact words. Close an item only with a render that shows the fix.
   score from Opus 5.5?" | round 1 | answered with measurement: three identical
   runs scored 6, 5, 5, so keep the metrics and act on repeated judge defects.
   Recorded in `docs/3d-pipeline.md`.
-- "Commit skirt subagent work when done." | round 1 | open: the skirt builder is
-  still running; its work is uncommitted in `/tmp/wt-skirt`.
+- "Commit skirt subagent work when done." | round 1 | done: committed as
+  `7ba8a38`, rebased onto main (its branch predated both other merges), verified,
+  merged. Side IoU 0.895 -> 0.908.
 
 ## Round 1
 Focus: the helm and collar were mid-rebuild from a paused session; the body
@@ -67,6 +68,12 @@ found a torn seam and a level collar rim, both fixed.
 Not checked: the side view's trim is still below its baseline (0.511 -> 0.470)
 and the cause is structural; no cross-piece decision has been made about which
 piece owns the enamel band at the flank.
-Next: land the skirt builder's branch; then settle the flank band (torso
-breastplate vs tasset), then the tasset leaf splay and the side pauldron.
-Stop: no — the round cap is 3 and two of the judge's repeated defects are open.
+Landed after the first measurement: the skirt branch (`7ba8a38`), rebased onto
+main because it predated the other two merges. It found that the side view's
+"thin calf" was the skirt — the reference puts the front fauld in a 0.09 m band
+standing proud of the thigh, which the old flat-on-the-hip fauld left empty.
+Front 0.914 -> 0.916 (lines 0.781 -> 0.824, trim 0.734 -> 0.764); side IoU
+0.895 -> 0.908; back 0.906 -> 0.911. Back trim 0.637 -> 0.634.
+Next: settle the flank band (torso breastplate vs tasset), then the tasset leaf
+splay and the side pauldron — the judge's two remaining repeated defects.
+Stop: no — side trim is 0.471, still below the round's 0.511 baseline.
