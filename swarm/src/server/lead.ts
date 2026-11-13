@@ -329,6 +329,12 @@ export class Lead {
     }
   }
 
+  /** Stop polling; used when hot reload replaces this instance. */
+  dispose() {
+    if (this.poll) clearInterval(this.poll)
+    this.poll = null
+  }
+
   getState(): LeadState {
     const models = allowedModels()
     return {
@@ -543,5 +549,10 @@ const KEY = Symbol.for('swarm.lead')
 
 export function getLead(): Lead {
   const g = globalThis as unknown as Record<symbol, Lead | undefined>
-  return (g[KEY] ??= new Lead())
+  const existing = g[KEY]
+  if (existing instanceof Lead) return existing
+  // Hot reload: hand over to the new class. State is on disk and detached runs
+  // are re-watched by the new instance; a direct child stays with the old one.
+  ;(existing as { dispose?: () => void } | undefined)?.dispose?.()
+  return (g[KEY] = new Lead())
 }

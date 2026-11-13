@@ -15,6 +15,7 @@ import {
   totalTokens,
 } from './model'
 import { AgentPlanCell } from '../plan/AgentPlanCell'
+import { chatHref } from '../chat/AgentChat'
 
 interface PanelProps {
   snapshot: SwarmSnapshot
@@ -42,6 +43,9 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
   const children = () => props.snapshot.agents.filter((x) => x.parentId === a().id)
   return (
     <div class="gp-frag">
+      <a class="gem-btn primary chat-open" href={chatHref(a().sessionId, a().id)}>
+        Open full chat
+      </a>
       <div class="gp-tags">
         <span class="chip">
           <Gem family={modelFamily(a().model)} />

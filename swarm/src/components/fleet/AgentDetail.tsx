@@ -33,6 +33,7 @@ import { agentDuration } from './rows'
 import { StatusDot } from './StatusDot'
 import { Orbs } from '../frame/SphereFrame'
 import { Icon, Socket, toolIcon } from '../frame/Gem'
+import { chatHref } from '../chat/AgentChat'
 
 export function AgentDetail(props: {
   snapshot: SwarmSnapshot
@@ -91,6 +92,9 @@ function Body(props: { agent: Agent; snapshot: SwarmSnapshot; now: number }) {
           Close
         </DrawerClose>
       </div>
+      <a class="gem-btn primary chat-open" href={chatHref(a().sessionId, a().id)}>
+        Open full chat
+      </a>
       <DrawerDescription>
         {a().kind === 'main' ? 'Main agent' : `Subagent${round() ? `, round ${round()!.index}` : ''}`} ·{' '}
         <span class="mono">{shortModel(a().model)}</span>

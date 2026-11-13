@@ -7,6 +7,7 @@ import { Composer } from './Composer'
 import { Activity } from './Activity'
 import { useLead, type Lead } from './useLead'
 import { formatDuration, shortModel } from '../fleet/format'
+import { chatHref } from '../chat/AgentChat'
 import './lead.css'
 
 const EXAMPLE_PROMPTS = [
@@ -243,6 +244,13 @@ export function LeadChat() {
       <header class="lead-head shell">
         <h1 class="ptitle">Lead</h1>
         <Meta lead={lead} />
+        <Show when={lead.state()?.sessionId}>
+          {(id) => (
+            <a class="lead-full" href={chatHref(id())}>
+              See everything the lead did: thinking, tool calls, subagents →
+            </a>
+          )}
+        </Show>
       </header>
 
       <ol class="lead-log shell" aria-label="Conversation with the lead" ref={stick.setLogRef}>

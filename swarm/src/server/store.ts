@@ -122,6 +122,18 @@ export class SwarmStore {
     return () => this.listeners.delete(fn)
   }
 
+  /**
+   * The transcript file of a known agent: the session's main transcript when
+   * `agentId` is null or equals the session id. Only files the store already
+   * tracks are returned, so request parameters never become paths.
+   */
+  transcriptPath(sessionId: string, agentId: string | null): string | undefined {
+    this.start()
+    const s = this.sessions.get(sessionId)
+    if (!s) return undefined
+    return (agentId && agentId !== sessionId ? s.subs.get(agentId) : s.main)?.path
+  }
+
   /** Current snapshot, refreshed if the last poll is stale. */
   getSnapshot(): SwarmSnapshot {
     this.start()
@@ -310,7 +322,8 @@ const KEY = Symbol.for('swarm.store')
 export function getStore(): SwarmStore {
   const g = globalThis as any
   const existing: SwarmStore | undefined = g[KEY]
-  if (existing && existing.root === transcriptsRoot()) return existing
+  // After hot reload the old instance belongs to the old class: replace it so edits take effect.
+  if (existing instanceof SwarmStore && existing.root === transcriptsRoot()) return existing
   existing?.stop()
   const s = new SwarmStore()
   g[KEY] = s
