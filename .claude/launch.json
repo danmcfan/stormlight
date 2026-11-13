@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "plate-preview",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "scripts/viewer/server.ts"],
+      "env": { "PORT": "5179" },
+      "port": 5179
+    }
+  ]
+}

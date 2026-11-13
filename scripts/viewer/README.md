@@ -1,6 +1,6 @@
 # Model viewer and art-pass index
 
-Three pages for judging the art, served together:
+Four pages for judging the art, served together:
 
 ```bash
 bun run view          # http://localhost:5178/
@@ -10,6 +10,7 @@ bun run view          # http://localhost:5178/
 |---|---|
 | `/` | The index: links, and the current comparison scores colour-coded by strength. |
 | `/gallery.html` | Every render in `art/renders`, paired **before → after** by view, with the `-profile`/`-detail` passes and the earlier checkpoints nested under each pair. Grows live as renders are written. |
+| `/plate.html` | The Shardplate beside its references (below). `?piece=pauldron` opens focused on a piece. |
 | `/model.html` | The Three.js inspector for the GLBs. |
 
 Point it at subagents' worktrees so their in-progress renders appear too:
@@ -48,6 +49,26 @@ writes), and `<view>-iterN` files are earlier checkpoints shown in an "earlier" 
   you left it, so an iterative Blender rebuild can be watched in place.
 - Wireframe and flat shading toggles, and a 1 m grid for scale.
 
+## The Shardplate preview
+
+For iterating on the Plate, or one piece of it, against the drawings it is built from.
+
+- **Reference vs. model, live.** Each sidebar card puts a reference view (the crops
+  `compare_reference.py` uses: front, side, back, helm front and side) next to a render
+  of the current GLB from the same side, in the same pose (arm 45°, elbow −37°, leg 5°).
+  The render is fitted to the drawn figure's bounds (helm views at the sheet's fixed
+  0.31 m = 346 px), so the two line up pixel for pixel; **overlay** fades one over the
+  other. A fill light from the card's camera is on while cards render, because the
+  drawings are flat-lit and the game sun leaves the side and back in shadow.
+- **Scores** from `scores.json` head each card, with the worst silhouette band, and
+  **sheet / lines / profile** open the Blender comparison images of the last scored build.
+- **Focus a piece** (left list) to ghost or hide the rest, crop every card to that piece,
+  show its rows of `docs/models/shardplate.md`, and move its part sheet to the top.
+- Front / side / back / ¾ buttons and an ortho toggle for the main view; **look from
+  here** on a card sets the main view to that card's side.
+- Rebuilding `shardplate.glb` re-renders everything in place; a new `scores.json`
+  refreshes the numbers.
+
 ## Screenshots
 
 `shot.mjs`, `gallery-shot.mjs` and `index-shot.mjs` capture deterministic shots with
@@ -78,10 +99,12 @@ game itself `scripts/ingame_shots.cjs`.
 | `index.html` | The art-pass index (links and the scores table). |
 | `gallery.html` | Before/after render gallery, grouped and paired by view. |
 | `model.html` | The 3D viewer's page. |
+| `plate.html`, `plate.ts` | The Shardplate preview: live reference comparisons, piece focus. |
+| `shading.ts` | The game's light and Plate materials, shared by both 3D pages. |
 | `main.ts` | The viewer: scene, game lighting, materials, piece list, isolation, GUI, live reload. |
 | `pose.ts` | Places the Shardplate pieces in body space, as `humanoid.ts` does. |
 | `shot.mjs` | Scripted screenshots of the viewer. |
 | `gallery-shot.mjs`, `index-shot.mjs` | Scripted screenshots of the two other pages. |
 
-Bun bundles `main.ts` on request (cached until the source changes), so editing the
+Bun bundles each page's entry (`main.ts`, `plate.ts`) on request (cached until the source changes), so editing the
 viewer only needs a browser refresh.

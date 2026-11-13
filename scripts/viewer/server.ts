@@ -25,6 +25,8 @@ const TYPES: Record<string, string> = {
   '.glb': 'model/gltf-binary',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.md': 'text/markdown; charset=utf-8',
   '.svg': 'image/svg+xml',
 };
 
@@ -42,10 +44,10 @@ function broadcast(event: string, data: string) {
   }
 }
 
-/** Bundle the viewer (three + lil-gui resolved from the repo's node_modules). */
-async function bundle(): Promise<string> {
+/** Bundle a page's entry (three + lil-gui resolved from the repo's node_modules). */
+async function bundle(entry: string): Promise<string> {
   const built = await Bun.build({
-    entrypoints: [join(HERE, 'main.ts')],
+    entrypoints: [entry],
     target: 'browser',
     format: 'esm',
     minify: false,
@@ -59,20 +61,25 @@ async function bundle(): Promise<string> {
   return await built.outputs[0].text();
 }
 
-/** Cached bundle plus the mtime it was built from, so source edits re-bundle. */
-let cache: { at: number; code: string } | null = null;
+/** Page entries that /<name>.js bundles, and the shared modules they import. */
+const ENTRIES = ['main', 'plate'];
+const SHARED = ['pose.ts', 'shading.ts'];
 
-async function viewerCode(): Promise<string> {
-  const files = [join(HERE, 'main.ts')];
+/** Cached bundles plus the mtime each was built from, so source edits re-bundle. */
+const cache = new Map<string, { at: number; code: string }>();
+
+async function pageCode(name: string): Promise<string> {
+  const entry = join(HERE, `${name}.ts`);
   let newest = 0;
-  for (const f of files) {
+  for (const f of [entry, ...SHARED.map((s) => join(HERE, s))]) {
     const s = await Bun.file(f).stat();
     newest = Math.max(newest, s?.mtimeMs ?? 0);
   }
-  if (!cache || cache.at < newest) {
-    cache = { at: newest, code: await bundle() };
-  }
-  return cache.code;
+  const hit = cache.get(name);
+  if (hit && hit.at >= newest) return hit.code;
+  const code = await bundle(entry);
+  cache.set(name, { at: newest, code });
+  return code;
 }
 
 // --- The gallery ------------------------------------------------------------------
@@ -206,8 +213,9 @@ const server = Bun.serve({
       });
     }
 
-    if (path === '/main.js') {
-      return new Response(await viewerCode(), {
+    const page = /^\/(\w+)\.js$/.exec(path)?.[1];
+    if (page && ENTRIES.includes(page)) {
+      return new Response(await pageCode(page), {
         headers: { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store' },
       });
     }
