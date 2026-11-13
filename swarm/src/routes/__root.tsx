@@ -16,6 +16,7 @@ import { LeadPanel } from '../components/lead/LeadPanel'
 // ui-sdk's default styles load first so the app's own CSS can override them.
 import uiSdkCss from '@ui-sdk/core/web.css?url'
 import styleCss from '../styles.css?url'
+import calmCss from '../calm.css?url'
 
 export const Route = createRootRouteWithContext()({
   head: () => ({
@@ -44,6 +45,7 @@ export const Route = createRootRouteWithContext()({
       },
       { rel: 'stylesheet', href: uiSdkCss },
       { rel: 'stylesheet', href: styleCss },
+      { rel: 'stylesheet', href: calmCss },
     ],
   }),
   shellComponent: RootComponent,
