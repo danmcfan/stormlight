@@ -29,8 +29,6 @@ live site (`.github/workflows/deploy.yml`). For each push:
 
 ## Rules
 
-- **Paid generation (images, 3D) waits for the user's yes.** Propose the model,
-  prompt, inputs and cost first, unless your brief grants a budget.
 - **Stay in your lane.** When your brief names files another session owns,
   touch them only as far as your brief allows, and say so in the commit.
 - **Combat timing is shared data.** `src/combat/moves.ts` keyframes drive both
