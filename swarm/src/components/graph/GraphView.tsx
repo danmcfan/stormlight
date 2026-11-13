@@ -8,6 +8,7 @@ import {
   FAMILY_COLOR,
   STATUS_LABEL,
   buildGraph,
+  labelOffsets,
   clamp,
   edgeWidth,
   isRecent,
@@ -41,7 +42,7 @@ const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…
 
 export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; connected: boolean }) {
   const [round, setRound] = createSignal('all')
-  const [showUntouched, setShowUntouched] = createSignal(true)
+  const [showUntouched, setShowUntouched] = createSignal(false)
   const [selected, setSelected] = createSignal<string | null>(null)
   const [hover, setHover] = createSignal<{ id: string; x: number; y: number } | null>(null)
   const [view, setView] = createSignal<View>({ x: 0, y: 0, k: 1 })
@@ -77,6 +78,14 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
   const neighbors = createMemo(() => {
     const s = selected()
     return s ? neighborIds(graph(), s) : null
+  })
+
+  const labelDy = createMemo(() => {
+    tick()
+    const pts = graph()
+      .nodes.filter((n) => n.kind === 'agent')
+      .map((n) => ({ id: n.id, x: layout?.nodes.get(n.id)?.x ?? 0, y: layout?.nodes.get(n.id)?.y ?? 0 }))
+    return labelOffsets(pts)
   })
 
   const pos = (id: string): [number, number] => {
@@ -319,6 +328,7 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                           done: n().status === 'done' || n().status === 'idle',
                           running: n().status === 'running',
                           error: n().status === 'error',
+                          untouched: !!n().untouched,
                         },
                       ]}
                       transform={`translate(${p()[0]} ${p()[1]})`}
@@ -344,13 +354,13 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
                         </Show>
                       </Show>
                       <Show when={showLabel()}>
-                        <text class="lbl" y={n().r + 12} text-anchor="middle">
+                        <text class="lbl" y={n().r + 12 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
                           {trunc(n().label, 22)}
                         </text>
                       </Show>
                       <Show when={n().activity}>
-                        <text class="act" y={n().r + 24} text-anchor="middle">
-                          {trunc(n().activity!, 38)}
+                        <text class="act" y={n().r + 24 + (labelDy().get(n().id) ?? 0)} text-anchor="middle">
+                          {n().activity}
                         </text>
                       </Show>
                     </g>

@@ -253,14 +253,14 @@
 
 .graph-legend {
   position: absolute;
-  left: 64px;
+  right: 10px;
   bottom: 10px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
   padding: 6px 10px;
   width: fit-content;
-  max-width: calc(100% - 74px);
+  max-width: calc(100% - 20px);justify-content:flex-end;
   border: 1px solid var(--g-line);
   border-radius: 8px;
   background: color-mix(in srgb, var(--g-panel) 92%, transparent);
@@ -526,4 +526,11 @@
 }
 .graph-page [data-slot='switch'][data-checked] {
   background: #0891b2;
+}
+
+.node.untouched {
+  opacity: 0.45;
+}
+.node.untouched.dim {
+  opacity: 0.1;
 }

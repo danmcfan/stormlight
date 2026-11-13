@@ -41,6 +41,7 @@ export interface GraphNode {
   main?: boolean
   fileCount?: number
   depth?: number
+  untouched?: boolean
   activity?: string
 }
 
@@ -171,7 +172,8 @@ export function buildGraph(snapshot: SwarmSnapshot, opts: GraphOptions): GraphDa
       kind: 'component',
       refId: c.id,
       label: c.label,
-      r: componentRadius(c.fileCount),
+      r: componentRadius(c.fileCount) * (usedComps.has(c.id) ? 1 : 0.6),
+      untouched: !usedComps.has(c.id),
       lastAt: compLast.get(c.id) ?? 0,
       fileCount: c.fileCount,
       depth: depthOf(c.id),
@@ -199,7 +201,7 @@ export function buildGraph(snapshot: SwarmSnapshot, opts: GraphOptions): GraphDa
       family: modelFamily(a.model),
       status: a.status,
       main,
-      activity: a.status === 'running' ? a.currentActivity : undefined,
+      activity: a.status === 'running' && a.currentActivity ? shortActivity(a.currentActivity) : undefined,
     })
     if (a.parentId && agentIds.has(a.parentId)) {
       links.push({
@@ -260,4 +262,31 @@ export function shortModel(model: string): string {
 
 export function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v))
+}
+
+/** "Bash S=/tmp/a/b/c.ts && x" -> "Bash b/c.ts": the tool plus a short target. */
+export function shortActivity(summary: string, max = 28): string {
+  const [tool, ...rest] = summary.trim().split(/\s+/)
+  const target = rest.find((t) => t.includes('/')) ?? rest[0] ?? ''
+  const path = target.replace(/^[A-Za-z_]+=/, '').replace(/^["'`]|["'`;]+$/g, '')
+  const short = path.includes('/') ? path.split('/').filter(Boolean).slice(-2).join('/') : path
+  const out = short ? `${tool} ${short}` : tool
+  return out.length > max ? out.slice(0, max - 1) + '…' : out
+}
+
+/** Vertical nudges so labels of agents drawn near each other do not overlap. */
+export function labelOffsets(pts: { id: string; x: number; y: number }[], w = 130, h = 28): Map<string, number> {
+  const out = new Map<string, number>()
+  const placed: { x: number; y: number }[] = []
+  for (const p of [...pts].sort((a, b) => a.y - b.y)) {
+    let dy = 0
+    for (let i = 0; i < 8; i++) {
+      const hit = placed.find((q) => Math.abs(q.x - p.x) < w && Math.abs(q.y - (p.y + dy)) < h)
+      if (!hit) break
+      dy = hit.y + h - p.y
+    }
+    out.set(p.id, dy)
+    placed.push({ x: p.x, y: p.y + dy })
+  }
+  return out
 }
