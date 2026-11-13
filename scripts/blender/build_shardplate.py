@@ -393,13 +393,15 @@ def build_pauldron(s):
     M = Frame(np.diag([s, 1.0, 1.0]))
     mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
     cx, cz = 0.095, -0.07
+    # The dome is 0.48 m deep at its widest (the reference's side view) and narrows above h 1.85:
+    # 0.70 m across at 1.88 and 0.695 at 1.93 in the front view, which is what these rx give.
     dome = Loft([
         dict(y=0.055, rx=0.228, rf=0.242, rb=0.25, cx=cx, cz=cz, p=2.3),
-        dict(y=0.095, rx=0.238, rf=0.252, rb=0.26, cx=cx, cz=cz, p=2.3),
-        dict(y=0.18, rx=0.228, rf=0.234, rb=0.24, cx=cx, cz=cz, p=2.25),
-        dict(y=0.26, rx=0.186, rf=0.192, rb=0.198, cx=cx, cz=cz, p=2.15),
-        dict(y=0.32, rx=0.116, rf=0.128, rb=0.134, cx=cx, cz=cz),
-        dict(y=0.352, rx=0.055, rf=0.07, rb=0.075, cx=cx, cz=cz),
+        dict(y=0.095, rx=0.238, rf=0.248, rb=0.256, cx=cx, cz=cz, p=2.3),
+        dict(y=0.18, rx=0.208, rf=0.2, rb=0.208, cx=cx, cz=cz, p=2.25),
+        dict(y=0.26, rx=0.156, rf=0.158, rb=0.166, cx=cx, cz=cz, p=2.15),
+        dict(y=0.32, rx=0.098, rf=0.108, rb=0.114, cx=cx, cz=cz),
+        dict(y=0.352, rx=0.05, rf=0.058, rb=0.062, cx=cx, cz=cz),
         dict(y=0.362, rx=0.01, rf=0.01, rb=0.01, cx=cx, cz=cz),
     ], M).mesh(p, "plate", seg=26, sub=2)
     # The dome's trim is one continuous outline, as the front reference draws it: up the inner edge
@@ -430,12 +432,14 @@ def build_pauldron(s):
         # front, and rides up to 1.78 / 1.68 where the next lame tucks under at the front and back.
         edge = lambda v: 0.34 + 0.52 * math.sin(math.pi * v) ** 0.55          # noqa: E731
         patch(p, "plate", lame, 0.0, edge, deg(-112), deg(112), off=0.0, thick=0.014, nt=3, nth=18)
-        path(p, "trim", lame, [(edge(v) - 0.075, deg(-108) + deg(216) * v) for v in np.linspace(0.02, 0.98, 14)],
+        path(p, "trim", lame, [(edge(v) - 0.05, deg(-108) + deg(216) * v) for v in np.linspace(0.02, 0.98, 14)],
              r=TRIM_R * 0.9, off=0.014, n=22)
     # The arched flange along the inner edge: outline in (z, y), bent to follow the dome's edge,
     # leaning a little toward the head. Its top arc carries a trim line on the outer face.
-    # A rounded half-disc: centre (z -0.09, y 0.27), radii 0.255 (z) x 0.26 (y), base buried in the dome.
-    arc = [(-0.09 + 0.255 * math.cos(a), 0.27 + 0.26 * math.sin(a)) for a in np.linspace(deg(8), deg(172), 15)]
+    # A rounded half-disc: centre (z -0.09, y 0.27), radii 0.225 (z) x 0.25 (y), base buried in the
+    # dome. The z radius is what puts its front end at z +0.36 after the 22 deg yaw; the reference
+    # stops there (the side view is 0.72 deep at h 1.82).
+    arc = [(-0.09 + 0.225 * math.cos(a), 0.27 + 0.25 * math.sin(a)) for a in np.linspace(deg(8), deg(172), 15)]
     base = [(-0.3, 0.15), (-0.09, 0.17), (0.12, 0.15)]
     outline = arc + base
     lean = rot_z(s * deg(4))
@@ -549,7 +553,7 @@ def build_gauntlet(s):
         dict(y=-0.004, rx=0.094, rf=0.084, rb=0.082),
         dict(y=-0.032, rx=0.082, rf=0.076, rb=0.074),
     ]).mesh(p, "plate", seg=22, sub=1)
-    band(p, "trim", cuff, -0.007, r=TRIM_R * 0.85, n=26)  # the enamel band under the cuff (h ~1.09)
+    band(p, "trim", cuff, 0.015, r=TRIM_R * 0.85, n=26)   # the enamel band under the cuff (h ~1.11)
     # Hand: dark leather core from the cuff to the knuckles, a plate over its back, trim round the
     # plate's border (the sheet inks the whole plate).
     hand = Loft([
