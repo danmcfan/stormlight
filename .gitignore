@@ -10,3 +10,6 @@ __pycache__/
 # In-game shot tiles (scripts/ingame_shots.cjs); only the contact sheets are kept
 art/renders/ingame/*.png
 !art/renders/ingame/sheet*.png
+# Working comparison sheets of the helm rebuild (copies live in art/renders/helm-rebuild/)
+art/renders/compare/*-helm[0-9][0-9]*
+art/renders/compare/scores-helm[0-9][0-9]*
