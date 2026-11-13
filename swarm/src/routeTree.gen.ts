@@ -10,43 +10,62 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as GraphRouteImport } from './routes/graph'
+import { Route as ApiSwarmRouteImport } from './routes/api/swarm'
+import { Route as ApiSwarmStreamRouteImport } from './routes/api/swarm.stream'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const GraphRoute = GraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSwarmRoute = ApiSwarmRouteImport.update({
+  id: '/api/swarm',
+  path: '/api/swarm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSwarmStreamRoute = ApiSwarmStreamRouteImport.update({
+  id: '/stream',
+  path: '/stream',
+  getParentRoute: () => ApiSwarmRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph': typeof GraphRoute
+  '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph': typeof GraphRoute
+  '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph': typeof GraphRoute
+  '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about'
+  fullPaths: '/' | '/graph' | '/api/swarm' | '/api/swarm/stream'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about'
-  id: '__root__' | '/' | '/about'
+  to: '/' | '/graph' | '/api/swarm' | '/api/swarm/stream'
+  id: '__root__' | '/' | '/graph' | '/api/swarm' | '/api/swarm/stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  GraphRoute: typeof GraphRoute
+  ApiSwarmRoute: typeof ApiSwarmRouteWithChildren
 }
 
 declare module '@tanstack/solid-router' {
@@ -58,19 +77,46 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/graph': {
+      id: '/graph'
+      path: '/graph'
+      fullPath: '/graph'
+      preLoaderRoute: typeof GraphRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/swarm': {
+      id: '/api/swarm'
+      path: '/api/swarm'
+      fullPath: '/api/swarm'
+      preLoaderRoute: typeof ApiSwarmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/swarm/stream': {
+      id: '/api/swarm/stream'
+      path: '/stream'
+      fullPath: '/api/swarm/stream'
+      preLoaderRoute: typeof ApiSwarmStreamRouteImport
+      parentRoute: typeof ApiSwarmRoute
     }
   }
 }
 
+interface ApiSwarmRouteChildren {
+  ApiSwarmStreamRoute: typeof ApiSwarmStreamRoute
+}
+
+const ApiSwarmRouteChildren: ApiSwarmRouteChildren = {
+  ApiSwarmStreamRoute: ApiSwarmStreamRoute,
+}
+
+const ApiSwarmRouteWithChildren = ApiSwarmRoute._addFileChildren(
+  ApiSwarmRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  GraphRoute: GraphRoute,
+  ApiSwarmRoute: ApiSwarmRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

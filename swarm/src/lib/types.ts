@@ -66,6 +66,8 @@ export interface Agent {
   touched: Record<string, number>
   /** What it is doing now, e.g. the last tool call summary. */
   currentActivity?: string
+  /** Estimated share of the plan windows, in percentage points of each window. */
+  plan?: { fiveHour?: number; sevenDay?: number }
 }
 
 /** A batch of subagents launched by one assistant message of a parent agent. */
@@ -98,6 +100,33 @@ export interface Session {
   startedAt: number
   lastActivityAt: number
   agentIds: string[]
+  /** Plan-window usage over this session's span (an estimate). */
+  plan?: {
+    fiveHour?: PlanWindowUsage
+    sevenDay?: PlanWindowUsage
+    /** API-equivalent $ per 1 percentage point of the 5-hour window; only when points > 0. */
+    costPerFiveHourPoint?: number
+  }
+}
+
+/** One reading of the account's subscription rate-limit windows. */
+export interface PlanReading {
+  /** Epoch ms. */
+  at: number
+  source?: string
+  /** utilization is a 0..1 fraction of the window used; resetsAt is epoch ms. */
+  fiveHour?: { utilization: number; resetsAt?: number }
+  sevenDay?: { utilization: number; resetsAt?: number }
+  isUsingOverage?: boolean
+}
+
+export interface PlanWindowUsage {
+  /** Percentage points (0..100) of the window used over the session's span. */
+  pointsUsed: number
+  /** Latest utilization as a 0..1 fraction. */
+  latestUtilization: number
+  /** Epoch ms. */
+  resetsAt?: number
 }
 
 export interface ModelTotals {
@@ -119,4 +148,14 @@ export interface SwarmSnapshot {
   }
   /** Shown next to costs: they are estimates from list prices. */
   pricingNote: string
+  /** Present only when a plan-usage file with readings exists. */
+  plan?: {
+    /** Last 200 readings, oldest first. */
+    readings: PlanReading[]
+    latest?: PlanReading
+    /** Caveat to display next to plan numbers. */
+    note: string
+    /** Model id -> percentage points of each window, summed over its agents. */
+    byModel: Record<string, { fiveHour?: number; sevenDay?: number }>
+  }
 }

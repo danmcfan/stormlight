@@ -1,0 +1,60 @@
+.plan-summary {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+.plan-meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+.plan-meter {
+  display: grid;
+  gap: 0.25rem;
+}
+.plan-meter [data-part='label'],
+.plan-meter-head {
+  font-weight: 600;
+}
+.plan-meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.plan-meter-sub {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.plan-meter-sub b {
+  color: var(--text);
+  font-weight: 600;
+}
+.plan-track {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.plan-fill {
+  height: 100%;
+  background: var(--accent);
+}
+.plan-meter[data-level='warn'] .plan-fill {
+  background: var(--warn);
+}
+.plan-meter[data-level='bad'] .plan-fill {
+  background: var(--bad);
+}
+.plan-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.plan-cell [data-empty] {
+  color: var(--text-dim);
+}
