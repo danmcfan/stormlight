@@ -82,6 +82,31 @@ Blender itself to inspect or hand-edit it.
    one on click, and reloads when the build rewrites the file. `node
    scripts/viewer/shot.mjs --piece helm` captures that view to a PNG.
 
+## Judging the art
+
+The scores above measure geometry against the drawings. They cannot see whether it
+*reads* right: a seam where two surfaces intersect, a plate that looks flat, trim that
+matches in position but sits proud or wrong in colour. Use a vision model for that, but
+read the next section before trusting its numbers.
+
+**A 1–10 rating from a vision model is not repeatable enough to optimise against.**
+Three identical runs (same images, same prompt, same model) scored the same model 6, 5
+and 5. Treat a single rating as ±1, which means a real improvement of half a point is
+invisible and a no-op can read as a regression. Never let an agent hill-climb a judged
+score.
+
+**The named defects are stable, though.** The same three runs agreed 3/3 on the leaf
+tassets reading as flat slats, the side pauldron being oversized, and the build reading
+boxy where the drawing is rounded and swollen; 2/3 on the gauntlets being stubs and the
+gem being too small. So:
+
+- run the judge **three times**, and
+- act on the **intersection** of the defects it names, never on the mean of the numbers.
+
+Use the metrics to find *where* (they localise in metres and are deterministic), and the
+judge to find *what looks wrong* (which the metrics cannot see). Neither replaces the
+other.
+
 ## Conventions
 
 - **Units:** metres. **Axes:** Blender is Z-up; glTF export converts to Y-up
