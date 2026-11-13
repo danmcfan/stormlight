@@ -33,7 +33,7 @@ export const Route = createFileRoute('/api/lead')({
         if (!(request.headers.get('content-type') ?? '').startsWith('application/json')) {
           return json({ error: 'Expected application/json' }, 415)
         }
-        let body: { action?: string; prompt?: string }
+        let body: { action?: string; prompt?: string; imageIds?: unknown; model?: string; subagentModel?: string }
         try {
           body = await request.json()
         } catch {
@@ -42,12 +42,16 @@ export const Route = createFileRoute('/api/lead')({
         const lead = getLead()
         try {
           switch (body.action ?? 'send') {
-            case 'send':
-              return json(lead.send(String(body.prompt ?? '')))
+            case 'send': {
+              const imageIds = Array.isArray(body.imageIds) ? body.imageIds.map((id) => String(id)) : undefined
+              return json(lead.send(String(body.prompt ?? ''), imageIds))
+            }
             case 'stop':
               return json(lead.stop())
             case 'reset':
               return json(lead.reset())
+            case 'model':
+              return json(lead.setModel(body.model, body.subagentModel))
             default:
               return json({ error: 'Unknown action' }, 400)
           }

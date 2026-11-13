@@ -233,10 +233,10 @@ export function LeadChat() {
           )}
         </Show>
         <For each={lead.state()?.waiting ?? []}>
-          {(p) => (
+          {(w) => (
             <li class="lead-turn">
               <p class="bubble you" data-state="waiting">
-                {p}
+                {w.prompt}
               </p>
             </li>
           )}

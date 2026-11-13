@@ -14,6 +14,7 @@ import { Route as GraphRouteImport } from './routes/graph'
 import { Route as LeadRouteImport } from './routes/lead'
 import { Route as ApiLeadRouteImport } from './routes/api/lead'
 import { Route as ApiSwarmRouteImport } from './routes/api/swarm'
+import { Route as ApiLeadUploadRouteImport } from './routes/api/lead.upload'
 import { Route as ApiSwarmStreamRouteImport } from './routes/api/swarm.stream'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const ApiSwarmRoute = ApiSwarmRouteImport.update({
   path: '/api/swarm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLeadUploadRoute = ApiLeadUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => ApiLeadRoute,
+} as any)
 const ApiSwarmStreamRoute = ApiSwarmStreamRouteImport.update({
   id: '/stream',
   path: '/stream',
@@ -51,16 +57,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/lead': typeof LeadRoute
-  '/api/lead': typeof ApiLeadRoute
+  '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/lead': typeof LeadRoute
-  '/api/lead': typeof ApiLeadRoute
+  '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRoutesById {
@@ -68,17 +76,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/lead': typeof LeadRoute
-  '/api/lead': typeof ApiLeadRoute
+  '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
+  '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/graph' | '/lead' | '/api/lead' | '/api/swarm' | '/api/swarm/stream'
+    | '/'
+    | '/graph'
+    | '/lead'
+    | '/api/lead'
+    | '/api/swarm'
+    | '/api/lead/upload'
+    | '/api/swarm/stream'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/graph' | '/lead' | '/api/lead' | '/api/swarm' | '/api/swarm/stream'
+    | '/'
+    | '/graph'
+    | '/lead'
+    | '/api/lead'
+    | '/api/swarm'
+    | '/api/lead/upload'
+    | '/api/swarm/stream'
   id:
     | '__root__'
     | '/'
@@ -86,6 +107,7 @@ export interface FileRouteTypes {
     | '/lead'
     | '/api/lead'
     | '/api/swarm'
+    | '/api/lead/upload'
     | '/api/swarm/stream'
   fileRoutesById: FileRoutesById
 }
@@ -93,7 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GraphRoute: typeof GraphRoute
   LeadRoute: typeof LeadRoute
-  ApiLeadRoute: typeof ApiLeadRoute
+  ApiLeadRoute: typeof ApiLeadRouteWithChildren
   ApiSwarmRoute: typeof ApiSwarmRouteWithChildren
 }
 
@@ -134,6 +156,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ApiSwarmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/lead/upload': {
+      id: '/api/lead/upload'
+      path: '/upload'
+      fullPath: '/api/lead/upload'
+      preLoaderRoute: typeof ApiLeadUploadRouteImport
+      parentRoute: typeof ApiLeadRoute
+    }
     '/api/swarm/stream': {
       id: '/api/swarm/stream'
       path: '/stream'
@@ -143,6 +172,17 @@ declare module '@tanstack/solid-router' {
     }
   }
 }
+
+interface ApiLeadRouteChildren {
+  ApiLeadUploadRoute: typeof ApiLeadUploadRoute
+}
+
+const ApiLeadRouteChildren: ApiLeadRouteChildren = {
+  ApiLeadUploadRoute: ApiLeadUploadRoute,
+}
+
+const ApiLeadRouteWithChildren =
+  ApiLeadRoute._addFileChildren(ApiLeadRouteChildren)
 
 interface ApiSwarmRouteChildren {
   ApiSwarmStreamRoute: typeof ApiSwarmStreamRoute
@@ -160,7 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GraphRoute: GraphRoute,
   LeadRoute: LeadRoute,
-  ApiLeadRoute: ApiLeadRoute,
+  ApiLeadRoute: ApiLeadRouteWithChildren,
   ApiSwarmRoute: ApiSwarmRouteWithChildren,
 }
 export const routeTree = rootRouteImport

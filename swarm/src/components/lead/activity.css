@@ -1,0 +1,177 @@
+/* The Lead "what it's doing right now" activity feed. Scoped under
+   .lead-activity so it can sit inline in the chat without fighting lead.css. */
+
+.lead-activity {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lead-activity-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--glassg), rgba(5, 8, 26, 0.6);
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lead-activity-head:focus-visible {
+  outline: 2px solid var(--ui-ring, var(--blue-hi));
+  outline-offset: 1px;
+}
+
+.lead-activity-glyph {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.lead-activity-glyph .gem {
+  width: 100%;
+  height: 100%;
+}
+
+.lead-activity-summary {
+  flex: none;
+  color: var(--ink);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.lead-activity-now {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-size: 0.78rem;
+}
+
+.lead-activity-chevron {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 0.7rem;
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+}
+.lead-activity-head[aria-expanded='true'] .lead-activity-chevron {
+  transform: rotate(90deg);
+}
+
+.lead-activity-body {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: rgba(5, 8, 26, 0.4);
+}
+
+.lead-activity-calls {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  max-height: 11rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lead-activity-earlier {
+  padding: 0.1rem 0;
+  color: var(--ink-3);
+  font-size: 0.76rem;
+  font-style: italic;
+}
+
+.lead-activity-call {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.lead-activity-tag {
+  flex: none;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: rgba(108, 180, 255, 0.08);
+  color: var(--blue-hi);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.lead-activity-call-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+.lead-activity-agents {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+}
+
+.lead-activity-agent {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lead-activity-agent-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 0.82rem;
+}
+
+.lead-activity-agent-model {
+  flex: none;
+  color: var(--ink-3);
+  font-family: var(--num);
+  font-size: 0.74rem;
+}
+
+.lead-activity-agent-now {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: calc(14px + 0.5rem);
+  color: var(--ink-3);
+  font-size: 0.74rem;
+}
+
+.lead-activity-agent[data-status='error'] .lead-activity-agent-desc {
+  color: var(--bad);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-activity-chevron {
+    transition: none;
+  }
+}
