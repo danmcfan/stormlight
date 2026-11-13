@@ -1,0 +1,33 @@
+# Installed to /etc/systemd/system/swarm.service by bootstrap.sh, which
+# substitutes @AGENT_USER@ and @DEPLOY_DIR@.
+[Unit]
+Description=Swarm dashboard (tailnet-only, behind tailscale serve)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@AGENT_USER@
+WorkingDirectory=@DEPLOY_DIR@/swarm
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+Environment=SWARM_TRANSCRIPTS_DIR=/home/@AGENT_USER@/.claude/projects
+ExecStart=/usr/bin/node server.mjs
+Restart=on-failure
+RestartSec=3
+
+# Hardening. The app only reads ~/.claude (transcripts, plan-usage, queue) and
+# the deploy checkout, so the whole filesystem can be read-only.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
