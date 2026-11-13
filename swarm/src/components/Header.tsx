@@ -52,17 +52,6 @@ function NavContent(props: { swarm: Swarm; onNavigate?: () => void }) {
           <Socket />
           Lead
         </Link>
-        <a
-          href="#rescue"
-          class="gem-btn nav"
-          onClick={(e) => {
-            e.preventDefault()
-            window.location.href = `${location.protocol}//${location.hostname}:5180/`
-          }}
-        >
-          <Socket />
-          Rescue
-        </a>
       </nav>
       <div class="side-status">
         <Live swarm={props.swarm} />

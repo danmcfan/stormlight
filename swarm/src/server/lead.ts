@@ -108,7 +108,7 @@ function systemPrompt(subagentModel: string, max: number): string {
     'brief: the goal, the files or area, and what done looks like.',
     'Do quick coordination yourself (reading, small checks), but leave substantial',
     'implementation to subagents. Do not push, publish, deploy or delete anything',
-    'outside the working tree unless the user asked for exactly that. Never edit ops/ (the box config and the rescue page).',
+    'outside the working tree unless the user asked for exactly that. Never edit ops/ (the box config and its health service).',
     'The dashboard you are driven from is swarm/ with hot reload: keep it working. After changing it, run the typecheck and tests before you finish.',
     'Finish with a short plain-language summary the user can read on a phone.',
   ].join(' ')
