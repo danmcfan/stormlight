@@ -1,0 +1,180 @@
+/* App shell: left sidebar (wide), top bar + drawer (phone), right Lead sidebar (widest). */
+
+.app {
+  min-height: 100dvh;
+}
+
+.app-main {
+  min-width: 0;
+  padding-top: 18px;
+}
+
+/* ---- phone and tablet portrait: top bar + drawer ------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 8px) max(14px, env(safe-area-inset-right)) 8px
+    max(10px, env(safe-area-inset-left));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.96), rgba(2, 4, 14, 0.9));
+  border-bottom: 2px solid transparent;
+  border-image: var(--silver) 1;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.7), 0 2px 14px rgba(100, 160, 255, 0.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.topbar .brand {
+  gap: 10px;
+}
+.topbar .brand .mark {
+  width: 30px;
+  height: 30px;
+}
+.topbar .brand .mark::before {
+  inset: -8px;
+}
+.topbar .brand-name {
+  font-size: 20px;
+}
+.topbar .live {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.menu-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+  background: var(--glassg), #05081a;
+  color: var(--blue-hi);
+  box-shadow: 0 0 12px rgba(100, 160, 255, 0.25);
+  cursor: pointer;
+}
+.menu-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.menu-btn:focus-visible {
+  outline: 2px solid var(--ui-ring);
+  outline-offset: 2px;
+}
+
+[data-slot='drawer-content'].nav-drawer {
+  width: min(20rem, 86vw);
+  padding: calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 20px)
+    max(20px, env(safe-area-inset-left));
+  border: 0;
+  border-right: 3px solid transparent;
+  border-image: var(--silver) 1;
+  background: linear-gradient(180deg, rgba(130, 180, 255, 0.1), rgba(0, 0, 0, 0) 40%), #02040c;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.9), 4px 0 22px rgba(100, 160, 255, 0.3);
+}
+
+/* ---- shared nav content ---------------------------------------------------- */
+
+.nav-content {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  height: 100%;
+}
+.side-links {
+  display: grid;
+  gap: 12px;
+}
+.side-links .gem-btn {
+  justify-content: flex-start;
+  min-height: 52px;
+  font-size: 14px;
+}
+.side-status {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: auto;
+}
+.side-status .live {
+  order: 0;
+  margin-left: 0;
+}
+
+/* ---- left sidebar (64rem and up) ------------------------------------------- */
+
+.side-nav {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .app {
+    display: grid;
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+  .topbar {
+    display: none;
+  }
+  .side-nav {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    padding: 26px 0 26px 26px;
+  }
+  .side-frame {
+    height: 100%;
+    --pad: 26px 20px;
+  }
+  .app-main {
+    padding-top: 26px;
+  }
+}
+
+/* ---- right Lead sidebar (90rem and up, not on the Lead page) --------------- */
+
+.side-lead {
+  display: none;
+}
+
+@media (min-width: 90rem) {
+  .app[data-lead-side] {
+    grid-template-columns: 15.5rem minmax(0, 1fr) 24rem;
+  }
+  .app[data-lead-side] .side-lead {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    padding: 26px 26px 26px 0;
+  }
+  .side-lead .frame {
+    height: 100%;
+    overflow-y: auto;
+  }
+}
+
+/* Landscape phones: keep content clear of the notch / Dynamic Island. */
+.shell {
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 14px;
+  }
+  .app-main {
+    padding-top: 22px;
+  }
+}

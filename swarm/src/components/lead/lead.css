@@ -1,9 +1,5 @@
-.lead-panel {
-  display: grid;
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
-  min-width: 0;
-}
+/* ---- shared --------------------------------------------------------------- */
+
 .lead-head {
   display: flex;
   flex-wrap: wrap;
@@ -14,11 +10,9 @@
   flex: 1 1 auto;
   margin-bottom: 4px;
 }
-.lead-meta,
-.lead-time {
+.lead-meta {
   color: var(--ink-3);
   font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
 }
 .lead-form {
   display: grid;
@@ -26,15 +20,17 @@
 }
 .lead-input {
   width: 100%;
-  min-height: 4.5rem;
-  resize: vertical;
-  padding: 0.7rem 0.8rem;
+  resize: none;
+  padding: 0.7rem 0.85rem;
   border: 1px solid var(--rule-strong);
-  border-radius: var(--ui-radius);
-  background: rgba(5, 8, 26, 0.85);
+  border-radius: 14px;
+  background: rgba(5, 8, 26, 0.92);
   color: var(--ink);
-  /* 16px stops iOS Safari zooming in on focus. */
+  /* 16px keeps iOS Safari from zooming in on focus. */
   font: 16px/1.45 var(--num);
+  field-sizing: content;
+  min-height: 3rem;
+  max-height: 38dvh;
 }
 .lead-input:focus {
   outline: 2px solid var(--ui-ring);
@@ -48,30 +44,39 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+.lead-actions .gem-btn {
+  min-height: 44px;
+}
 .lead-error {
   margin: 0;
   color: var(--bad);
   font-size: 0.85rem;
 }
+.lead-working {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--blue-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- compact panel (right sidebar) ---------------------------------------- */
+
+.lead-panel {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
 .lead-run {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.3rem 0.6rem;
-  padding: 0.55rem 0;
+  gap: 0.4rem;
+  padding-top: 0.7rem;
   border-top: 1px solid var(--rule);
-}
-.lead-run[data-state='done'],
-.lead-run[data-state='failed'] {
-  grid-template-columns: minmax(0, 1fr);
 }
 .lead-prompt {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--ink-2);
-}
-.lead-run[data-state='running'] .lead-prompt {
-  color: var(--blue-hi);
 }
 .lead-reply {
   margin: 0;
@@ -83,8 +88,103 @@
 .lead-run[data-state='failed'] .lead-reply {
   color: var(--bad);
 }
-.lead-history summary {
-  cursor: pointer;
+
+/* ---- full-screen chat ------------------------------------------------------ */
+
+.lead-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 120px);
+}
+.lead-chat .lead-head {
+  display: block;
+  width: 100%;
+  max-width: 54rem;
+}
+.lead-chat .lead-head .ptitle {
+  margin-bottom: 6px;
+}
+.lead-chat .lead-meta {
+  display: block;
+}
+.lead-log {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 1.1rem;
+  margin: 1rem auto 0;
+  padding-top: 0;
+  padding-bottom: 1rem;
+  list-style: none;
+  width: 100%;
+  max-width: 54rem;
+}
+.lead-empty {
   color: var(--ink-3);
-  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.lead-turn {
+  display: grid;
+  gap: 0.5rem;
+}
+.bubble {
+  margin: 0;
+  max-width: 88%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.bubble.you {
+  justify-self: end;
+  border-bottom-right-radius: 6px;
+  background: linear-gradient(180deg, #2b5fd6, #1b3e9e);
+  color: #f2f7ff;
+  box-shadow: 0 0 14px rgba(80, 140, 255, 0.35);
+}
+.bubble.you[data-state='waiting'] {
+  opacity: 0.6;
+}
+.bubble.lead {
+  justify-self: start;
+  border-bottom-left-radius: 6px;
+  border: 1px solid var(--rule-strong);
+  background: var(--glassg), #05081a;
+}
+.bubble.lead[data-state='failed'] {
+  color: var(--bad);
+}
+
+.lead-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  padding: 10px 0 max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.92) 22%, #000);
+}
+.lead-dock .shell {
+  max-width: 54rem;
+}
+.lead-dock .lead-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+.lead-dock .lead-actions {
+  flex-wrap: nowrap;
+}
+.lead-dock .lead-error {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 40rem) {
+  .lead-dock .lead-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lead-dock .lead-actions {
+    flex-wrap: wrap;
+  }
+  .bubble {
+    max-width: 92%;
+  }
 }

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="512" height="512">
+  <defs>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a5367"/><stop offset=".22" stop-color="#f4f8ff"/><stop offset=".3" stop-color="#8692a8"/>
+      <stop offset=".55" stop-color="#c4cede"/><stop offset=".72" stop-color="#fff"/><stop offset=".85" stop-color="#7b879d"/><stop offset="1" stop-color="#434b5f"/>
+    </linearGradient>
+    <radialGradient id="bg" cx=".5" cy=".42" r=".7">
+      <stop offset="0" stop-color="#16285c"/><stop offset=".55" stop-color="#050a1e"/><stop offset="1" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="halo" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#cfeaff" stop-opacity=".55"/><stop offset=".45" stop-color="#6c9cff" stop-opacity=".22"/><stop offset="1" stop-color="#6c8cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glass" cx=".38" cy=".3" r=".85">
+      <stop offset="0" stop-color="#eaf6ff" stop-opacity=".5"/><stop offset=".35" stop-color="#6ea8ff" stop-opacity=".25"/>
+      <stop offset=".8" stop-color="#1a2a66" stop-opacity=".6"/><stop offset="1" stop-color="#050818" stop-opacity=".95"/>
+    </radialGradient>
+    <radialGradient id="inner" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#c8ecff" stop-opacity=".95"/>
+      <stop offset=".6" stop-color="#5aa0ff" stop-opacity=".5"/><stop offset="1" stop-color="#3a5cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spec" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tbl" cx=".5" cy=".4" r=".6">
+      <stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#bfe8ff"/><stop offset="1" stop-color="#7fb8ff"/>
+    </radialGradient>
+  </defs>
+  <rect width="48" height="48" fill="url(#bg)"/>
+  <circle cx="24" cy="24" r="23" fill="url(#halo)"/>
+  <g transform="translate(24 24) scale(.74) translate(-24 -24)">
+    <circle cx="24" cy="24" r="23.2" fill="#02030a"/>
+    <circle cx="24" cy="24" r="21" fill="url(#glass)"/>
+    <circle cx="24" cy="24" r="20.2" fill="url(#inner)"/>
+    <g transform="translate(11.5 11.5) scale(1.25)">
+      <g stroke="rgba(255,255,255,.55)" stroke-width=".35" stroke-linejoin="round">
+        <path d="M10 1 L18 6 L14 8 L10 6Z" fill="#d6f1ff"/><path d="M18 6 L18 14 L14 12 L14 8Z" fill="#4f8dff"/>
+        <path d="M18 14 L10 19 L10 14 L14 12Z" fill="#2a52d0"/><path d="M10 19 L2 14 L6 12 L10 14Z" fill="#1d3aa6"/>
+        <path d="M2 14 L2 6 L6 8 L6 12Z" fill="#62adff"/><path d="M2 6 L10 1 L10 6 L6 8Z" fill="#a4d9ff"/>
+        <path d="M10 6 L14 8 L14 12 L10 14 L6 12 L6 8Z" fill="url(#tbl)"/>
+      </g>
+      <path d="M10 6 L14 8 L10 10Z" fill="#fff" opacity=".7"/>
+    </g>
+    <circle cx="24" cy="24" r="6" fill="url(#spec)" opacity=".85"/>
+    <ellipse cx="16.5" cy="12.5" rx="8" ry="4.2" transform="rotate(-32 16.5 12.5)" fill="url(#spec)"/>
+    <path d="M36.5 31 A14.5 14.5 0 0 1 20 38.2" fill="none" stroke="#e4f2ff" stroke-width="1.1" stroke-linecap="round" opacity=".5"/>
+    <circle cx="24" cy="24" r="22.2" fill="none" stroke="url(#silver)" stroke-width="3"/>
+    <circle cx="24" cy="24" r="20.5" fill="none" stroke="rgba(0,0,0,.55)" stroke-width=".8"/>
+    <g fill="url(#silver)" stroke="#2a3040" stroke-width=".5">
+      <circle cx="8.3" cy="8.3" r="2.3"/><circle cx="39.7" cy="8.3" r="2.3"/><circle cx="8.3" cy="39.7" r="2.3"/><circle cx="39.7" cy="39.7" r="2.3"/>
+    </g>
+  </g>
+</svg>
