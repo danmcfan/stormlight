@@ -7,7 +7,8 @@
     "generate-routes": "vite build",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@solidjs/web": "2.0.0-rc.21",
@@ -24,9 +25,11 @@
   },
   "devDependencies": {
     "@tanstack/devtools-vite": "0.8.6",
+    "@types/node": "^22.20.5",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vite-plugin-solid": "3.0.0-next.27"
+    "vite-plugin-solid": "3.0.0-next.27",
+    "vitest": "^5.1.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
