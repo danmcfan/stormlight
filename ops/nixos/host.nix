@@ -1,35 +1,65 @@
-# Settings that belong to this one machine. Edit before the first rebuild.
-{ lib, ... }:
+# Settings that belong to this one machine (Hostinger KVM, NixOS 26.05 template).
+# Values below mirror the template's /etc/nixos/configuration.nix as shipped.
+{ lib, pkgs, ... }:
 {
-  # Copy from the template's own configuration. Check with:
-  #   cat /etc/nixos/configuration.nix; nixos-version
-  # Never change it afterwards (it is not the NixOS release you run).
-  system.stateVersion = "REPLACE_ME"; # e.g. "26.05"
+  # From the template. Never change it afterwards (it is not the release you run).
+  system.stateVersion = "26.05";
 
-  # SSH public keys allowed to log in as `agent` and `root` (public SSH, and
-  # plain-sshd over the tailnet). Without at least one the build refuses to
-  # evaluate, because password logins are off and you would lock yourself out.
+  # SSH only over Tailscale. Verified `ssh agent@agent-box` over the tailnet first.
+  agentBox.publicSsh = false;
+
+  # Dashboard in dev mode with the lead agent, on the tailnet only.
+  agentBox.swarmDev = {
+    enable = true;
+    tailnetIp = "100.69.34.120";
+  };
+
+  # SSH public keys allowed to log in as `agent` and `root`.
   agentBox.authorizedKeys = [
-    # "ssh-ed25519 AAAA... you@laptop"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJk74y4vUcpM2sqWbMQffZhkt8bHgqxljVQ+6SpGTTZb danmcfan33@gmail.com"
   ];
 
-  # ---- Boot loader and disk: keep what the Hostinger template uses ---------
-  # Copy the template's boot.loader.* / fileSystems / networking lines here if
-  # /etc/nixos/configuration.nix has them. Reported for Hostinger's image (verify
-  # with `lsblk` and `[ -d /sys/firmware/efi ] && echo uefi || echo bios`):
-  # BIOS boot, GRUB on /dev/sda. Uncomment only if that matches your box:
-  #
-  # boot.loader.grub.enable = true;
-  # boot.loader.grub.device = "/dev/sda";
+  # ---- Boot loader and disk (template: SeaBIOS, MBR, GRUB on /dev/sda) -------
+  boot.loader.grub.enable = true;
+  boot.loader.grub.device = "/dev/sda";
+  boot.loader.grub.efiSupport = false;
+  boot.loader.timeout = 1;
 
-  # Hostinger's image gets its static IP from cloud-init (rendered into
-  # /etc/systemd/network). Keep cloud-init enabled or the box loses its network
-  # on the next switch. If the template's configuration.nix says otherwise,
-  # follow it instead. First apply with `nixos-rebuild test` (README step 6).
+  # Template grows the root partition and filesystem when the plan's disk grows.
+  # (The device itself comes from hardware-configuration.nix.)
+  fileSystems."/".autoResize = true;
+  boot.growPartition = true;
+
+  # Serial console for Proxmox serial0 + memory hotplug, as in the template.
+  boot.kernelParams = [
+    "console=tty0" "console=ttyS0,115200" "earlyprintk=ttyS0,115200"
+    "consoleblank=0" "memhp_default_state=online"
+  ];
+
+  # ---- Hostinger provisioning (hPanel talks to the VM through these) ---------
+  services.qemuGuest.enable = true;
+  # hVPS runs bare-name commands (sh, cloud-init, chpasswd, dig, ...) through the
+  # guest agent, so give it the full system PATH, as the template does.
+  systemd.services.qemu-guest-agent.environment.PATH =
+    lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin:/bin";
+  environment.systemPackages = with pkgs; [
+    cloud-init
+    dnsutils # dig, nslookup, host
+    nettools # ifconfig, netstat, route
+    wget
+    nano
+  ];
+
+  # ---- Network: cloud-init renders the static IP into systemd-networkd -------
+  # (/etc/systemd/network/10-cloud-init-eth0.network). Keep it, or the box loses
+  # its network on switch.
   services.cloud-init = {
     enable = true;
-    network.enable = true; # renders the static IP into systemd-networkd
+    network.enable = true;
+    settings.datasource_list = [ "NoCloud" "ConfigDrive" ];
+    # Its helper isn't shipped in NixOS's cloud-init; avoids a "degraded" exit.
+    settings.ssh.emit_keys_to_console = false;
   };
   networking.useNetworkd = true;
-  networking.useDHCP = false;
+  networking.useDHCP = lib.mkForce false;
 }

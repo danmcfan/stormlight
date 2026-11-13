@@ -55,6 +55,28 @@ in
       '';
     };
 
+    swarmDev = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Run the swarm dashboard in dev mode (Vite, hot reload) from the agent's
+          own checkout, ~agent/stormlight/swarm, with the lead agent's prompt box.
+          Reached at http://agent-box.<tailnet>.ts.net:<port>; it binds only to
+          the tailnet address, so it is never on the public interface.
+        '';
+      };
+      tailnetIp = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "The box's Tailscale IPv4 (`tailscale ip -4`); the dev server binds to it.";
+      };
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 5173;
+      };
+    };
+
     # Set by the placeholder hardware-configuration.nix only.
     placeholders.hardware = lib.mkOption {
       type = lib.types.bool;
@@ -72,6 +94,10 @@ in
       {
         assertion = config.system.stateVersion != "REPLACE_ME";
         message = "Set system.stateVersion in ops/nixos/host.nix to the template's value.";
+      }
+      {
+        assertion = !cfg.swarmDev.enable || cfg.swarmDev.tailnetIp != null;
+        message = "Set agentBox.swarmDev.tailnetIp in host.nix (`tailscale ip -4` on the box).";
       }
       {
         assertion = cfg.authorizedKeys != [ ];
@@ -209,6 +235,35 @@ in
         RestrictSUIDSGID = true;
         RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
         LockPersonality = true;
+      };
+    };
+
+    # ---- the swarm dashboard, dev mode (hot reload + lead agent) ----------------
+    # Runs from the agent's checkout so edits (yours or the agents') reload live.
+    # The lead agent it hosts spawns `claude` as `agent`, so Claude Code must be
+    # logged in once as that user.
+    systemd.services.swarm-dev = lib.mkIf cfg.swarmDev.enable {
+      description = "Swarm dashboard, dev mode (tailnet-only, hot reload, lead agent)";
+      after = [ "network-online.target" "tailscaled.service" ];
+      wants = [ "network-online.target" "tailscaled.service" ];
+      wantedBy = [ "multi-user.target" ];
+      unitConfig.ConditionPathExists = "/home/agent/stormlight/swarm/node_modules/.bin/vite";
+      path = with pkgs; [ nodejs_22 claude-code git git-lfs gh ripgrep bash coreutils findutils gnugrep gnused jq ];
+      environment = {
+        HOME = "/home/agent";
+        SWARM_TRANSCRIPTS_DIR = "/home/agent/.claude/projects";
+        SWARM_LEAD_CWD = "/home/agent/stormlight";
+      };
+      serviceConfig = {
+        User = "agent";
+        Group = "users";
+        WorkingDirectory = "/home/agent/stormlight/swarm";
+        ExecStart = "/home/agent/stormlight/swarm/node_modules/.bin/vite dev --host ${cfg.swarmDev.tailnetIp} --port ${toString cfg.swarmDev.port} --strictPort";
+        # Fails until tailscaled has brought the tailnet address up; keep retrying.
+        Restart = "always";
+        RestartSec = 5;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
       };
     };
 
