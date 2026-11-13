@@ -883,8 +883,12 @@ a {
   max-width: 100%;
   padding: 2px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: #5d6a85 transparent;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 
 .seg[data-slot='segmented-control'] {
@@ -1058,6 +1062,13 @@ a {
   cursor: pointer;
 }
 
+/* Visual size stays a tidy 30px; the actual tap target grows to the 44px minimum. */
+.search [data-slot='input-clear']::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
 .search [data-slot='input-clear'] svg {
   width: 14px;
   height: 14px;
@@ -1108,8 +1119,12 @@ a {
 .table-wrap {
   overflow: auto;
   border-top: 1px solid var(--rule-strong);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: #5d6a85 transparent;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 
 .table-wrap:focus-visible {
@@ -1154,6 +1169,7 @@ a {
 }
 
 .sort {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1166,6 +1182,14 @@ a {
   letter-spacing: inherit;
   text-transform: inherit;
   cursor: pointer;
+}
+
+/* The visible button stays header-row height; the tap target grows to 44px
+   without changing the dense desktop row rhythm. */
+.sort::before {
+  content: '';
+  position: absolute;
+  inset: -11px -6px;
 }
 
 @media (hover: hover) {
@@ -1291,6 +1315,168 @@ th[aria-sort='descending'] .sort {
   .row-open {
     max-width: 11rem;
     font-size: 14.5px;
+  }
+}
+
+/* Agent cards: the phone shape for the Fleet list below 40rem. The real
+   table (above) stays for wider widths, where the columns fit. */
+
+.agent-cards-wrap {
+  display: none;
+}
+
+.sort-strip {
+  display: flex;
+  gap: 8px;
+  padding: 2px 2px 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+}
+
+.sort-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.sort-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(150, 190, 255, 0.08), rgba(0, 0, 0, 0.5)) padding-box, linear-gradient(#040712, #040712) padding-box, var(--silver) border-box;
+  color: var(--ink-2);
+  font-family: var(--label);
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sort-chip[aria-pressed='true'] {
+  color: var(--blue-hi);
+  text-shadow: 0 0 8px rgba(110, 170, 255, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(170, 215, 255, 0.4);
+}
+
+.agent-cards {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-cards-empty {
+  padding: 2rem;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.agent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(150, 190, 255, 0.07), rgba(0, 0, 0, 0.4)) padding-box, linear-gradient(#040712, #040712) padding-box, var(--silver) border-box;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.agent-card[data-selected] {
+  background: linear-gradient(180deg, rgba(110, 170, 255, 0.22), rgba(110, 170, 255, 0.05)) padding-box, linear-gradient(#040712, #040712) padding-box, var(--silver) border-box;
+  box-shadow: inset 0 0 0 1px rgba(170, 215, 255, 0.35);
+}
+
+.agent-card:focus-visible {
+  outline-offset: 2px;
+}
+
+.ac-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ac-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: var(--label);
+  font-size: 15.5px;
+  letter-spacing: 0.06em;
+}
+
+.agent-card[data-kind='main'] .ac-label {
+  color: var(--blue-hi);
+  text-shadow: 0 0 10px rgba(110, 170, 255, 0.5);
+}
+
+.ac-activity {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.ac-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.ac-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ac-stat dt {
+  flex: none;
+  color: var(--ink-3);
+  font-family: var(--label);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ac-stat dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-stat dd .ico {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 40rem) {
+  .agent-cards-wrap {
+    display: block;
+  }
+  .table-wrap {
+    display: none;
   }
 }
 

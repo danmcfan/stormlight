@@ -231,8 +231,12 @@
 .graph-toolbar .seg {
   max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   background: linear-gradient(180deg, rgba(150, 190, 255, 0.1), rgba(0, 0, 0, 0.5)) padding-box, linear-gradient(#040712f2, #040712f2) padding-box, var(--silver) border-box;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 .graph-toolbar .seg [data-slot='segmented-control-item'] {
   min-height: 38px;
@@ -405,16 +409,16 @@
   display: none;
 }
 .gp-close.gem-btn.icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
 }
 .gp-close.gem-btn.icon .sock {
-  width: 32px;
-  height: 32px;
+  width: 33px;
+  height: 33px;
 }
 .gp-close.gem-btn.icon .sock .gem {
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
 }
 .gp-body {
   flex: 1;
@@ -523,8 +527,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 24px;
-  padding: 0;
+  min-height: 44px;
+  padding-block: 10px;
+  padding-inline: 0;
   border: 0;
   background: none;
   color: var(--blue-hi);
@@ -589,8 +594,10 @@
   .graph-toolbar .seg {
     padding: 3px;
   }
+  /* Touch sizes grow here, they never shrink below the desktop (hover) sizes
+     above: these are the pinch-zoom-adjacent controls people tap most. */
   .graph-toolbar .seg [data-slot='segmented-control-item'] {
-    min-height: 36px;
+    min-height: 40px;
     padding-right: 14px;
     font-size: 11px;
   }
@@ -599,19 +606,19 @@
     height: 26px;
   }
   .graph-switch {
-    min-height: 40px;
+    min-height: 46px;
     padding-right: 14px;
     font-size: 11px;
     letter-spacing: 0.08em;
   }
   .graph-toolbar .gem-btn.fit {
-    width: 42px;
-    min-height: 42px;
+    width: 48px;
+    min-height: 48px;
     padding: 0;
   }
   .graph-toolbar .gem-btn.fit .sock {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
   }
   .btn-text {
     position: absolute;
@@ -622,8 +629,8 @@
     white-space: nowrap;
   }
   .graph-toolbar .gem-btn.icon {
-    width: 42px;
-    height: 42px;
+    width: 50px;
+    height: 50px;
   }
   .graph-panel {
     max-height: 48%;

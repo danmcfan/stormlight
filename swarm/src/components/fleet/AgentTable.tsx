@@ -22,13 +22,24 @@ const COLS: Col[] = [
   { key: 'round', label: 'Round', num: true },
   { key: 'started', label: 'Started', hideSm: true, hideMd: true },
   { key: 'duration', label: 'Time', num: true },
-  { key: 'turns', label: 'Turns', num: true },
+  { key: 'turns', label: 'Turns', num: true, hideSm: true },
   { key: 'input', label: 'In', num: true, hideSm: true, hideMd: true },
   { key: 'output', label: 'Out', num: true },
   { key: 'cacheRead', label: 'Cache read', num: true, hideSm: true },
   { key: 'cost', label: 'Est. cost', num: true },
   { key: null, label: 'Plan 5h / 7d', hideSm: true },
   { key: null, label: 'Activity' },
+]
+
+/** Sort keys offered on the phone card list's sort strip, shortest-label first. */
+const CARD_SORTS: { key: SortKey; label: string }[] = [
+  { key: 'status', label: 'Status' },
+  { key: 'duration', label: 'Time' },
+  { key: 'cost', label: 'Cost' },
+  { key: 'output', label: 'Out' },
+  { key: 'turns', label: 'Turns' },
+  { key: 'label', label: 'Agent' },
+  { key: 'round', label: 'Round' },
 ]
 
 export function AgentTable(props: {
@@ -44,7 +55,17 @@ export function AgentTable(props: {
     c.key && props.sort === c.key ? (props.desc ? 'descending' : 'ascending') : c.key ? 'none' : undefined
 
   return (
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Agents table">
+    <>
+      <AgentCards
+        rows={props.rows}
+        now={props.now}
+        sort={props.sort}
+        desc={props.desc}
+        onSort={props.onSort}
+        onOpen={props.onOpen}
+        selectedId={props.selectedId}
+      />
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Agents table">
       <table class="agents">
         <thead>
           <tr>
@@ -114,7 +135,7 @@ export function AgentTable(props: {
                   <td class="num">{row().round ?? '–'}</td>
                   <td class="hide-sm hide-md">{formatRelative(a().startedAt, props.now)}</td>
                   <td class="num">{formatDuration(agentDuration(a(), props.now))}</td>
-                  <td class="num">{a().turns}</td>
+                  <td class="num hide-sm">{a().turns}</td>
                   <td class="num hide-sm hide-md">{formatTokens(a().usage.input)}</td>
                   <td class="num">{formatTokens(a().usage.output)}</td>
                   <td class="num hide-sm">{formatTokens(a().usage.cacheRead)}</td>
@@ -131,6 +152,99 @@ export function AgentTable(props: {
           </For>
         </tbody>
       </table>
+      </div>
+    </>
+  )
+}
+
+/** The phone card list: one agent per card, with a sort strip in place of column headers. */
+function AgentCards(props: {
+  rows: Row[]
+  now: number
+  sort: SortKey
+  desc: boolean
+  onSort: (key: SortKey) => void
+  onOpen: (id: string) => void
+  selectedId: string | null
+}) {
+  return (
+    <div class="agent-cards-wrap">
+      <div class="sort-strip" role="group" aria-label="Sort agents">
+        <For each={CARD_SORTS}>
+          {(s) => (
+            <button
+              type="button"
+              class="sort-chip"
+              aria-pressed={props.sort === s.key}
+              onClick={() => props.onSort(s.key)}
+            >
+              {s.label}
+              <span class="sort-mark" aria-hidden="true">
+                {props.sort === s.key ? (props.desc ? '▼' : '▲') : ''}
+              </span>
+            </button>
+          )}
+        </For>
+      </div>
+      <ul class="agent-cards" aria-label="Agents">
+        <For
+          each={props.rows}
+          keyed={(r) => r.agent.id}
+          fallback={<li class="agent-cards-empty">No agents match these filters.</li>}
+        >
+          {(row) => {
+            const a = () => row().agent
+            return (
+              <li>
+                <div
+                  class="agent-card"
+                  data-selected={props.selectedId === a().id ? '' : undefined}
+                  data-kind={a().kind}
+                  role="button"
+                  tabindex="0"
+                  aria-pressed={props.selectedId === a().id}
+                  onClick={() => props.onOpen(a().id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      props.onOpen(a().id)
+                    }
+                  }}
+                >
+                  <div class="ac-head">
+                    <StatusDot status={a().status} />
+                    <span class="ac-label">{a().label}</span>
+                  </div>
+                  <Show when={a().currentActivity}>
+                    <p class="ac-activity mono">{a().currentActivity}</p>
+                  </Show>
+                  <dl class="ac-stats">
+                    <div class="ac-stat">
+                      <dt>Model</dt>
+                      <dd class="mono">
+                        <Icon name={modelFamily(a().model)} />
+                        {shortModel(a().model)}
+                      </dd>
+                    </div>
+                    <div class="ac-stat">
+                      <dt>Time</dt>
+                      <dd>{formatDuration(agentDuration(a(), props.now))}</dd>
+                    </div>
+                    <div class="ac-stat">
+                      <dt>Out</dt>
+                      <dd>{formatTokens(a().usage.output)}</dd>
+                    </div>
+                    <div class="ac-stat">
+                      <dt>Est. cost</dt>
+                      <dd class="cost">{formatCost(a().costUsd)}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </li>
+            )
+          }}
+        </For>
+      </ul>
     </div>
   )
 }
