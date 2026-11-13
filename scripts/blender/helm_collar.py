@@ -635,3 +635,205 @@ _YBOT = pchip([0, 23, 48.5, 75, 85, 93, 99, 119, 144, 180],
 def helm_bottom(phi):
     a = abs((math.degrees(phi) + 180) % 360 - 180)
     return float(_YBOT(a))
+
+
+def visor_edge(B):
+    """The visor's edge = the trim centreline on the +x side, apex to chin, as (y, phi) on the hull.
+
+    Each stretch (apex -> pivot, round the pivot, pivot -> chin) is read from both views and blended:
+    the front view where the surface faces forward, the side view where it faces sideways.
+    """
+    k0 = 3                                       # the front trace above row 192 runs on the crown ridge
+    top = min(range(len(FRONT_TRIM)), key=lambda i: abs(FRONT_TRIM[i][1] - 321))
+    low = min(range(len(FRONT_TRIM)), key=lambda i: abs(FRONT_TRIM[i][1] - 392))
+    segs = [(FRONT_TRIM[k0:top + 1], SIDE_TRIM_UP), (FRONT_TRIM[top:low + 1], SIDE_TRIM_PIVOT),
+            (FRONT_TRIM[low:], SIDE_TRIM_LOW)]
+    out = []
+    for F, S in segs:
+        f = resample(np.array([B.locate(fy(py), VISOR_T, x=fx(px)) for px, py in F]), n=40)
+        s = resample(np.array([B.locate(fy(py), VISOR_T, z=sz(px)) for px, py in S]), n=40)
+        for a, b in zip(f, s):
+            w = smoothstep(deg(50), deg(78), b[1])
+            out.append(a * (1 - w) + b * w)
+    out = np.array(out)
+    out[-1, 0] = helm_bottom(out[-1, 1]) + 0.001
+    P = np.array([B.point(y, a, VISOR_T) for y, a in out])
+    s = arclen(P)
+    u = np.linspace(0, s[-1], int(s[-1] / 0.005))
+    out = smooth(np.stack([np.interp(u, s, out[:, 0]), np.interp(u, s, out[:, 1])], 1), 3)
+    P = np.array([B.point(y, a, VISOR_T) for y, a in out])
+    return out[simplify(P, 0.0007)]
+
+
+def offset_line(B, yp, off, d):
+    """A (y, phi) polyline moved d to its left (seen from outside, walking along it) on the surface."""
+    P = np.array([B.point(y, a, off) for y, a in yp])
+    out = []
+    for i, (y, a) in enumerate(yp):
+        t = unit(P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)])
+        n = B.normal(y, a)
+        out.append(B.param(P[i] + np.cross(n, t) * d - n * off))
+    return np.array(out)
+
+
+def mirror(yp):
+    return [(y, -a) for y, a in yp]
+
+
+def make_helm(enemy_crest=False):
+    """The helm (see the module docstring). Returns (helm piece, crest piece or None)."""
+    B = helm_hull()
+    p = OPiece("helm")
+    half = HELM_BAND / 2
+
+    # --- Visor: the plate inside the trim line, with the eye slit cut through it ---
+    C = visor_edge(B)                              # trim centreline, +x side, apex -> chin
+    A = offset_line(B, C, VISOR_T, -half)          # the plate's edge (outside of the band)
+    A[-1, 0] = helm_bottom(A[-1, 1])
+    m = len(A)
+    e = A[-1][1]
+    bottom = [(helm_bottom(a), a) for a in np.linspace(e, -e, 9)[1:-1]]
+    apex_y = A[0][0]
+    loop = [tuple(q) for q in A] + bottom + mirror(A)[::-1] + [(apex_y, 0.0)]
+    visor = Region(B, loop, VISOR_T)
+
+    def vis(x, y, depth=0.0, lift=0.0):
+        """A point of the visor at front-view (x, y), pushed `depth` back into the helm."""
+        yb, a = B.locate(y, VISOR_T, x=abs(x))
+        a = math.copysign(a, x) if x else 0.0
+        q = B.point(yb, a, VISOR_T + lift)
+        if depth:
+            n = B.normal(yb, a)
+            q = q - unit([n[0], 0.0, n[2]]) * depth
+        return q, (yb, a)
+
+    # Slit (front view of the sheet): nearly straight top edge sagging to the centre, lower edge a V.
+    W1, W2 = 120 * MPP, 112 * MPP                  # half-width of the rim and of the dark opening
+    top1 = lambda x: float(fy(355 + 21 * (1 - abs(x) / W1)))      # noqa: E731
+    bot1 = lambda x: float(fy(387 + 37 * (1 - abs(x) / W1)))      # noqa: E731
+    top2 = lambda x: float(fy(359 + 17 * (1 - abs(x) / W2)))      # noqa: E731
+    bot2 = lambda x: float(fy(388 + 25 * (1 - abs(x) / W2)))      # noqa: E731
+    NS = 11
+
+    def slit_loop(w, top, bot, grow=0.0, **kw):
+        xs = np.linspace(-w - grow, w + grow, NS)
+        pts = [vis(x, top(min(abs(x), w) * np.sign(x)) + grow, **kw) for x in xs]
+        pts += [vis(x, bot(min(abs(x), w) * np.sign(x)) - grow, **kw) for x in xs[::-1]]
+        return pts
+    r0 = slit_loop(W1, top1, bot1, grow=0.006)                    # where the raised rim starts
+    r1 = slit_loop(W1, top1, bot1, lift=0.0025)                   # the rim's crest = the opening's edge
+    r2 = slit_loop(W2, top2, bot2, depth=0.022)                   # the back of the recess
+    ridge = [(y, 0.0) for y in np.linspace(r0[NS + NS // 2][1][0] - 0.012, helm_bottom(0) + 0.012, 5)]
+    brow = [(y, a) for y in np.arange(r0[NS // 2][1][0] + 0.02, apex_y - 0.03, 0.03) for a in (-0.09, 0.09)]
+    visor.build(p, trims=[(0, m - 1), (m + len(bottom), 2 * m + len(bottom) - 1)], band=HELM_BAND,
+                holes=[[q[1] for q in r0]], lines=[ridge], steiner=brow, grid=(deg(13), 0.032, 0.014))
+    visor.wall(p, base=-0.001)
+    mid = lambda c: np.array([c[0] * 0.8, 0.5 * (top2(c[0]) + bot2(c[0])), c[2]]) - c   # noqa: E731
+    p.strip([q[0] for q in r0], [q[0] for q in r1], "plate", closed=True)
+    p.strip([q[0] for q in r1], [q[0] for q in r2], "plate", ref=mid, closed=True)
+    back = [q[0] for q in r2]
+    p.put(back, [(i, i + 1, 2 * NS - 2 - i, 2 * NS - 1 - i) for i in range(NS - 1)], "plate_dark", (0, 0, 1))
+    # A thin line of Stormlight deep in the slit.
+    gx = np.linspace(-0.07, 0.07, 7)
+    gy = lambda x: 0.5 * (top2(x) + bot2(x)) - 0.002               # noqa: E731
+    p.strip([vis(x, gy(x) + 0.0022, depth=0.0205)[0] for x in gx], [vis(x, gy(x) - 0.0022, depth=0.0205)[0] for x in gx],
+            "glow", (0, 0, 1))
+
+    # --- Cheek plates: behind the visor's lower edge, back to the ear, down to the jaw ---
+    kp = max((i for i in range(m) if A[i][0] < 0.15), key=lambda i: A[i][1])      # the pivot's lower corner
+    regions = [visor]
+    for sgn in (1, -1):
+        front = [tuple(q) for q in A[kp:]]
+        a_rear = B.locate(0.03, CHEEK_T, z=sz(CHEEK_REAR))[1]
+        under = [(helm_bottom(a), a) for a in np.linspace(front[-1][1], a_rear, 6)[1:]]
+        rear = [B.locate(y, CHEEK_T, z=sz(CHEEK_REAR)) for y in np.linspace(under[-1][0], front[0][0], 6)[1:-1]]
+        lp = front + under + rear
+        if sgn < 0:
+            lp = mirror(lp)
+        ch = Region(B, lp, CHEEK_T).build(p, grid=(deg(14), 0.035, 0.012))
+        ch.wall(p, base=-0.001, span=(len(front) - 1, len(lp) - 1))
+        regions.append(ch)
+
+    # --- Neck guard: a flared lame round the back with a trim band on its lower edge ---
+    a0 = B.locate(0.07, LAME_T, z=sz(LAME_TOP[0][0]))[1]
+    zt, yt = sz([q[0] for q in LAME_TOP])[::-1], fy([q[1] for q in LAME_TOP])[::-1]
+    zb_, yb_ = sz([q[0] for q in LAME_BOT])[::-1], fy([q[1] for q in LAME_BOT])[::-1]
+    ang = np.linspace(a0, TAU - a0, 21)
+    zs = [B.base(0.08, a)[2] for a in ang]
+    lame_top = [(float(np.interp(z, zt, yt)), a) for z, a in zip(zs, ang)]
+    lame_bot = [(float(np.interp(z, zb_, yb_)), a) for z, a in zip(zs, ang)]
+    lp = lame_bot + [(0.5 * (lame_bot[-1][0] + lame_top[-1][0]), ang[-1])] + lame_top[::-1] + \
+        [(0.5 * (lame_bot[0][0] + lame_top[0][0]), ang[0])]
+    lame = Region(B, lp, LAME_T)
+    lame.build(p, trims=[(0, len(lame_bot) - 1)], band=HELM_BAND)
+    lame.wall(p, base=-0.001)
+    regions.append(lame)
+
+    # --- Skull: the hull itself, where no plate covers it ---
+    def shown(y, a):
+        a1 = (a + math.pi) % TAU - math.pi
+        return not (visor.contains(y, a1) or regions[1].contains(y, a1) or regions[2].contains(y, a1)
+                    or lame.contains(y, a % TAU))
+    yk = 0.155
+    rows = [0.3625, 0.354, 0.340, 0.320, 0.293, 0.262, 0.228, 0.192, yk,
+            lambda a: 0.5 * (yk + helm_bottom(a)), helm_bottom]
+    NC = 28
+    V = hull_grid(p, B, rows, NC, "plate", keep=shown)
+    top = np.array([0.0, B.y1, B.sec(B.y1)[3]])
+    p.put([top] + V[:NC], [(0, 1 + j, 1 + (j + 1) % NC) for j in range(NC)], "plate")
+    rim = V[-NC:]
+
+    # --- Crown ridge: a raised strip from the nape over the crown to the visor's apex, trim on both edges ---
+    y_nape, y_end = 0.128, apex_y - 0.004
+    us = np.linspace(-1, 1, 81)
+    cen = []
+    for u in us:
+        y = B.y1 - (B.y1 - (y_nape if u < 0 else y_end)) * u * u
+        rx, rf, rb, cz, _, _ = B.sec(y)
+        cen.append((0.0, y, cz - rb if u < 0 else cz + rf))
+    cen = resample(np.array(cen), n=19)
+    wmid = lambda q: 0.0175 + 0.0062 * (smoothstep(0.36, 0.325, q[1]) if q[2] > 0.1 else 0.0)   # noqa: E731
+    rowsr = []
+    for i, c in enumerate(cen):
+        t = unit(cen[min(i + 1, len(cen) - 1)] - cen[max(i - 1, 0)])
+        n = np.array([0.0, -t[2], t[1]])
+        if n @ (c - p.C0) < 0:
+            n = -n
+        wm = wmid(c)
+        row = []
+        for x, h in ((-wm - half, -0.001), (-wm - half, RIDGE_T), (-wm + half, RIDGE_T), (0.0, RIDGE_T + 0.0025),
+                     (wm - half, RIDGE_T), (wm + half, RIDGE_T), (wm + half, -0.001)):
+            _, q = B.drop(c + np.array([x, 0.0, 0.0]), n)
+            row.append(q + n * h)
+        rowsr.append(row)
+    R = np.array(rowsr)
+    for k, (mat, ref) in enumerate((("plate", (-1, 0, 0)), ("trim", None), ("plate", None), ("plate", None),
+                                    ("trim", None), ("plate", (1, 0, 0)))):
+        p.strip(R[:, k], R[:, k + 1], mat, ref)
+    p.put(R[0], [tuple(range(7))], "plate", -(cen[1] - cen[0]))         # the square end at the nape
+
+    # --- Rivets: the visor pivot, three above the lame, one on the cheek (side view) ---
+    for sgn in (1, -1):
+        for (px, py), off, r in [(RIVET_PIVOT, VISOR_T, 0.0095), (RIVET_CHEEK, CHEEK_T, 0.0065)] + \
+                [(q, 0.0, 0.0065) for q in RIVETS_SKULL]:
+            y, a = B.locate(float(fy(py)), off, z=float(sz(px)))
+            dome(p, "plate", B.point(y, sgn * a, off), B.normal(y, sgn * a), r)
+
+    # --- Padded collar under the helm (dark): fills the gap down to the gorget ---
+    pad = Hull([-0.058, 0.008, 0.018, 0.028, 0.037, 0.06, 0.10],
+               [0.170, 0.172, 0.168, 0.155, 0.143, 0.130, 0.118],
+               [0.190, 0.200, 0.200, 0.200, 0.200, 0.196, 0.19],
+               [-0.100, -0.100, -0.099, -0.095, -0.074, -0.056, -0.045],
+               [0.04] * 7, [1.05] * 7, [2.0] * 7)
+    hull_grid(p, pad, [0.065, 0.037, 0.028, 0.014, -0.055], 16, "plate_dark", cap="bottom")
+    # The helm's underside, from its lower edge in to the padding.
+    inner = [pad.point(min(helm_bottom(TAU * j / NC) + 0.016, 0.09), TAU * j / NC) for j in range(NC)]
+    p.strip(rim, inner, "plate_dark", (0, -1, 0), closed=True)
+
+    crest = None
+    if enemy_crest:
+        crest = Piece("helm_crest")
+        for sgn in (1, -1):
+            tube(crest, "plate", [B.point(y, sgn * a) + np.array([0, dy, 0]) for y, a, dy in (
+                (0.28, deg(30), 0.0), (0.345, deg(75), 0.02), (0.30, deg(145), 0.05), (0.17, deg(155), 0.09))], r=0.022)
+    return p, crest

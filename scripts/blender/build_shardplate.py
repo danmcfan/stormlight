@@ -67,80 +67,10 @@ def rivet(p, centre, nrm, r=0.009):
 
 
 def build_helm(enemy_crest=False):
-    """Great helm (helm sheet + plate-helm-34): round, full crown with a flat rib front to back
-    edged in trim; the trim splits at the brow and frames the faceplate down to the cheeks. The
-    faceplate stands proud of the shell, faceted with a centre ridge and a V chin; the curved eye
-    slit (dark recess, a thin glowing line inside) sits between its top edge and the brow.
-    Origin: helm joint (world 2.0 m)."""
-    p = Piece("helm")
-    cz = 0.08
-    L = Loft([
-        dict(y=-0.10, rx=0.158, rf=0.15, rb=0.215, cz=cz),
-        dict(y=0.0, rx=0.158, rf=0.162, rb=0.178, cz=cz, p=2.2),
-        dict(y=0.10, rx=0.152, rf=0.172, rb=0.165, cz=cz, p=2.3),
-        dict(y=0.20, rx=0.145, rf=0.196, rb=0.162, cz=cz, p=2.3),
-        dict(y=0.28, rx=0.138, rf=0.184, rb=0.15, cz=cz, p=2.15),
-        dict(y=0.335, rx=0.118, rf=0.142, rb=0.118, cz=cz),
-        dict(y=0.37, rx=0.078, rf=0.092, rb=0.078, cz=cz),
-        dict(y=0.385, rx=0.025, rf=0.025, rb=0.025, cz=cz),
-    ]).mesh(p, "plate", seg=24, sub=2)
-    # Faceplate: front-only loft, a forward wedge at the chin, faceted (p < 2).
-    face = Loft([
-        dict(y=-0.04, rx=0.135, rf=0.15, rb=0.0, p=1.5, cz=cz),
-        dict(y=0.06, rx=0.146, rf=0.17, rb=0.0, p=1.55, cz=cz),
-        dict(y=0.15, rx=0.148, rf=0.19, rb=0.0, p=1.75, cz=cz),
-        dict(y=0.23, rx=0.14, rf=0.192, rb=0.0, p=2.0, cz=cz),
-    ])
-    TH = deg(58)
-    dip = lambda v: 1 - (2 * v - 1) ** 2          # noqa: E731  1 at the centre, 0 at the ends
-    vee = lambda v: abs(2 * v - 1)                 # noqa: E731
-    top = lambda v: t_at(face, 0.19 - 0.02 * (1 - vee(v)))        # noqa: E731  slit's lower edge: a shallow V
-    chin = lambda v: t_at(face, 0.02 + 0.075 * vee(v))            # noqa: E731  V chin
-    patch(p, "plate", face, chin, top, FRONT - TH, FRONT + TH, off=0.0, thick=0.014, nt=7, nth=12)
-    # Eye slit: a dark recess on the shell between the faceplate and the brow, narrowing at the ends,
-    # with a thin glowing line deep inside.
-    lo = lambda v: t_at(L, 0.188 - 0.02 * (1 - vee(v)))           # noqa: E731
-    hi = lambda v: t_at(L, 0.222 - 0.006 * vee(v) ** 3)           # noqa: E731  nearly straight top
-    patch(p, "plate_dark", L, lo, hi, FRONT - deg(46), FRONT + deg(46), off=0.004, thick=0.003, nt=2, nth=12)
-    glo = lambda v: t_at(L, 0.203 - 0.012 * (1 - vee(v)))         # noqa: E731
-    ghi = lambda v: t_at(L, 0.208 - 0.012 * (1 - vee(v)))         # noqa: E731
-    patch(p, "glow", L, glo, ghi, FRONT - deg(24), FRONT + deg(24), off=0.0055, thick=0.001, nt=1, nth=8)
-    # Centre ridge down the faceplate, from under the slit to the chin point.
-    path(p, "plate", face, [(t_at(face, 0.165), FRONT), (t_at(face, 0.09), FRONT), (t_at(face, 0.025), FRONT)],
-         r=0.008, off=0.012, n=6, flat=None)
-    # Crown rib: a flat raised band from the nape over the top to the brow, trim along both edges
-    # that splits at the brow and frames the faceplate down to the chin (helm sheet, measured).
-    top_t = L.n - 1.0
-    rib = [(t_at(L, y), BACK) for y in (0.0, 0.12, 0.24, 0.32, 0.36)] + [(top_t, FRONT + TAU)] + \
-          [(t_at(L, y), FRONT + TAU) for y in (0.36, 0.32, 0.29)]
-    rp, rn = sample_path(L, rib, 22, 0.0)
-    back_n = 15     # rib samples up to the crown top
-    oy = HELM_O[1]
-    for sgn in (1, -1):
-        edge = offset_line(rp[:back_n], rn[:back_n], -sgn * 0.025)[back_n - 6:]
-        en = rn[back_n - 6:back_n]
-        front = [(0.024, 2.365), (0.027, 2.325), (0.034, 2.305), (0.047, 2.285), (0.067, 2.265), (0.094, 2.245)]
-        side = [(0.12, 2.236), (0.06, 2.225), (0.04, 2.205), (0.04, 2.185), (0.05, 2.165), (0.09, 2.15),
-                (0.145, 2.13)]
-        chin = [(0.09, 2.105), (0.078, 2.085), (0.07, 2.065), (0.066, 2.045)]
-        tths = proj(L, [(sgn * x, y) for x, y in front], "front", HELM_O) + \
-            proj(L, side, "left" if sgn > 0 else "right", HELM_O) + \
-            proj(L, [(sgn * x, y) for x, y in chin], "front", HELM_O)
-        fp, fn = sample_path(L, tths, 40, 0.0015)
-        tube(p, "trim", [q + nv * 0.0015 for q, nv in zip(edge, en)] + fp, r=0.0055, nrm=list(en) + fn, flat=0.45)
-        # Rivets: the visor pivot and three along the cheek plate's lower edge (side view).
-        for z, y, r in ((0.01, 2.245, 0.012), (-0.01, 2.085, 0.009), (-0.06, 2.085, 0.009), (-0.11, 2.09, 0.009)):
-            t = t_at(L, y - oy)
-            th = th_for(L, t, z, "left" if sgn > 0 else "right")
-            rivet(p, L.surf(t, th, 0.002), L.normal(t, th), r)
-    if enemy_crest:
-        c = Piece("helm_crest")
-        for sgn in (1, -1):
-            tube(c, "plate", [L.surf(t_at(L, y), th, 0.0) + np.array([0, dy, 0]) for y, th, dy in (
-                (0.28, FRONT + sgn * 0.5, 0.0), (0.35, sgn * 0.9 + (0 if sgn > 0 else math.pi), 0.03),
-                (0.3, BACK + sgn * 0.6, 0.06), (0.17, BACK + sgn * 0.45, 0.10))], r=0.022)
-        return p, c
-    return p, None
+    """Armet with a prow visor, measured off the helm sheet (helm_collar.py): skull, visor with the
+    recessed eye slit, cheek plates, flared neck guard, crown ridge, flush trim. Origin: helm joint."""
+    import helm_collar
+    return helm_collar.make_helm(enemy_crest)
 
 
 def build_gorget():
