@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { handPoint, type BladePose } from '../combat/bladePose';
 import { clamp, damp } from '../core/math';
+import { paintPlate } from './platePaint';
 
 /*
  * Shared skeleton (body space, metres, +Z forward, +X = left):
@@ -176,9 +177,13 @@ export class HumanoidModel {
   private buildModelledPlate(model: THREE.Object3D, enemy: boolean): THREE.Material {
     // Satin rather than mirror metal: the references paint the Plate as a matt slate blue-grey,
     // with deep indigo enamel and a dark brown-black padded layer showing at the joints.
-    const shade = { metalness: 0.25, flatShading: false };
+    // Metalness 0.35: stylize.ts keeps the shaded side a cool grey (acceptance.mjs: shaded
+    // saturation 0.16, under its 0.30 cap) instead of navy (0.31 at 0.25) or dead grey (0.05 at 0.4).
+    // Its second bar, shaded <= 1.3x lit, fails here because the lit side is now nearly neutral
+    // (0.07); meeting it would take the dead grey. Logged in art/rounds/2026-11-13-plate-look.md.
+    const shade = { metalness: 0.35, flatShading: false };
     const mats: Record<string, THREE.MeshStandardMaterial> = {
-      plate: this.mat(enemy ? '#6e5a47' : '#8d959d', { ...shade, roughness: 0.48 }),
+      plate: this.mat(enemy ? '#7a6550' : '#98a2b0', { ...shade, roughness: 0.48 }),
       plate_dark: this.mat(enemy ? '#2a1d16' : '#2b2724', { metalness: 0.05, roughness: 0.85, flatShading: false }),
       // Enamel bands: deep sapphire-indigo on the player's Plate, dull gold on the enemy's.
       trim: this.mat(enemy ? '#a8803f' : '#323b6e', {
@@ -188,6 +193,10 @@ export class HumanoidModel {
       // Stormlight: the visor line and the chest sapphire.
       glow: this.mat('#a9ccff', { emissive: new THREE.Color('#5aa2ff'), emissiveIntensity: 2.2, flatShading: false }),
     };
+    // Painted wear (platePaint.ts): worn edges brighten toward polished steel (bronze on the
+    // enemy), orange plateau dust sits in the seams.
+    const mask = model.userData.paintMask as THREE.Texture | undefined;
+    if (mask) paintPlate(mats.plate, mask, enemy ? { worn: '#b89a6e', dust: '#7c4a2a' } : { worn: '#c9d1d8', dust: '#8f6a4c' });
     const piece = (name: string, parent: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Object3D => {
       const src = model.getObjectByName(name);
       if (!src) throw new Error(`shardplate.glb has no piece "${name}"`);

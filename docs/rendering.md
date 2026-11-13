@@ -47,6 +47,31 @@ Emissive materials keep working: emissive is added after the shading and is not
 hue-shifted or capped. New materials are picked up automatically (the scene is
 re-scanned once a second).
 
+### Plate paint (`platePaint.ts`)
+
+The concept close-up paints the Plate with darker value in its folds, worn bright edges,
+orange plateau dust in the seams and along the enamel, and visible brushwork. The game
+recolours the Plate per fighter by material name, so the GLB carries a **mask**, not
+colour: `public/models/shardplate-mask.jpg`, baked by `scripts/blender/plate_bake.py`
+on every build onto the plate faces' UVs (trim, under-layer and glow point at one
+neutral texel).
+
+| Channel | Baked as | Painted as | Look value |
+|---|---|---|---|
+| R | occlusion within 15 cm, the piece's own | darker plate in folds (and less sky fill) | `plateShade` |
+| G | convex edges (2 cm bevel) nothing crowds | lifted toward bright steel (bronze on the enemy) | `plateWear` |
+| B | occlusion within 5 cm, broadened | orange plateau dust | `plateDust` |
+| – | value noise at two scales in the piece's own space | brushwork | `plateBrush` |
+
+Worn-edge and dust colours are per fighter in `HumanoidModel.buildModelledPlate`. The
+features are drawn wider than real wear because a centimetre is a pixel or two at
+gameplay distance. Cost: one texture read and about 40 ALU ops per Plate pixel; the mask
+is 1024² (about 4 MB of GPU memory with mips).
+
+`node scripts/lookdev/plateshot.mjs <tag>` takes the Plate's fixed close-up (framed like
+the concept close-up), the shade side and the gameplay angle, and writes
+`plate-<tag>-vs-ref.jpg` beside the painting.
+
 ### Post (`post.ts`)
 
 - **Brushstrokes** (Kuwahara, `brushstrokes`, `brushRadius`): desktop only, off

@@ -848,6 +848,9 @@ for name, o in objs.items():
     print(f"  {name:13s} {n:6d} tris")
 print(f"total {tris} triangles in {len(objs)} pieces")
 
+# The paint mask (plate_bake.py): UVs on every piece and a shared atlas the game colours.
+from plate_bake import bake_mask  # noqa: E402
+bake_mask([o for n, o in objs.items() if n != "helm_crest"] + [objs["helm_crest"]], ROOT / "public/models/shardplate-mask.jpg")
 export_glb(ROOT / "public/models/shardplate.glb", list(objs.values()))
 
 if "--no-render" in sys.argv:

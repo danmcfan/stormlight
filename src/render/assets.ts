@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { preparePlateMask } from './platePaint';
 
 /** Models built by the Blender pipeline (scripts/blender/, public/models/). */
 export interface Models {
@@ -8,7 +9,8 @@ export interface Models {
   /**
    * Shardplate as rigid pieces, one node per bone (helm, breastplate,
    * upperarm_l, ...), each with its origin at that joint. See
-   * scripts/blender/build_shardplate.py and HumanoidModel.
+   * scripts/blender/build_shardplate.py and HumanoidModel. Its paint mask
+   * (shardplate-mask.jpg, see platePaint.ts) is on `userData.paintMask`.
    */
   shardplate: THREE.Object3D;
   /** Plains props: rockbuds, chrysalis, bridge (scripts/blender/build_plains_props.py). */
@@ -33,9 +35,11 @@ async function load(loader: GLTFLoader, file: string): Promise<THREE.Object3D> {
 
 export async function loadModels(): Promise<Models> {
   const loader = new GLTFLoader();
-  const [shardblade, shardplate, plainsProps, terrainDetail] = await Promise.all([
+  const [shardblade, shardplate, plainsProps, terrainDetail, plateMask] = await Promise.all([
     load(loader, 'shardblade.glb'), load(loader, 'shardplate.glb'), load(loader, 'plains-props.glb'),
     new THREE.TextureLoader().loadAsync(textureUrl('terrain-detail.jpg')),
+    new THREE.TextureLoader().loadAsync(url('shardplate-mask.jpg')),
   ]);
+  shardplate.userData.paintMask = preparePlateMask(plateMask);
   return { shardblade, shardplate, plainsProps, terrainDetail };
 }

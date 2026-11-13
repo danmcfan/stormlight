@@ -47,6 +47,16 @@ export const defaultLook = {
   /** Extra HDR for strong emissives (Stormlight, gems, visor, etched line). */
   glowBoost: 1.2,
 
+  // --- Plate paint (platePaint.ts): the baked mask, painted per fighter ------------
+  /** How much the Plate darkens in its own folds (the mask's occlusion). */
+  plateShade: 0.7,
+  /** Worn bright edges. */
+  plateWear: 1.2,
+  /** Orange plateau dust in the seams and along the enamel. */
+  plateDust: 0.8,
+  /** Brushwork: value variation at two scales, fixed to each piece. */
+  plateBrush: 0.08,
+
   // --- Atmosphere ------------------------------------------------------------
   hazeColor: '#c9dbea',
   /** Distance haze per metre. */

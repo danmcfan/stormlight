@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { look } from './look';
+import { syncPlateUniforms } from './platePaint';
 
 /**
  * Painterly shading for every MeshStandardMaterial / MeshPhysicalMaterial in
@@ -66,6 +67,7 @@ export function syncStyleUniforms(sunColor: THREE.Color, sunIntensity: number): 
   u.uChasmFog.value = look.chasmFog;
   u.uChasmDepth.value = look.chasmDepth;
   u.uFogTop.value = look.fogTop;
+  syncPlateUniforms();
 }
 
 const HEADER = /* glsl */`

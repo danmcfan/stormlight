@@ -177,6 +177,11 @@ export class DebugTools {
     sh.add(look, 'rimPower', 0.5, 8, 0.1).name('rim power');
     sh.add(look, 'maxLit', 0.5, 3, 0.05).name('max lit (no bloom)');
     sh.add(look, 'glowBoost', 0, 8, 0.1).name('glow boost');
+    const pl = f.addFolder('Plate paint');
+    pl.add(look, 'plateShade', 0, 1, 0.01).name('shade in folds');
+    pl.add(look, 'plateWear', 0, 2, 0.01).name('worn edges');
+    pl.add(look, 'plateDust', 0, 2, 0.01).name('dust in seams');
+    pl.add(look, 'plateBrush', 0, 0.5, 0.01).name('brushwork');
     const at = f.addFolder('Atmosphere & sky');
     at.addColor(look, 'hazeColor').name('haze colour');
     at.add(look, 'hazeDensity', 0, 0.02, 0.0001).name('haze density');
@@ -200,7 +205,7 @@ export class DebugTools {
     pp.addColor(look, 'gradeHighlights').name('grade highlights');
     pp.add(look, 'gradeAmount', 0, 1, 0.01).name('grade amount');
     pp.add(look, 'vignette', 0, 1, 0.01);
-    for (const sub of [sun, sh, at, pp]) sub.close();
+    for (const sub of [sun, sh, pl, at, pp]) sub.close();
     f.add({ copy: () => this.copyText(JSON.stringify(look, null, 2)) }, 'copy').name('Copy look JSON');
     f.add({ reset: () => {
       const q = look.quality;

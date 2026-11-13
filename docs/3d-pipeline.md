@@ -142,6 +142,11 @@ other.
   `PAULDRON_VARIANT=trellis|hybrid`) found the same, even fitted to the same box and carrying the
   scripted trim: lower scores in front and back, and a blind judge ranked the scripted piece
   first 3/3 (`art/rounds/2026-11-13-pauldron.md`).
+- **Plate paint mask:** `build_shardplate.py` UV-unwraps the plate faces of every piece into
+  one atlas and bakes `public/models/shardplate-mask.jpg` (`plate_bake.py`: R occlusion, G
+  worn edges, B dust cavities), which the game paints with per-fighter colours
+  (`docs/rendering.md`, Plate paint). Every build rebakes it (about a minute), because the
+  UVs change with the geometry; the GLB and the mask must ship together.
 - **Materials:** Principled BSDF only (exports to glTF PBR). Glow is emission:
   Stormlight blue `(0.5, 0.82, 1.0)`.
 - **Storage:** GLBs and renders are Git LFS (`.gitattributes`); the Pages
