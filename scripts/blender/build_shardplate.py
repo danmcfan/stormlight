@@ -74,34 +74,11 @@ def build_helm(enemy_crest=False):
 
 
 def build_gorget():
-    """High flared collar, open in a V at the front over the dark padded neck. Origin: the waist."""
-    p = Piece("gorget")
-    L = Loft([
-        dict(y=0.72, rx=0.37, rf=0.33, rb=0.3, cz=0.03),
-        dict(y=0.86, rx=0.37, rf=0.3, rb=0.28, cz=0.04),
-        dict(y=0.93, rx=0.3, rf=0.27, rb=0.255, cz=0.05),
-        dict(y=0.99, rx=0.262, rf=0.262, rb=0.245, cz=0.05),
-        dict(y=1.04, rx=0.258, rf=0.262, rb=0.244, cz=0.05),
-        dict(y=1.075, rx=0.272, rf=0.276, rb=0.256, cz=0.05),
-    ])
-    t_rim = t_at(L, 1.075)
-    t_back = t_at(L, 1.0)
-    t_v = t_at(L, 0.85)
-
-    def top(th):
-        d = abs(((th - FRONT + math.pi) % TAU) - math.pi)
-        f = 0.5 * (1 + math.cos(math.pi * d / 0.78)) if d < 0.78 else 0.0
-        b = 0.5 * (1 + math.cos(math.pi * min(1.0, abs(((th - BACK + math.pi) % TAU) - math.pi) / 1.2)))
-        return t_rim + (t_v - t_rim) * f ** 0.6 + (t_back - t_rim) * b
-    rim = shell(p, L, top, 0.0, thick=0.018, nth=34, nu=4)
-    tube(p, "trim", rim, r=TRIM_R, closed=True)
-    # A second band inset below the rim, following the V down toward the gem.
-    inner = [L.surf(top(TAU * j / 34) - 0.45, TAU * j / 34, 0.003) for j in range(34)]
-    tube(p, "trim", inner, r=TRIM_R * 0.8, closed=True)
-    # Dark padded neck inside the collar, under the helm (shows in the V).
-    Loft([dict(y=0.72, rx=0.16, rf=0.17, rb=0.15, cz=0.06), dict(y=0.98, rx=0.14, rf=0.15, rb=0.13, cz=0.07)]
-         ).mesh(p, "plate_dark", seg=14, sub=1)
-    return p
+    """Standing flared collar, open in a V at the front over the dark padded neck, trim along
+    the rim and a second band below it (helm_collar.make_gorget, measured off plate-helm-34).
+    Origin: the waist."""
+    import helm_collar
+    return helm_collar.make_gorget()
 
 
 def build_breastplate():

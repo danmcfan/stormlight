@@ -27,6 +27,7 @@ from mathutils.geometry import delaunay_2d_cdt
 
 from plate_geom import Piece, tube
 from lib import deg
+from skeleton import WAIST_Y
 
 TAU = math.tau
 MPP = 0.31 / 346            # metres per helm-sheet pixel
@@ -844,3 +845,107 @@ def make_helm(enemy_crest=False):
             tube(crest, "plate", [B.point(y, sgn * a) + np.array([0, dy, 0]) for y, a, dy in (
                 (0.28, deg(30), 0.0), (0.345, deg(75), 0.02), (0.30, deg(145), 0.05), (0.17, deg(155), 0.09))], r=0.022)
     return p, crest
+
+
+# --- The collar (gorget) ----------------------------------------------------------------
+# Built the same way as the helm: a hull of stacked sections through the drawing, with the
+# plates and their enamel trim lying on it. The part sheet plate-helm-34 shows it from the
+# front-left and the back, sitting on the shoulders: a standing collar that flares out at
+# the rim, open at the front in a V that shows the dark padding, and a second smaller flare
+# at its lower edge. Sheet scale as for the helm (MPP); the collar's own rows below.
+
+# The collar, measured in the body references and the part sheet. Heights are world metres;
+# they are converted to the collar's own frame below, because the piece's origin is the waist.
+# Rows: world y, half-width, front/back centre offset, depth forward, depth back.
+# The collar tapers in from a wide base on the shoulders to a narrow waist, then flares again
+# at its rim (docs/models/shardplate.md: rim ±0.25 at 2.07-2.16, the V down to 1.93).
+GORGET = [
+    (1.800, 0.370, 0.030, 0.330, 0.300),   # the base, sitting on the shoulders
+    (1.940, 0.370, 0.040, 0.300, 0.280),
+    (2.010, 0.300, 0.050, 0.270, 0.255),
+    (2.070, 0.262, 0.050, 0.262, 0.245),
+    (2.120, 0.258, 0.050, 0.262, 0.244),   # the waist
+    (2.155, 0.272, 0.050, 0.276, 0.256),   # the rim, trim along it
+]
+GORGET_Y0 = WAIST_Y        # the piece's origin is the waist
+GORGET_BAND = 0.011
+GORGET_V_DEPTH = 0.225     # how far the front V drops below the rim (to 1.93)
+GORGET_V_WIDTH = 30.0      # half-angle of the V at the rim, degrees
+
+
+def gorget_hull():
+    a = np.array(GORGET, float)
+    ys = a[:, 0] - GORGET_Y0
+    cz = a[:, 2]
+    return Hull(ys, a[:, 1], cz + a[:, 3], cz - a[:, 4], cz,
+                np.full(len(a), 1.7), np.full(len(a), 1.7))
+
+
+def make_gorget():
+    """The collar: a standing flared collar round the neck, open in a V at the front over the
+    dark padded neck, trim along the rim and a second band below it. Origin: the waist (the
+    torso's origin), so it rides with the chest like the breastplate."""
+    H = gorget_hull()
+    p = OPiece("gorget")
+    y_lo = GORGET[0][0] - GORGET_Y0
+    y_hi = GORGET[-1][0] - GORGET_Y0
+    band = GORGET_BAND
+
+    # The collar's body, as one surface split into material bands. Rows blend from the lower
+    # edge up to the rim profile, so the grid conforms to the rim (including the V's dip) with
+    # no stair-stepping at the notch; the trim is the grid's own faces, so nothing overlaps.
+    n = 40
+    band0 = band * 0.8
+
+    def rim_y(a):
+        a = abs((math.degrees(a) + 180) % 360 - 180)
+        if a >= GORGET_V_WIDTH:
+            return y_hi
+        u = a / GORGET_V_WIDTH                 # 0 at the centre of the V, 1 at its shoulder
+        return y_hi - GORGET_V_DEPTH * (1.0 - u) ** 1.6
+
+    def inner_y(a):
+        """The second, inset trim band, following the V."""
+        return rim_y(a) - 0.042
+
+    def blend(y0, y1, t):
+        return lambda a: y0(a) + (y1(a) - y0(a)) * t
+
+    ylo = lambda a: y_lo                        # noqa: E731
+    inner = inner_y
+    rim = rim_y
+    mid1_lo = blend(ylo, inner, 0.0)            # bottom band -> inner band
+    # Rows from the bottom band's inner edge up to the inner trim band.
+    seg_a = [blend(lambda a: y_lo + band, lambda a: inner(a) - band0, t) for t in (0, 0.34, 0.67, 1)]
+    seg_b = [blend(lambda a: inner(a), lambda a: rim(a) - band, t) for t in (0, 0.25, 0.5, 0.75, 1)]
+
+    hull_grid(p, H, [ylo, lambda a: y_lo + band], n, "trim", phi0=0.0)
+    hull_grid(p, H, seg_a, n, "plate", phi0=0.0)
+    hull_grid(p, H, [lambda a: inner(a) - band0, inner], n, "trim", phi0=0.0)
+    hull_grid(p, H, seg_b, n, "plate", phi0=0.0)
+    hull_grid(p, H, [lambda a: rim(a) - band, rim], n, "trim", phi0=0.0)
+
+    def ring(yfun, off=0.0):
+        return [H.point(yfun(TAU * j / n), TAU * j / n, off) for j in range(n)]
+
+    # The plate's thickness: a wall round the rim (which carries it down both sides of the V's
+    # notch) and one round the lower edge.
+    p.strip(ring(rim), ring(rim, -0.016), "plate", _radial_out(), closed=True)
+    p.strip(ring(ylo), ring(ylo, -0.014), "plate", _radial_out(), closed=True)
+
+    # Dark padded neck inside the collar (shows in the V, and under the helm).
+    pad = Hull([y_lo - 0.03, 2.00 - GORGET_Y0, 2.10 - GORGET_Y0, y_hi + 0.02],
+               [0.150, 0.150, 0.148, 0.140],
+               [0.210, 0.210, 0.205, 0.200],
+               [-0.145, -0.145, -0.140, -0.135],
+               [0.04] * 4, [1.9] * 4, [1.9] * 4)
+    hull_grid(p, pad, [y_hi + 0.02, 2.10 - GORGET_Y0, 2.00 - GORGET_Y0, y_lo - 0.03], 18,
+              "plate_dark", cap="bottom")
+    return p
+
+
+def _radial_out():
+    """Reference direction for winding a ring's band: radially outward at each face."""
+    def ref(c):
+        return np.array([c[0], 0.15, c[2] - 0.045])
+    return ref
