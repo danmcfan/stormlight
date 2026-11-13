@@ -350,3 +350,17 @@
     scroll-behavior: smooth;
   }
 }
+
+/* The chat fills the screen under the top bar: the log scrolls itself and the
+ * composer always sits at the bottom, even with no messages yet. */
+.lead-chat {
+  height: calc(100dvh - env(safe-area-inset-top) - 84px);
+}
+.lead-log {
+  max-height: none;
+}
+@media (min-width: 64rem) {
+  .lead-chat {
+    height: calc(100dvh - 52px);
+  }
+}
