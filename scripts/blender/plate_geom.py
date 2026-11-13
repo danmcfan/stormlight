@@ -515,10 +515,30 @@ def th_for(loft, t, coord, face):
     rng = {"front": (0.0, math.pi), "back": (math.pi, TAU), "left": (-math.pi / 2, math.pi / 2),
            "right": (math.pi / 2, 1.5 * math.pi)}[face]
     k = 0 if face in ("front", "back") else 2
+
+    def err(th):
+        return loft.local(t, th)[k] - coord
+
+    # A coarse sweep to bracket the answer (the coordinate is not monotone in the angle on
+    # every face), then bisect. A flat 97-sample sweep leaves up to ~1 cm of quantisation on
+    # a 0.35 m section, which is a third of the trim tolerance.
     ths = np.linspace(rng[0], rng[1], 97)
-    vals = np.array([loft.local(t, th)[k] for th in ths])
-    i = int(np.argmin(np.abs(vals - coord)))
-    return float(ths[i])
+    vals = np.array([err(th) for th in ths])
+    i = int(np.argmin(np.abs(vals)))
+    lo, hi = ths[max(i - 1, 0)], ths[min(i + 1, len(ths) - 1)]
+    a, b = err(lo), err(hi)
+    if a == 0 or b == 0 or a * b > 0:
+        return float(ths[i])
+    for _ in range(30):
+        m = 0.5 * (lo + hi)
+        c = err(m)
+        if c == 0:
+            return float(m)
+        if a * c < 0:
+            hi, b = m, c
+        else:
+            lo, a = m, c
+    return float(0.5 * (lo + hi))
 
 
 def proj(loft, pts, face="front", origin=(0, 0, 0)):

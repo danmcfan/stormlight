@@ -831,18 +831,18 @@
  "plate-front": {
   "iou": 0.902,
   "lines_f": 0.717,
-  "trim_f": 0.568,
+  "trim_f": 0.57,
   "detail": {
    "trim": {
-    "f": 0.568,
-    "precision": 0.575,
-    "recall": 0.562,
+    "f": 0.57,
+    "precision": 0.577,
+    "recall": 0.563,
     "ref_to_model_cm": 3.4,
     "model_to_ref_cm": 3.2
    },
    "lines": {
     "f": 0.717,
-    "precision": 0.876,
+    "precision": 0.877,
     "recall": 0.606,
     "ref_to_model_cm": 2.9,
     "model_to_ref_cm": 1.3
@@ -1402,26 +1402,26 @@
  },
  "plate-side": {
   "iou": 0.888,
-  "lines_f": 0.685,
-  "trim_f": 0.509,
+  "lines_f": 0.684,
+  "trim_f": 0.511,
   "detail": {
    "trim": {
-    "f": 0.509,
-    "precision": 0.489,
-    "recall": 0.529,
+    "f": 0.511,
+    "precision": 0.491,
+    "recall": 0.532,
     "ref_to_model_cm": 3.5,
-    "model_to_ref_cm": 4.5
+    "model_to_ref_cm": 4.6
    },
    "lines": {
-    "f": 0.685,
-    "precision": 0.842,
+    "f": 0.684,
+    "precision": 0.84,
     "recall": 0.577,
     "ref_to_model_cm": 3.2,
     "model_to_ref_cm": 1.5
    },
    "trim_cover": {
     "ref": 0.0998,
-    "model": 0.0744
+    "model": 0.0747
    }
   },
   "worst_bands": [
@@ -1986,14 +1986,14 @@
    },
    "lines": {
     "f": 0.55,
-    "precision": 0.661,
-    "recall": 0.471,
+    "precision": 0.662,
+    "recall": 0.47,
     "ref_to_model_cm": 4.1,
     "model_to_ref_cm": 2.4
    },
    "trim_cover": {
     "ref": 0.0864,
-    "model": 0.0526
+    "model": 0.0527
    }
   },
   "worst_bands": [
