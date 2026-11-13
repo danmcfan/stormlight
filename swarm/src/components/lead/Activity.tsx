@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createMemo, createSignal } from 'solid-js'
 import { useSwarm } from '../../lib/useSwarm'
-import { selectActivity, totalCalls } from './activity'
+import { selectActivity, totalCalls } from './activity-model'
 import { Gem } from '../frame/Gem'
 import { StatusDot } from '../fleet/StatusDot'
 import { shortModel } from '../fleet/format'

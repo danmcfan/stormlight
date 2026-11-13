@@ -90,7 +90,7 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
       <Show when={children().length}>
         <h4>Subagents ({children().length})</h4>
         <ul class="gp-list">
-          <For each={children()} keyed={(c) => c.id}>
+          <For each={children()}>
             {(c) => (
               <li>
                 <button type="button" class="gp-link" onClick={() => props.onSelect(agentNodeId(c.id))}>
@@ -105,7 +105,7 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
       <Show when={compIds().length}>
         <h4>Components touched</h4>
         <ul class="gp-list">
-          <For each={compIds()} keyed={([id]) => id}>
+          <For each={compIds()}>
             {([id, n]) => (
               <li>
                 <button type="button" class="gp-link mono" onClick={() => props.onSelect(componentNodeId(id))}>
@@ -119,7 +119,7 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
       </Show>
       <h4>Recent tool calls</h4>
       <ul class="gp-calls">
-        <For each={recent()} keyed={(t) => t.id} fallback={<li class="gp-sub">None yet</li>}>
+        <For each={recent()} fallback={<li class="gp-sub">None yet</li>}>
           {(t) => (
             <li data-hot={isRecent(t.at, props.now)}>
               <span class="mono">{t.summary}</span>
@@ -165,7 +165,7 @@ function ComponentDetails(props: { comp: Component; snapshot: SwarmSnapshot; now
       </Show>
       <h4>Touched by</h4>
       <ul class="gp-list">
-        <For each={touchers()} keyed={(x) => x.a.id} fallback={<li class="gp-sub">No agent has touched this</li>}>
+        <For each={touchers()} fallback={<li class="gp-sub">No agent has touched this</li>}>
           {(x) => (
             <li>
               <button type="button" class="gp-link" onClick={() => props.onSelect(agentNodeId(x.a.id))}>
@@ -180,7 +180,7 @@ function ComponentDetails(props: { comp: Component; snapshot: SwarmSnapshot; now
       <Show when={children().length}>
         <h4>Subdirectories</h4>
         <ul class="gp-list">
-          <For each={children()} keyed={(k) => k.id}>
+          <For each={children()}>
             {(k) => (
               <li>
                 <button type="button" class="gp-link mono" onClick={() => props.onSelect(componentNodeId(k.id))}>

@@ -1,7 +1,7 @@
 import { For, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { JSX } from '@solidjs/web'
-import { isSafeHref, isSafeImageSrc, parseMarkdown } from './markdown'
-import type { Align, Block, Inline, ListItem } from './markdown'
+import { isSafeHref, isSafeImageSrc, parseMarkdown } from './parse'
+import type { Align, Block, Inline, ListItem } from './parse'
 import './md.css'
 
 /**

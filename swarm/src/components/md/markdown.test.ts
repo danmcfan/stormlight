@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isSafeHref, isSafeImageSrc, parseMarkdown } from './markdown'
-import type { Block, Inline } from './markdown'
+import { isSafeHref, isSafeImageSrc, parseMarkdown } from './parse'
+import type { Block, Inline } from './parse'
 
 function text(nodes: Inline[]): string {
   return nodes

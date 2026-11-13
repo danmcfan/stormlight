@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Agent, SwarmSnapshot, TokenUsage, ToolCall } from '../../lib/types'
-import { MAX_CALLS, selectActivity, totalCalls } from './activity'
+import { MAX_CALLS, selectActivity, totalCalls } from './activity-model'
 
 const zero: TokenUsage = { input: 0, output: 0, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 0 }
 

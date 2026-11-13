@@ -175,7 +175,7 @@ function AgentCards(props: {
             <button
               type="button"
               class="sort-chip"
-              aria-pressed={props.sort === s.key}
+              aria-pressed={props.sort === s.key ? "true" : "false"}
               onClick={() => props.onSort(s.key)}
             >
               {s.label}
@@ -202,7 +202,7 @@ function AgentCards(props: {
                   data-kind={a().kind}
                   role="button"
                   tabindex="0"
-                  aria-pressed={props.selectedId === a().id}
+                  aria-pressed={props.selectedId === a().id ? "true" : "false"}
                   onClick={() => props.onOpen(a().id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

@@ -201,7 +201,7 @@ export function Composer(props: {
             multiple
             class="composer-file-input"
             aria-hidden="true"
-            tabIndex={-1}
+            tabindex="-1"
             onChange={(e) => {
               addFiles(imageFiles(e.currentTarget.files))
               e.currentTarget.value = ''

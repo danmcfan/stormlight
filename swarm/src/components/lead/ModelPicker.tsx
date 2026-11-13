@@ -1,8 +1,8 @@
 // Compact control in the composer that shows "lead → subagent" and opens a
 // bottom sheet (ui-sdk's Drawer) to change either model. Options always come
 // from the server's `models`/`subagentModels`, never hardcoded.
-import { For, Show } from 'solid-js'
-import { Drawer, DrawerBackdrop, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from '@ui-sdk/solid/drawer'
+import { For, Show, createSignal } from 'solid-js'
+import { Drawer, DrawerBackdrop, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } from '@ui-sdk/solid/drawer'
 import { Field, FieldLabel } from '@ui-sdk/solid/field'
 import { Radio, RadioGroup, RadioIndicator } from '@ui-sdk/solid/radio'
 import { shortModel } from '../fleet/format'
@@ -29,11 +29,14 @@ export function ModelPicker(props: { lead: Lead }) {
     return s ? `Models: ${shortModel(s.model)} leads, ${shortModel(s.subagentModel)} agents. Change` : 'Models'
   }
 
+  // Controlled: with ui-sdk 0.1.0-beta.1 on Solid 2 RC, an uncontrolled DrawerTrigger never opens.
+  const [open, setOpen] = createSignal(false)
   return (
-    <Drawer side="bottom">
-      <DrawerTrigger class="chip model-trigger" aria-label={triggerLabel()}>
-        <TriggerLabel lead={props.lead} />
-      </DrawerTrigger>
+    <>
+    <button type="button" class="chip model-trigger" aria-haspopup="dialog" aria-label={triggerLabel()} onClick={() => setOpen(true)}>
+      <TriggerLabel lead={props.lead} />
+    </button>
+    <Drawer side="bottom" open={open()} onOpenChange={setOpen}>
       <DrawerBackdrop />
       <DrawerContent class="model-sheet" initialFocus="content">
         <div data-slot="grip" aria-hidden="true" />
@@ -87,7 +90,9 @@ export function ModelPicker(props: { lead: Lead }) {
             </div>
           )}
         </Show>
+        <DrawerClose class="gem-btn primary model-done">Done</DrawerClose>
       </DrawerContent>
     </Drawer>
+    </>
   )
 }
