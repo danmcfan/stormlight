@@ -42,6 +42,20 @@ Blender itself to inspect or hand-edit it.
    profile (metres), or by comparing runs against a baseline taken on the same
    helm. Comparing a body score across a helm change reads as a regression that
    isn't one.
+   **Beware two traps when reading a score:**
+   - **Bands vs the whole.** `lines F` / `trim F` are computed over the whole
+     silhouette. A helper that scores one height band (a belt, a knee) will
+     report a very different number than the shipped `trim_f`, and optimising
+     the band can leave the total flat. Check `scores.json`'s figure, not a
+     helper's, before claiming a gain.
+   - **Region and scale.** The score erodes the shared interior by 2.5 cm and
+     measures at the render's own resolution. A helper with its own camera or a
+     fixed erosion kernel measures a different region at a different scale, so
+     its absolute numbers are not comparable with `scores.json`
+     (a hand-rolled tool has read 0.72 where the score says 0.51). Use a helper
+     to *locate* defects in metres; use `compare_reference.py` to *judge* a
+     gain.
+
    It also writes, per view:
    - `<view>-profile.png`: both silhouettes' extents every 5 cm of height in
      metres from the body axis, and the error per band; `scores.json` lists the
