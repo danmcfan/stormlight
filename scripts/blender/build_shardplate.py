@@ -488,66 +488,69 @@ def build_pauldron(s):
         dict(y=0.405, rx=0.045, rf=0.11, rb=0.14, cx=0.035, cz=-0.125),
         dict(y=0.425, rx=0.01, rf=0.02, rb=0.03, cx=0.03, cz=-0.13),
     ], M).mesh(p, "plate", seg=26, sub=2)
-    # The dome's trim is one continuous outline, as the front reference draws it: up the inner edge
-    # (x 0.34 from h 1.97 down to 1.88), out along the rim to x 0.44 at h 1.73, then sweeping out and
-    # up over the outside of the arm to x 0.70 at h 1.82 — the band the brief measures at +-0.73
-    # around h 1.80. Local y = world h - 1.70, local x = world x - 0.42 (the shoulder).
-    o = (s * 0.42, 1.70)
-    arch = [(0.320, 1.945), (0.322, 1.910), (0.330, 1.880), (0.355, 1.850), (0.395, 1.815),
-            (0.428, 1.790)]
-    q = posed([(s * ax, ah) for ax, ah in arch], o, 0.0)
-    if s < 0:
-        q = [(-ax, ay) for ax, ay in q]
-    path(p, "trim", dome, [(t_at(dome, y), th_for(dome, t_at(dome, y), x, "left" if s > 0 else "right"))
-                           for x, y in q], r=TRIM_R, n=20)
+    # The dome's trim: a heavy band along the fin's base, which the side view draws as an arch from
+    # the front rondel up over the crown to the back and the front view as the dome's inner edge
+    # (x 0.32-0.43 from h 1.79 up to 1.95), and the rim band. In the dome's own angles th 0 is the
+    # outside of the arm, 90 deg the front, 180 the neck side and 270 the back.
+    # The arch's angles came from a sweep: moving it out onto the front face (th 95-140) to trace the
+    # side view's front edge cost the front and back views 0.02-0.04 of trim F and the side view none.
+    front_half = [(0.07, 100), (0.16, 122), (0.27, 146), (0.35, 166)]
+    arch = front_half + [(0.395, 180)] + [(y, 360 - a) for y, a in reversed(front_half)]
+    path(p, "trim", dome, [(t_at(dome, y), deg(a)) for y, a in arch], r=TRIM_R * 1.15, n=34)
     # The rim proper: an arc along the dome's lower edge from the front (x 0.42, h 1.74) round the
     # outside of the arm (x 0.71 at h 1.82, the band the brief measures at +-0.73 round h 1.80) to
-    # the back. In the dome's own angles th 0 is the outside of the arm and +-80 deg the front and
-    # back edges, so the band is lowest at the edges and highest over the outside.
-    rim(p, "trim", dome, lambda th: 0.030 + 0.062 * math.cos(th) ** 3, n=44)
-    # Lames: partial bands round the outside of the arm, each tucked under the one above, the lower
-    # edge flared and trimmed. Over the *outside* of the arm the reference's lames are a straight
-    # wall in the front view (x 0.70-0.73, nearly vertical); their lower edges dip in the side view
-    # and hook up at the front and back, so `edge` is a t that is greatest over the outside.
-    # The upper lame is pulled in to the front view's x 0.71 at h 1.70; the lower one keeps its width,
-    # because the arm below it fills the drawing's outline out to x 0.78 at h 1.62.
-    for y0, y1, k, w in ((-0.03, 0.07, 0.0, 0.182), (-0.105, -0.005, 0.012, 0.2)):
-        lame = Loft([dict(y=y1, rx=w - k, rf=0.228 - k, rb=0.235 - k, cx=cx + 0.005, cz=cz, p=2.2),
-                     dict(y=y0, rx=w + 0.005 - k, rf=0.236 - k, rb=0.243 - k, cx=cx + 0.005, cz=cz, p=2.2)], M)
-        # Side view: the lame's lower edge sits at h 1.72 / 1.62 from the outer face round to the
-        # front, and rides up to 1.78 / 1.68 where the next lame tucks under at the front and back.
+    # the back, lowest at the edges and highest over the outside. Heavier than the other trim: the
+    # drawings make it the boldest line on the shoulder.
+    rim(p, "trim", dome, lambda th: 0.030 + 0.062 * math.cos(th) ** 3, n=44, r=TRIM_R * 1.3)
+    # Lames: partial bands round the outside of the arm. Each flares out ~2.5 cm toward its lower
+    # edge and starts inside the edge of the one above, so every lower edge stands proud as a step
+    # (the drawings' stacked plates) rather than the two reading as one skirt. Their lower edges dip
+    # over the outside of the arm in the side view and hook up at the front and back (`edge`). Front
+    # view: the upper lame's edge at x 0.71 round h 1.70, the lower one's at 1.62 (the arm below
+    # fills the outline to 0.78 there). Side view: their backs reach the dome's z -0.37.
+    LAME_T = 0.018
+    for y0, y1, top, flare in ((-0.03, 0.07, (0.17, 0.228, 0.262), 0.026),
+                               (-0.105, -0.005, (0.17, 0.222, 0.258), 0.028)):
+        rx, rf, rb = top
+        lame = Loft([dict(y=y1, rx=rx, rf=rf, rb=rb, cx=cx + 0.005, cz=cz, p=2.2),
+                     dict(y=y0, rx=rx + flare, rf=rf + flare, rb=rb + flare, cx=cx + 0.005, cz=cz, p=2.2)], M)
         edge = lambda v: 0.34 + 0.52 * math.sin(math.pi * v) ** 0.55          # noqa: E731
-        patch(p, "plate", lame, 0.0, edge, deg(-112), deg(112), off=0.0, thick=0.014, nt=3, nth=18)
+        patch(p, "plate", lame, 0.0, edge, deg(-112), deg(112), off=0.0, thick=LAME_T, nt=3, nth=18)
         path(p, "trim", lame, [(edge(v) - 0.05, deg(-108) + deg(216) * v) for v in np.linspace(0.02, 0.98, 14)],
-             r=TRIM_R * 0.9, off=0.014, n=22)
-    # The arched flange along the inner edge: outline in (z, y), bent to follow the dome's edge,
-    # leaning a little toward the head. Its top arc carries a trim line on the outer face.
-    # A rounded half-disc: centre (z -0.09, y 0.27), radii 0.225 (z) x 0.25 (y), base buried in the
-    # dome. The z radius is what puts its front end at z +0.36 after the 22 deg yaw; the reference
-    # stops there (the side view is 0.72 deep at h 1.82).
+             r=TRIM_R * 1.1, off=LAME_T, n=22)
+    # The crest (the "horn") along the inner edge: outline in (z, y), bent to follow the dome's edge
+    # and leaning in toward the head. Drawn as a solid plate with rounded edges, not a flat slab:
+    # four rings through its thickness, the outer two pulled in from the outline, so its rim is a
+    # round bead. A trim line runs inside its top arc on the outer face.
+    # Outline: a rounded half-disc, centre (z -0.09, y 0.27), radii 0.225 (z) x 0.25 (y), base buried
+    # in the dome.
     arc = [(-0.09 + 0.225 * math.cos(a), 0.27 + 0.25 * math.sin(a)) for a in np.linspace(deg(8), deg(172), 15)]
     base = [(-0.3, 0.15), (-0.09, 0.17), (0.12, 0.15)]
     outline = arc + base
     # Set in toward the neck so the broad face the front view sees spans x 0.36-0.40 at its tip,
     # not further out over the dome.
     FIN_X = -0.065
-    lean = rot_z(s * deg(4))
+    lean = rot_z(s * deg(5))
     yaw = rot_y(deg(13))        # front end swung out: the front view sees a broad fin
 
     def fl(z, y, x=0.0):
         return lean @ mx(yaw @ np.array((FIN_X + x + 1.2 * (z - cz) ** 2, y, z - cz)) + np.array((0, 0, cz)))
-    thick = 0.032
+    thick = 0.046
     n = len(outline)
-    verts = [fl(z, y, thick / 2) for z, y in outline] + [fl(z, y, -thick / 2) for z, y in outline]
-    faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+    fc = (-0.09, 0.22)
+
+    def shrink(z, y, k):
+        return fc[0] + (z - fc[0]) * k, fc[1] + (y - fc[1]) * k
+    rings = [[fl(*shrink(z, y, kk), x) for z, y in outline]
+             for kk, x in ((0.94, thick / 2), (1.0, thick / 5), (1.0, -thick / 5), (0.94, -thick / 2))]
+    verts = [v for r in rings for v in r]
+    faces = [tuple(range(n)), tuple(range(4 * n - 1, 3 * n - 1, -1))]
+    for a in range(3):
+        faces += [(a * n + i, a * n + (i + 1) % n, (a + 1) * n + (i + 1) % n, (a + 1) * n + i) for i in range(n)]
     p.add(verts, faces, "plate")
-    inset = [(-0.09 + (z + 0.09) * 0.86, 0.27 + (y - 0.27) * 0.86) for z, y in arc[1:-1]]
+    inset = [(-0.09 + (z + 0.09) * 0.8, 0.27 + (y - 0.27) * 0.8) for z, y in arc[1:-1]]
     pts = [fl(z, y, thick / 2 + 0.002) for z, y in inset]
-    tube(p, "trim", pts, r=TRIM_R * 0.85, nrm=[lean @ mx((1, 0, 0))] * len(pts), flat=0.45)
-    # Trim down the dome's inner front edge, from the fin to the rondel (reference: the vertical
-    # line at x 0.32-0.37 running h 1.68 down to 1.56 on the inner side of the arm).
-    path(p, "trim", dome, [(t_at(dome, 0.3), deg(150)), (t_at(dome, 0.22), deg(132)), (t_at(dome, 0.13), deg(118))],
-         r=TRIM_R, n=10)
+    tube(p, "trim", pts, r=TRIM_R, nrm=[lean @ mx((1, 0, 0))] * len(pts), flat=0.45)
     # The back rondel sits inside the side view's outline (the drawing shows none behind the dome).
     for z, nz in ((0.235, 1.0), (-0.3, -1.0)):
         c = mx((-0.065, 0.1, z))

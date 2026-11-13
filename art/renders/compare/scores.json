@@ -830,39 +830,39 @@
  },
  "plate-front": {
   "iou": 0.923,
-  "lines_f": 0.83,
-  "trim_f": 0.765,
+  "lines_f": 0.835,
+  "trim_f": 0.77,
   "detail": {
    "trim": {
-    "f": 0.765,
-    "precision": 0.739,
-    "recall": 0.793,
+    "f": 0.77,
+    "precision": 0.742,
+    "recall": 0.8,
     "ref_to_model_cm": 1.8,
     "model_to_ref_cm": 2.8
    },
    "lines": {
-    "f": 0.83,
-    "precision": 0.957,
-    "recall": 0.732,
+    "f": 0.835,
+    "precision": 0.959,
+    "recall": 0.739,
     "ref_to_model_cm": 2.0,
     "model_to_ref_cm": 0.8
    },
    "trim_cover": {
-    "ref": 0.0955,
-    "model": 0.0986
+    "ref": 0.0968,
+    "model": 0.0998
    }
   },
   "worst_bands": [
    "at 0.68 m the model's char-right edge is 0.06 m outside the reference",
    "at 0.68 m the model's char-left edge is 0.06 m outside the reference",
-   "at 1.62 m the model's char-right edge is 0.05 m inside the reference",
-   "at 1.62 m the model's char-left edge is 0.05 m inside the reference",
+   "at 2.23 m the model's char-right edge is 0.05 m inside the reference",
+   "at 2.23 m the model's char-left edge is 0.05 m inside the reference",
    "at 0.62 m the model's char-right edge is 0.04 m outside the reference",
    "at 0.62 m the model's char-left edge is 0.04 m outside the reference",
+   "at 1.62 m the model's char-right edge is 0.04 m inside the reference",
+   "at 1.62 m the model's char-left edge is 0.04 m inside the reference",
    "at 0.57 m the model's char-right edge is 0.03 m outside the reference",
-   "at 0.57 m the model's char-left edge is 0.03 m outside the reference",
-   "at 1.52 m the model's char-right edge is 0.03 m inside the reference",
-   "at 1.07 m the model's char-right edge is 0.03 m inside the reference"
+   "at 0.57 m the model's char-left edge is 0.03 m outside the reference"
   ],
   "profile": [
    {
@@ -1224,8 +1224,8 @@
      0.777
     ],
     "model": [
-     -0.728,
-     0.729
+     -0.735,
+     0.736
     ]
    },
    {
@@ -1235,8 +1235,8 @@
      0.719
     ],
     "model": [
-     -0.723,
-     0.724
+     -0.735,
+     0.736
     ]
    },
    {
@@ -1246,8 +1246,8 @@
      0.712
     ],
     "model": [
-     -0.721,
-     0.721
+     -0.726,
+     0.726
     ]
    },
    {
@@ -1257,8 +1257,8 @@
      0.733
     ],
     "model": [
-     -0.733,
-     0.733
+     -0.735,
+     0.736
     ]
    },
    {
@@ -1280,7 +1280,7 @@
     ],
     "model": [
      -0.714,
-     0.717
+     0.712
     ]
    },
    {
@@ -1291,7 +1291,7 @@
     ],
     "model": [
      -0.694,
-     0.7
+     0.695
     ]
    },
    {
@@ -1345,8 +1345,8 @@
      0.398
     ],
     "model": [
-     -0.39,
-     0.39
+     -0.378,
+     0.376
     ]
    },
    {
@@ -1356,8 +1356,8 @@
      0.381
     ],
     "model": [
-     -0.351,
-     0.352
+     -0.334,
+     0.335
     ]
    },
    {
@@ -1401,47 +1401,47 @@
   ]
  },
  "plate-side": {
-  "iou": 0.913,
-  "lines_f": 0.688,
-  "trim_f": 0.47,
+  "iou": 0.914,
+  "lines_f": 0.692,
+  "trim_f": 0.472,
   "detail": {
    "trim": {
-    "f": 0.47,
-    "precision": 0.435,
+    "f": 0.472,
+    "precision": 0.439,
     "recall": 0.51,
     "ref_to_model_cm": 3.6,
-    "model_to_ref_cm": 5.1
+    "model_to_ref_cm": 4.9
    },
    "lines": {
-    "f": 0.688,
-    "precision": 0.827,
-    "recall": 0.589,
-    "ref_to_model_cm": 3.1,
-    "model_to_ref_cm": 1.6
+    "f": 0.692,
+    "precision": 0.835,
+    "recall": 0.591,
+    "ref_to_model_cm": 3.0,
+    "model_to_ref_cm": 1.5
    },
    "trim_cover": {
-    "ref": 0.0975,
-    "model": 0.0924
+    "ref": 0.0978,
+    "model": 0.0994
    }
   },
   "worst_bands": [
    "at 0.57 m the model's back edge is 0.14 m outside the reference",
    "at 2.02 m the model's front edge is 0.09 m outside the reference",
-   "at 1.93 m the model's front edge is 0.08 m outside the reference",
-   "at 1.88 m the model's front edge is 0.07 m outside the reference",
+   "at 1.93 m the model's front edge is 0.09 m outside the reference",
+   "at 1.88 m the model's front edge is 0.08 m outside the reference",
    "at 1.98 m the model's front edge is 0.07 m outside the reference",
    "at 2.08 m the model's front edge is 0.05 m outside the reference",
-   "at 1.82 m the model's front edge is 0.04 m outside the reference",
+   "at 1.82 m the model's front edge is 0.05 m outside the reference",
    "at 0.47 m the model's front edge is 0.04 m inside the reference",
-   "at 0.17 m the model's front edge is 0.04 m inside the reference",
-   "at 0.62 m the model's front edge is 0.04 m outside the reference"
+   "at 0.62 m the model's front edge is 0.04 m outside the reference",
+   "at 0.17 m the model's front edge is 0.04 m inside the reference"
   ],
   "profile": [
    {
     "h": 0.025,
     "ref": [
-     -0.351,
-     0.173
+     -0.347,
+     0.177
     ],
     "model": [
      -0.347,
@@ -1451,8 +1451,8 @@
    {
     "h": 0.075,
     "ref": [
-     -0.351,
-     0.177
+     -0.347,
+     0.18
     ],
     "model": [
      -0.347,
@@ -1462,30 +1462,30 @@
    {
     "h": 0.125,
     "ref": [
-     -0.334,
-     0.177
+     -0.331,
+     0.18
     ],
     "model": [
      -0.334,
-     0.18
+     0.183
     ]
    },
    {
     "h": 0.175,
     "ref": [
-     -0.248,
-     0.167
+     -0.244,
+     0.171
     ],
     "model": [
      -0.209,
-     0.157
+     0.158
     ]
    },
    {
     "h": 0.225,
     "ref": [
-     -0.171,
-     0.173
+     -0.167,
+     0.177
     ],
     "model": [
      -0.154,
@@ -1495,63 +1495,63 @@
    {
     "h": 0.275,
     "ref": [
-     -0.142,
-     0.161
+     -0.138,
+     0.164
     ],
     "model": [
      -0.135,
-     0.177
+     0.174
     ]
    },
    {
     "h": 0.325,
     "ref": [
-     -0.129,
-     0.151
+     -0.125,
+     0.154
     ],
     "model": [
      -0.138,
-     0.186
+     0.187
     ]
    },
    {
     "h": 0.375,
     "ref": [
-     -0.135,
-     0.167
+     -0.132,
+     0.171
     ],
     "model": [
-     -0.142,
-     0.193
+     -0.141,
+     0.196
     ]
    },
    {
     "h": 0.425,
     "ref": [
-     -0.148,
-     0.183
+     -0.144,
+     0.187
     ],
     "model": [
-     -0.142,
+     -0.141,
      0.199
     ]
    },
    {
     "h": 0.475,
     "ref": [
-     -0.183,
-     0.19
+     -0.18,
+     0.193
     ],
     "model": [
-     -0.142,
+     -0.141,
      0.199
     ]
    },
    {
     "h": 0.525,
     "ref": [
-     -0.222,
-     0.19
+     -0.218,
+     0.193
     ],
     "model": [
      -0.225,
@@ -1561,19 +1561,19 @@
    {
     "h": 0.575,
     "ref": [
-     -0.251,
-     0.18
+     -0.247,
+     0.183
     ],
     "model": [
-     -0.235,
+     -0.234,
      0.318
     ]
    },
    {
     "h": 0.625,
     "ref": [
-     -0.379,
-     0.286
+     -0.376,
+     0.289
     ],
     "model": [
      -0.415,
@@ -1583,30 +1583,30 @@
    {
     "h": 0.675,
     "ref": [
-     -0.379,
-     0.289
+     -0.376,
+     0.293
     ],
     "model": [
-     -0.399,
+     -0.402,
      0.312
     ]
    },
    {
     "h": 0.725,
     "ref": [
-     -0.383,
-     0.292
+     -0.379,
+     0.296
     ],
     "model": [
      -0.376,
-     0.299
+     0.302
     ]
    },
    {
     "h": 0.775,
     "ref": [
-     -0.392,
-     0.292
+     -0.389,
+     0.296
     ],
     "model": [
      -0.386,
@@ -1616,52 +1616,52 @@
    {
     "h": 0.825,
     "ref": [
-     -0.392,
-     0.302
+     -0.389,
+     0.306
     ],
     "model": [
      -0.376,
-     0.305
+     0.306
     ]
    },
    {
     "h": 0.875,
     "ref": [
-     -0.389,
-     0.302
+     -0.386,
+     0.306
     ],
     "model": [
      -0.363,
-     0.296
+     0.299
     ]
    },
    {
     "h": 0.925,
     "ref": [
-     -0.386,
-     0.299
+     -0.382,
+     0.302
     ],
     "model": [
-     -0.383,
+     -0.382,
      0.315
     ]
    },
    {
     "h": 0.975,
     "ref": [
-     -0.399,
-     0.305
+     -0.395,
+     0.309
     ],
     "model": [
-     -0.386,
+     -0.389,
      0.318
     ]
    },
    {
     "h": 1.025,
     "ref": [
-     -0.399,
-     0.305
+     -0.395,
+     0.309
     ],
     "model": [
      -0.386,
@@ -1671,30 +1671,30 @@
    {
     "h": 1.075,
     "ref": [
-     -0.392,
-     0.296
+     -0.389,
+     0.299
     ],
     "model": [
-     -0.367,
+     -0.366,
      0.299
     ]
    },
    {
     "h": 1.125,
     "ref": [
-     -0.386,
-     0.289
+     -0.382,
+     0.293
     ],
     "model": [
-     -0.351,
+     -0.35,
      0.289
     ]
    },
    {
     "h": 1.175,
     "ref": [
-     -0.376,
-     0.273
+     -0.373,
+     0.277
     ],
     "model": [
      -0.379,
@@ -1704,19 +1704,19 @@
    {
     "h": 1.225,
     "ref": [
-     -0.386,
-     0.27
+     -0.382,
+     0.273
     ],
     "model": [
      -0.386,
-     0.292
+     0.296
     ]
    },
    {
     "h": 1.275,
     "ref": [
-     -0.367,
-     0.283
+     -0.363,
+     0.286
     ],
     "model": [
      -0.392,
@@ -1726,19 +1726,19 @@
    {
     "h": 1.325,
     "ref": [
-     -0.367,
-     0.299
+     -0.363,
+     0.302
     ],
     "model": [
-     -0.399,
-     0.308
+     -0.398,
+     0.312
     ]
    },
    {
     "h": 1.375,
     "ref": [
-     -0.379,
-     0.328
+     -0.376,
+     0.331
     ],
     "model": [
      -0.402,
@@ -1748,30 +1748,30 @@
    {
     "h": 1.425,
     "ref": [
-     -0.389,
-     0.337
+     -0.386,
+     0.341
     ],
     "model": [
      -0.408,
-     0.318
+     0.322
     ]
    },
    {
     "h": 1.475,
     "ref": [
-     -0.392,
-     0.337
+     -0.389,
+     0.341
     ],
     "model": [
-     -0.412,
+     -0.411,
      0.325
     ]
    },
    {
     "h": 1.525,
     "ref": [
-     -0.392,
-     0.321
+     -0.389,
+     0.325
     ],
     "model": [
      -0.415,
@@ -1781,41 +1781,30 @@
    {
     "h": 1.575,
     "ref": [
-     -0.399,
-     0.328
+     -0.395,
+     0.331
     ],
     "model": [
      -0.415,
-     0.341
+     0.338
     ]
    },
    {
     "h": 1.625,
     "ref": [
-     -0.402,
-     0.347
+     -0.398,
+     0.351
     ],
     "model": [
      -0.415,
-     0.344
+     0.367
     ]
    },
    {
     "h": 1.675,
     "ref": [
-     -0.412,
-     0.357
-    ],
-    "model": [
-     -0.431,
-     0.344
-    ]
-   },
-   {
-    "h": 1.725,
-    "ref": [
-     -0.412,
-     0.363
+     -0.408,
+     0.36
     ],
     "model": [
      -0.434,
@@ -1823,32 +1812,43 @@
     ]
    },
    {
+    "h": 1.725,
+    "ref": [
+     -0.408,
+     0.367
+    ],
+    "model": [
+     -0.434,
+     0.37
+    ]
+   },
+   {
     "h": 1.775,
     "ref": [
-     -0.405,
-     0.363
+     -0.402,
+     0.367
     ],
     "model": [
      -0.431,
-     0.363
+     0.367
     ]
    },
    {
     "h": 1.825,
     "ref": [
-     -0.367,
-     0.36
+     -0.363,
+     0.363
     ],
     "model": [
-     -0.412,
-     0.36
+     -0.411,
+     0.363
     ]
    },
    {
     "h": 1.875,
     "ref": [
-     -0.328,
-     0.353
+     -0.324,
+     0.357
     ],
     "model": [
      -0.402,
@@ -1858,30 +1858,30 @@
    {
     "h": 1.925,
     "ref": [
-     -0.318,
-     0.344
+     -0.315,
+     0.347
     ],
     "model": [
      -0.402,
-     0.353
+     0.354
     ]
    },
    {
     "h": 1.975,
     "ref": [
-     -0.318,
-     0.331
+     -0.315,
+     0.334
     ],
     "model": [
-     -0.383,
-     0.337
+     -0.382,
+     0.338
     ]
    },
    {
     "h": 2.025,
     "ref": [
-     -0.261,
-     0.328
+     -0.257,
+     0.331
     ],
     "model": [
      -0.347,
@@ -1891,77 +1891,77 @@
    {
     "h": 2.075,
     "ref": [
-     -0.267,
-     0.308
+     -0.263,
+     0.312
     ],
     "model": [
      -0.318,
-     0.305
+     0.309
     ]
    },
    {
     "h": 2.125,
     "ref": [
-     -0.27,
-     0.28
+     -0.267,
+     0.283
     ],
     "model": [
-     -0.293,
+     -0.292,
      0.273
     ]
    },
    {
     "h": 2.175,
     "ref": [
-     -0.273,
-     0.231
+     -0.27,
+     0.235
     ],
     "model": [
      -0.283,
-     0.228
+     0.225
     ]
    },
    {
     "h": 2.225,
     "ref": [
-     -0.27,
-     0.119
+     -0.267,
+     0.122
     ],
     "model": [
      -0.273,
-     0.148
+     0.142
     ]
    },
    {
     "h": 2.275,
     "ref": [
-     -0.257,
-     0.083
+     -0.254,
+     0.087
     ],
     "model": [
      -0.257,
-     0.087
+     0.084
     ]
    },
    {
     "h": 2.325,
     "ref": [
-     -0.235,
-     0.067
+     -0.231,
+     0.071
     ],
     "model": [
-     -0.232,
+     -0.231,
      0.061
     ]
    },
    {
     "h": 2.375,
     "ref": [
-     -0.171,
-     0.016
+     -0.167,
+     0.019
     ],
     "model": [
-     -0.174,
+     -0.173,
      0.01
     ]
    },
@@ -1973,27 +1973,27 @@
   ]
  },
  "plate-back": {
-  "iou": 0.916,
-  "lines_f": 0.664,
-  "trim_f": 0.638,
+  "iou": 0.917,
+  "lines_f": 0.683,
+  "trim_f": 0.647,
   "detail": {
    "trim": {
-    "f": 0.638,
-    "precision": 0.632,
-    "recall": 0.644,
-    "ref_to_model_cm": 3.8,
-    "model_to_ref_cm": 5.0
+    "f": 0.647,
+    "precision": 0.626,
+    "recall": 0.671,
+    "ref_to_model_cm": 3.4,
+    "model_to_ref_cm": 4.8
    },
    "lines": {
-    "f": 0.664,
-    "precision": 0.788,
-    "recall": 0.574,
-    "ref_to_model_cm": 3.3,
+    "f": 0.683,
+    "precision": 0.793,
+    "recall": 0.6,
+    "ref_to_model_cm": 3.2,
     "model_to_ref_cm": 1.6
    },
    "trim_cover": {
-    "ref": 0.0847,
-    "model": 0.0631
+    "ref": 0.0861,
+    "model": 0.0699
    }
   },
   "worst_bands": [
@@ -2368,8 +2368,8 @@
      0.729
     ],
     "model": [
-     -0.727,
-     0.729
+     -0.736,
+     0.735
     ]
    },
    {
@@ -2379,8 +2379,8 @@
      0.713
     ],
     "model": [
-     -0.723,
-     0.722
+     -0.736,
+     0.735
     ]
    },
    {
@@ -2390,8 +2390,8 @@
      0.706
     ],
     "model": [
-     -0.72,
-     0.722
+     -0.727,
+     0.729
     ]
    },
    {
@@ -2401,7 +2401,7 @@
      0.732
     ],
     "model": [
-     -0.733,
+     -0.736,
      0.735
     ]
    },
@@ -2434,7 +2434,7 @@
      0.684
     ],
     "model": [
-     -0.698,
+     -0.695,
      0.697
     ]
    },
@@ -2489,8 +2489,8 @@
      0.395
     ],
     "model": [
-     -0.39,
-     0.392
+     -0.377,
+     0.376
     ]
    },
    {
@@ -2500,8 +2500,8 @@
      0.373
     ],
     "model": [
-     -0.352,
-     0.354
+     -0.336,
+     0.335
     ]
    },
    {
