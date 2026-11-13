@@ -66,6 +66,52 @@ def rivet(p, centre, nrm, r=0.009):
     disc(p, "plate", centre, nrm, r, r * 0.9, seg=8)
 
 
+def chest_gem(piece, centre, nrm, w, h, depth):
+    """The sternum sapphire: a hexagonal stone filling a plate setting edged with trim.
+
+    w / h are the setting's half-width / half-height (metres). plate_geom.hexgem draws the
+    stone at only 0.76 of its setting, which leaves a wide bezel; the front reference draws the
+    stone nearly edge to edge (setting 0.084 x 0.135, stone 0.082 x 0.121), so the girdle here
+    sits at 0.90 of the setting instead.
+    """
+    nrm = np.asarray(nrm, float) / np.linalg.norm(nrm)
+    u = np.cross([0, 1, 0], nrm)
+    u /= np.linalg.norm(u)
+    v = np.cross(nrm, u)
+    c = np.asarray(centre, float)
+
+    def hexpts(sx, sy, lift=0.0):
+        return [c + nrm * lift + u * sx * math.sin(a) + v * sy * math.cos(a)
+                for a in np.linspace(0, TAU, 6, endpoint=False)]
+    base = hexpts(w, h)
+    top = [p + nrm * depth * 0.55 for p in base]
+    verts = base + top
+    faces = [tuple(range(5, -1, -1)), tuple(range(6, 12))] + \
+            [(i, (i + 1) % 6, 6 + (i + 1) % 6, 6 + i) for i in range(6)]
+    piece.add(verts, faces, "plate")
+    tube(piece, "trim", [p + nrm * depth * 0.55 for p in base], r=TRIM_R * 0.8, closed=True)
+    # The stone: girdle, crown break, table — the reference's faceted brilliant.
+    g0 = hexpts(w * 0.90, h * 0.90, depth * 0.55)
+    g1 = hexpts(w * 0.78, h * 0.78, depth * 1.05)
+    g2 = hexpts(w * 0.42, h * 0.42, depth * 1.30)
+    verts = g0 + g1 + g2
+    sides = [tuple(range(5, -1, -1))]
+    for a, b in ((0, 6), (6, 12)):
+        sides += [(a + i, a + (i + 1) % 6, b + (i + 1) % 6, b + i) for i in range(6)]
+    piece.add(verts, sides, "trim")
+    piece.add(verts, [tuple(range(12, 18))], "glow")
+
+
+def _lerp_h(profile, x):
+    """Height at |x| from a piecewise-linear [(|x|, height)] table read off a reference."""
+    a = abs(x)
+    for (x0, h0), (x1, h1) in zip(profile, profile[1:]):
+        if a <= x1:
+            f = min(1.0, max(0.0, (a - x0) / (x1 - x0)))
+            return h0 + (h1 - h0) * f
+    return profile[-1][1]
+
+
 def build_helm(enemy_crest=False):
     """Armet with a prow visor, measured off the helm sheet (helm_collar.py): skull, visor with the
     recessed eye slit, cheek plates, flared neck guard, crown ridge, flush trim. Origin: helm joint."""
@@ -82,36 +128,62 @@ def build_gorget():
 
 
 def build_breastplate():
-    """Barrel chest: hex sapphire at the sternum, trim V from the collar to it, an arc under the
-    chest, two lines each side down the abdomen, a shallow V lower edge; back: the yoke arc and
-    lines down to the belt (front/back references, world metres). Origin: the waist."""
+    """Barrel chest: hex sapphire at the sternum, trim from the collar to it, the chest arc, two
+    rib pairs down the abdomen, the lower edge V, the centre ridge; back: the yoke arc, two lines
+    down to the belt and the lower V. Every path is measured off the front and back references in
+    world metres (scripts/blender/trim_lines.py), not eyeballed. Origin: the waist."""
     p = Piece("breastplate")
+    # Depths from the side reference's own extents (metres from the body axis): the chest's
+    # front face reaches 0.39-0.41 m at 1.5-1.7 m and its back 0.33-0.36; the collar narrows to
+    # 0.30 front / 0.28 back. (The side sheet's camera is 0.004 m per px, so 1 px = 4 mm.)
     L = Loft([
-        dict(y=0.16, rx=0.3, rf=0.27, rb=0.3, cz=0.03, p=2.3),
-        dict(y=0.32, rx=0.33, rf=0.31, rb=0.34, cz=0.03, p=2.4),
-        dict(y=0.48, rx=0.37, rf=0.35, rb=0.34, cz=0.03, p=2.5),
-        dict(y=0.62, rx=0.385, rf=0.37, rb=0.33, cz=0.03, p=2.5),
-        dict(y=0.74, rx=0.375, rf=0.34, rb=0.31, cz=0.03, p=2.4),
-        dict(y=0.84, rx=0.355, rf=0.29, rb=0.27, cz=0.03),
-        dict(y=0.90, rx=0.29, rf=0.24, rb=0.23, cz=0.04),
-    ]).mesh(p, "plate", seg=28, sub=2)
-    t_gem = t_at(L, 0.7)
-    hexgem(p, L.surf(t_gem, FRONT, -0.012), L.normal(t_gem, FRONT), 0.05, 0.08, 0.032)
+        dict(y=0.16, rx=0.315, rf=0.352, rb=0.320, cz=0.025, p=2.3),
+        dict(y=0.32, rx=0.335, rf=0.376, rb=0.336, cz=0.020, p=2.4),
+        dict(y=0.48, rx=0.365, rf=0.390, rb=0.348, cz=0.015, p=2.5),
+        dict(y=0.60, rx=0.382, rf=0.396, rb=0.356, cz=0.012, p=2.5),
+        dict(y=0.68, rx=0.383, rf=0.392, rb=0.358, cz=0.010, p=2.45),
+        dict(y=0.78, rx=0.368, rf=0.360, rb=0.344, cz=0.008, p=2.35),
+        dict(y=0.86, rx=0.330, rf=0.316, rb=0.296, cz=0.008),
+        dict(y=0.90, rx=0.290, rf=0.266, rb=0.250, cz=0.010),
+    ]).mesh(p, "plate", seg=30, sub=2)
+    # Gem: the reference's setting is 0.084 wide x 0.135 tall with its centre at 1.745 m, and
+    # the stone nearly fills it. A hexagon of half-width w is 1.732 w across, 2 h tall.
+    t_gem = t_at(L, 0.665)
+    chest_gem(p, L.surf(t_gem, FRONT, -0.008), L.normal(t_gem, FRONT), 0.0485, 0.0675, 0.026)
     O = CHEST_O
-    # Raised centre line from under the gem to the lower edge.
-    ref_path(p, "plate", L, [(0.0, 1.635), (0.0, 1.5), (0.0, 1.37)], "front", O, r=0.008, mirror=False, flat=None)
-    ref_path(p, "trim", L, [(0.235, 1.99), (0.12, 1.905), (0.05, 1.845)], "front", O)
-    ref_path(p, "trim", L, [(0.0, 1.655), (0.1, 1.625), (0.2, 1.588), (0.28, 1.535), (0.345, 1.475), (0.375, 1.43)],
+    # Raised centre ridge from under the gem down to the lower edge's apex.
+    ref_path(p, "plate", L, [(0.0, 1.672), (0.0, 1.56), (0.0, 1.44), (0.0, 1.34), (0.0, 1.275)],
+             "front", O, r=0.008, mirror=False, flat=None)
+    # Collar sides (+-0.263, 2.02) to the gem's top corners (+-0.048, 1.80).
+    ref_path(p, "trim", L, [(0.263, 2.020), (0.252, 1.984), (0.238, 1.951), (0.218, 1.919),
+                            (0.190, 1.891), (0.162, 1.865), (0.131, 1.844), (0.099, 1.824),
+                            (0.067, 1.806), (0.048, 1.800)], "front", O)
+    # The chest arc: apex (0, 1.663) round under the pectorals to (+-0.32, 1.475).
+    ref_path(p, "trim", L, [(0.0, 1.663), (0.050, 1.636), (0.100, 1.605), (0.150, 1.585),
+                            (0.200, 1.560), (0.250, 1.519), (0.290, 1.489), (0.320, 1.475),
+                            (0.344, 1.468)], "front", O)
+    # The short stroke that closes the arc off against the armhole.
+    ref_path(p, "trim", L, [(0.310, 1.692), (0.327, 1.640), (0.354, 1.590), (0.373, 1.569)],
              "front", O)
-    ref_path(p, "trim", L, [(0.2, 1.585), (0.18, 1.47), (0.13, 1.32)], "front", O)
-    ref_path(p, "trim", L, [(0.3, 1.52), (0.3, 1.43), (0.27, 1.355)], "front", O)
-    ref_path(p, "trim", L, [(0.0, 1.29), (0.15, 1.31), (0.3, 1.355), (0.37, 1.39)], "front", O)
-    # Back: yoke V under the collar, the arch over the shoulder blades, two lines down.
-    ref_path(p, "trim", L, [(0.0, 1.97), (0.12, 2.0), (0.22, 2.03)], "back", O)
-    ref_path(p, "trim", L, [(0.0, 1.615), (0.12, 1.6), (0.25, 1.55), (0.35, 1.49), (0.38, 1.45)], "back", O)
-    ref_path(p, "trim", L, [(0.19, 1.575), (0.18, 1.46), (0.16, 1.37)], "back", O)
+    # Abdominal ribs, inner and outer, both drifting outward as they rise.
+    ref_path(p, "trim", L, [(0.131, 1.300), (0.134, 1.350), (0.138, 1.382), (0.144, 1.420),
+                            (0.158, 1.452), (0.180, 1.490), (0.190, 1.520), (0.194, 1.537)],
+             "front", O)
+    ref_path(p, "trim", L, [(0.210, 1.345), (0.224, 1.380), (0.238, 1.420), (0.253, 1.460),
+                            (0.264, 1.487)], "front", O)
+    # Lower edge V: apex (0, 1.268) rising to (+-0.31, 1.395) — the belt's band runs below it.
+    ref_path(p, "trim", L, [(0.0, 1.268), (0.060, 1.277), (0.110, 1.290), (0.165, 1.310),
+                            (0.210, 1.330), (0.250, 1.350), (0.280, 1.368), (0.310, 1.392)],
+             "front", O)
+    # Back: the yoke arc from (0, 1.620) out to (+-0.34, 1.460), the two lines down to the
+    # belt, and the shallow V of the backplate's lower edge.
+    ref_path(p, "trim", L, [(0.0, 1.620), (0.082, 1.601), (0.146, 1.576), (0.210, 1.534),
+                            (0.274, 1.489), (0.310, 1.472), (0.338, 1.460)], "back", O)
+    ref_path(p, "trim", L, [(0.191, 1.524), (0.184, 1.486), (0.171, 1.457), (0.162, 1.428),
+                            (0.159, 1.390), (0.157, 1.347)], "back", O)
+    ref_path(p, "trim", L, [(0.290, 1.372), (0.260, 1.362), (0.210, 1.352), (0.140, 1.336),
+                            (0.070, 1.323), (0.0, 1.315)], "back", O, mirror=True)
     return p
-
 
 def build_abdomen():
     """A lame under the breastplate's lower edge (shows when the torso leans). Origin: the waist."""
@@ -124,26 +196,91 @@ def build_abdomen():
     return p
 
 
-def build_belt():
-    """Belt band (1.22-1.38 m) dipping to a V at the centre front, trim on both edges; the dark
-    padding (abdomen piece) shows below it between the tassets and the fauld. Origin: the waist."""
-    p = Piece("belt")
-    L = Loft([
-        dict(y=0.29, rx=0.355, rf=0.325, rb=0.315, cz=0.03, p=2.5),
-        dict(y=0.22, rx=0.37, rf=0.335, rb=0.325, cz=0.03, p=2.5),
-        dict(y=0.12, rx=0.372, rf=0.338, rb=0.322, cz=0.03, p=2.5),
-        dict(y=0.06, rx=0.37, rf=0.335, rb=0.32, cz=0.03, p=2.5),
-    ])
-    nth = 32
+def _edge_t(loft, th, h_of_x, it=8):
+    """Loft t at angle th whose surface height (local y, metres above the piece origin) is
+    h_of_x(x); x itself depends on t, so iterate."""
+    y = 0.2
+    for _ in range(it):
+        y = h_of_x(loft.local(t_at(loft, y), th)[0])
+    return t_at(loft, y)
 
-    def vee(v):
-        d = abs(((v * TAU - FRONT + math.pi) % TAU) - math.pi)
-        return max(0.0, 1 - d / 0.55)
-    bot = lambda v: t_at(L, 0.18 - 0.05 * vee(v))       # noqa: E731
-    top = t_at(L, 0.27)
-    patch(p, "plate", L, bot, top, 0.0, TAU, off=0.0, thick=0.02, nt=3, nth=nth)
-    yring(p, "trim", L, 0.258, off=0.02)
-    path(p, "trim", L, [(bot(j / 48) - 0.1, TAU * j / 48) for j in range(49)], r=TRIM_R, off=0.02, n=44)
+
+def _front_back(front, back, th):
+    """Blend the front and back height tables by the angle (1 at the front (+z), 0 at the back)."""
+    k = (math.sin(th) + 1) * 0.5           # 1 at th = FRONT, 0 at th = BACK
+    k = k * k * (3 - 2 * k)                # smoothstep so the sides settle to one value
+    return lambda x: _lerp_h(front, x) * k + _lerp_h(back, x) * (1 - k)
+
+
+def build_belt():
+    """Belt band round the hips, in two measured bands.
+
+    The top edge tucks up under the breastplate's lower-edge V, so that V's own enamel is the
+    "top band" the front reference draws. The lower edge carries the belt's second band, and it
+    is a different shape front and back: on the front a W (arch over the codpiece at 1.245 m,
+    troughs at (+-0.12, 1.168), hips at (+-0.34, 1.31)); on the back a shallow V ((0, 1.207)
+    through (+-0.15, 1.221) to (+-0.35, 1.311)). A third line — the inner arch over the codpiece
+    — sits between them on the front. All read off the trim masks. Origin: the waist."""
+    p = Piece("belt")
+    # The reference's waist half-depth is 0.368 m forward and 0.281 m back at 1.27 m; the
+    # forward figure includes the breastplate's lip, so the belt's own face sits 0.335 m out.
+    L = Loft([
+        dict(y=0.38, rx=0.336, rf=0.310, rb=0.296, cz=0.040, p=2.5),
+        dict(y=0.30, rx=0.358, rf=0.318, rb=0.286, cz=0.040, p=2.5),
+        dict(y=0.22, rx=0.366, rf=0.322, rb=0.284, cz=0.040, p=2.5),
+        dict(y=0.14, rx=0.366, rf=0.320, rb=0.282, cz=0.038, p=2.5),
+        dict(y=0.06, rx=0.358, rf=0.314, rb=0.280, cz=0.036, p=2.5),
+    ])
+    # World heights as (|x|, height) tables, read off the front and back trim masks.
+    # Lower edge, the belt's own band:
+    #   front: a W — arch over the codpiece at (0, 1.245), troughs at (+-0.12, 1.168), hips at
+    #          (+-0.34, 1.310)
+    #   back:  a shallow V — (0, 1.207) through (+-0.15, 1.221) to (+-0.35, 1.311)
+    W = WAIST_Y
+    top_f = [(0.0, 1.256), (0.06, 1.276), (0.14, 1.296), (0.19, 1.315), (0.23, 1.335),
+             (0.27, 1.357), (0.30, 1.377), (0.36, 1.395), (0.40, 1.399)]
+    top_b = [(0.0, 1.306), (0.10, 1.322), (0.20, 1.348), (0.26, 1.370), (0.30, 1.382),
+             (0.40, 1.398)]
+    bot_f = [(0.0, 1.245), (0.055, 1.226), (0.090, 1.196), (0.120, 1.168), (0.150, 1.178),
+             (0.200, 1.212), (0.250, 1.250), (0.290, 1.281), (0.340, 1.310), (0.400, 1.330)]
+    bot_b = [(0.0, 1.207), (0.08, 1.212), (0.15, 1.221), (0.22, 1.241), (0.27, 1.261),
+             (0.30, 1.281), (0.35, 1.311), (0.40, 1.322)]
+    local = lambda tab: [(x, h - W) for x, h in tab]                            # noqa: E731
+    top = lambda th: _edge_t(L, th, _front_back(local(top_f), local(top_b), th))  # noqa: E731
+    bot = lambda th: _edge_t(L, th, _front_back(local(bot_f), local(bot_b), th))  # noqa: E731
+    ths = np.linspace(0, TAU, 73)
+    # One plate band between the two edges, closed round the body.
+    outer, inner = [], []
+    for th in ths[:-1]:
+        t1, t0 = top(th), bot(th)
+        for i in range(2):
+            t = t0 + (t1 - t0) * i
+            pt, nrm = L.point(t, th), L.normal(t, th)
+            outer.append(pt + nrm * 0.02)
+            inner.append(pt + nrm * 0.004)
+    NW = len(ths) - 1
+    N = len(outer)
+    faces = []
+    for j in range(NW):
+        j2 = (j + 1) % NW
+        a, b = j * 2, j2 * 2
+        faces.append((a, a + 1, b + 1, b))
+        faces.append((N + a, N + b, N + b + 1, N + a + 1))
+        faces.append((a, N + a, N + b, b))
+        faces.append((a + 1, b + 1, N + b + 1, N + a + 1))
+    p.add(outer + inner, faces, "plate")
+    # Enamel along both edges, run as one closed band right round the waist: in the side view
+    # the reference draws the belt's bands straight across the flank (a continuous span at
+    # 1.20 m from z -0.15 to +0.14), so a gap at the sides would lose that line.
+    path(p, "trim", L, [(top(th) - 0.055, th) for th in ths], r=TRIM_R, off=0.021, n=len(ths))
+    path(p, "trim", L, [(bot(th) + 0.03, th) for th in ths], r=TRIM_R, off=0.021, n=len(ths))
+    # The inner arch over the codpiece: the reference's second belt band, running from
+    # (+-0.20, 1.160) up to peak at (+-0.19, 1.245) and back down across the centre at (0, 1.175).
+    for pts in ([(0.20, 1.160), (0.192, 1.212), (0.190, 1.245), (0.150, 1.228),
+                 (0.100, 1.208), (0.050, 1.190), (0.0, 1.180)],
+                [(-0.20, 1.160), (-0.192, 1.212), (-0.190, 1.245), (-0.150, 1.228),
+                 (-0.100, 1.208), (-0.050, 1.190), (0.0, 1.180)]):
+        ref_path(p, "trim", L, pts, "front", CHEST_O, r=TRIM_R, off=0.021, mirror=False, n=14)
     return p
 
 
