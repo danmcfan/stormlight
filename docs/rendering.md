@@ -68,6 +68,11 @@ features are drawn wider than real wear because a centimetre is a pixel or two a
 gameplay distance. Cost: one texture read and about 40 ALU ops per Plate pixel; the mask
 is 1024² (about 4 MB of GPU memory with mips).
 
+`node scripts/lookdev/motionstrip.mjs <tag>` grids eight frames across the run (side), the
+sprint, a light cut (front three-quarter and side), the heavy thrust and raising the guard,
+stepping the sim by hand, into `art/renders/motion/<tag>-*.png`: the motion counterpart of
+the still views, for judging weight and clipping between pieces.
+
 `node scripts/lookdev/plateshot.mjs <tag>` takes the Plate's fixed close-up (framed like
 the concept close-up), the shade side and the gameplay angle, and writes
 `plate-<tag>-vs-ref.jpg` beside the painting.

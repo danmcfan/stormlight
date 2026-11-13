@@ -372,12 +372,21 @@ def ellipsoid(piece, mat, centre, radii, seg=16, rings=8, frame=ID):
     L.mesh(piece, mat, seg=seg, sub=1)
     return L
 
-def leaf(piece, mat, w, h, thick, frame, nu=2, nv=4, bulge=0.012):
+def leaf(piece, mat, w, h, thick, frame, nu=2, nv=4, bulge=0.012, ogive=False):
     """A leaf-shaped plate, convex across its width so it doesn't flash like a mirror.
 
-    Local: top edge centred on the origin, hanging down -y, facing +z.
+    Local: top edge centred on the origin, hanging down -y, facing +z. With `ogive` the sides run
+    straight and close in a gothic arch (two circular arcs of radius = the width), the shape the
+    references draw for fauld scales, instead of tapering to a spike.
     """
-    def hw(v):  # half-width down the leaf: straight sides, then a rounded point
+    tip = min(0.866 * w / h, 0.9)          # the arch's length, as a fraction of the leaf
+
+    def hw(v):  # half-width down the leaf
+        if ogive:
+            if v <= 1 - tip:
+                return 0.5
+            d = (v - (1 - tip)) * h / w        # distance into the arch, in widths
+            return max(math.sqrt(max(0.0, 1 - d * d)) - 0.5, 0.0) + 0.004
         return 0.5 if v < 0.45 else 0.5 * math.cos((v - 0.45) / 0.55 * math.pi / 2) + 0.004
     grid = []
     for side, sgn in (("front", 1), ("back", -1)):

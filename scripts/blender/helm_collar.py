@@ -860,19 +860,19 @@ def make_helm(enemy_crest=False):
 # they are converted to the collar's own frame below, because the piece's origin is the waist.
 # Rows: world y, half-width, front/back centre offset, depth forward, depth back.
 #
-# The collar sits ON the breastplate rather than inside it. The breastplate's front reaches
-# z ≈ +0.39 at 1.90 m and its top is 1.99 m, so every collar row up to there has to stand
-# proud of it; a row that crosses from inside to outside tears a seam across the chest where
-# the two surfaces intersect. Hence the generous depths at the base, tapering as it rises
-# clear of the chest at ~1.99 m, then the waist and the rim flare
-# (docs/models/shardplate.md: rim ±0.25 at 2.07-2.16, the V down to 1.93).
+# The collar sits ON the breastplate rather than inside it: every collar row up to the chest's
+# top (1.99 m) stands ~1.5 cm proud of the breastplate's front (0.33 at 1.86, 0.30 at 1.94),
+# because a row that crosses from inside to outside tears a seam across the chest where the
+# two surfaces intersect. The side view puts the collar's front at 0.31-0.32 over 1.88-1.98
+# and 0.26-0.27 above 2.03 (it stood 5-9 cm proud of that when the chest was deeper), then the
+# waist and the rim flare (docs/models/shardplate.md: rim ±0.25 at 2.07-2.16, the V to 1.93).
 GORGET = [
-    (1.860, 0.372, 0.030, 0.372, 0.318),   # the base, laying over the breastplate's top
-    (1.940, 0.362, 0.038, 0.362, 0.300),
-    (2.000, 0.320, 0.046, 0.310, 0.272),   # clear of the chest from here up
-    (2.070, 0.262, 0.050, 0.262, 0.245),
-    (2.120, 0.258, 0.050, 0.262, 0.244),   # the waist
-    (2.155, 0.276, 0.050, 0.282, 0.260),   # the rim, trim along it
+    (1.860, 0.372, 0.030, 0.315, 0.318),   # the base, laying over the breastplate's top
+    (1.940, 0.362, 0.038, 0.284, 0.300),
+    (2.000, 0.320, 0.046, 0.236, 0.272),   # clear of the chest from here up
+    (2.070, 0.262, 0.050, 0.222, 0.245),
+    (2.120, 0.258, 0.050, 0.222, 0.244),   # the waist
+    (2.155, 0.276, 0.050, 0.242, 0.260),   # the rim, trim along it
 ]
 GORGET_Y0 = WAIST_Y        # the piece's origin is the waist
 GORGET_BAND = 0.011

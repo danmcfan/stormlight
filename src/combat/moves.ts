@@ -7,6 +7,11 @@
  * at given frames, interpolated along great-circle arcs. The same keys drive
  * the animation, so what you see is exactly what hits.
  *
+ * The Shardbearer's sword moves each carry an anticipation key in the windup (the blade cocked
+ * further back, the torso wound tighter) and an overswing key in the recovery. They sit outside
+ * the active frames, which are the only frames the blade is tested against opponents, so they
+ * make a swing read heavier without moving where or when it hits.
+ *
  * Body-space angles: yaw 0 = straight ahead, positive yaw = to the LEFT,
  * negative = to the RIGHT. Pitch 90 = straight up, >90 = over the head
  * toward the back, negative = downward.
@@ -104,9 +109,11 @@ export const moves: Record<string, Move> = {
     lunge: [[5, 15, 0.7]], parryable: true,
     keys: [
       { f: 0, yaw: -35, pitch: -25, reach: 0.55 },
+      { f: 6, yaw: -140, pitch: 18, reach: 0.58, twist: -55 },
       { f: 9, yaw: -125, pitch: 8, reach: 0.6, twist: -40 },
       { f: 12, yaw: -15, pitch: 0, reach: 0.68, twist: 0 },
       { f: 16, yaw: 95, pitch: -12, reach: 0.62, twist: 38 },
+      { f: 21, yaw: 118, pitch: -22, reach: 0.6, twist: 52 },
       { f: 34, yaw: -35, pitch: -25, reach: 0.55 },
     ],
   },
@@ -118,9 +125,11 @@ export const moves: Record<string, Move> = {
     lunge: [[4, 13, 0.6]], parryable: true,
     keys: [
       { f: 0, yaw: 95, pitch: -12, reach: 0.62, twist: 38 },
+      { f: 4, yaw: 130, pitch: 26, reach: 0.58, twist: 52 },
       { f: 7, yaw: 118, pitch: 18, reach: 0.6, twist: 42 },
       { f: 10, yaw: 10, pitch: 4, reach: 0.68, twist: 0 },
       { f: 14, yaw: -100, pitch: -18, reach: 0.62, twist: -38 },
+      { f: 19, yaw: -122, pitch: -25, reach: 0.6, twist: -52 },
       { f: 32, yaw: -35, pitch: -25, reach: 0.55 },
     ],
   },
@@ -132,10 +141,12 @@ export const moves: Record<string, Move> = {
     lunge: [[9, 22, 1.5]], parryable: true,
     keys: [
       { f: 0, yaw: -100, pitch: -18, reach: 0.62, twist: -38 },
+      { f: 9, yaw: -160, pitch: 22, reach: 0.6, twist: -78 },
       { f: 13, yaw: -150, pitch: 12, reach: 0.62, twist: -65 },
       { f: 16, yaw: -55, pitch: 2, reach: 0.72, twist: -25 },
       { f: 19, yaw: 40, pitch: -4, reach: 0.72, twist: 30 },
       { f: 23, yaw: 135, pitch: -15, reach: 0.62, twist: 65 },
+      { f: 29, yaw: 150, pitch: -24, reach: 0.6, twist: 75 },
       { f: 47, yaw: -35, pitch: -25, reach: 0.55 },
     ],
   },
@@ -148,10 +159,12 @@ export const moves: Record<string, Move> = {
     charge: { holdAt: 14, max: 40, damageMult: 1.8, lungeMult: 1.6 },
     keys: [
       { f: 0, yaw: -35, pitch: -25, reach: 0.55 },
+      { f: 9, yaw: -40, pitch: 12, reach: 0.2, twist: -45 },
       { f: 14, yaw: -28, pitch: 6, reach: 0.12, twist: -30 },
       { f: 16, yaw: -20, pitch: 4, reach: 0.2, twist: -25 },
       { f: 20, yaw: -3, pitch: 0, reach: 0.9, twist: 8 },
       { f: 23, yaw: -2, pitch: -2, reach: 0.92, twist: 10 },
+      { f: 29, yaw: 5, pitch: -6, reach: 0.9, twist: 18 },
       { f: 49, yaw: -35, pitch: -25, reach: 0.55 },
     ],
   },
@@ -167,9 +180,11 @@ export const moves: Record<string, Move> = {
     lunge: [[12, 22, 0.8]], hyperArmor: [8, 24], parryable: true, twoHanded: true,
     keys: [
       { f: 0, yaw: -10, pitch: 40, reach: 0.42 },
+      { f: 11, yaw: -30, pitch: 140, reach: 0.5, twist: -24 },
       { f: 16, yaw: -25, pitch: 125, reach: 0.5, twist: -15 },
       { f: 20, yaw: -6, pitch: 40, reach: 0.68, twist: 0 },
       { f: 24, yaw: 15, pitch: -45, reach: 0.62, twist: 10 },
+      { f: 30, yaw: 22, pitch: -62, reach: 0.6, twist: 16 },
       { f: 48, yaw: -10, pitch: 40, reach: 0.42 },
     ],
   },
@@ -181,9 +196,11 @@ export const moves: Record<string, Move> = {
     lunge: [[8, 18, 0.7]], hyperArmor: [6, 20], parryable: true, twoHanded: true,
     keys: [
       { f: 0, yaw: 15, pitch: -45, reach: 0.62, twist: 10 },
+      { f: 8, yaw: 36, pitch: -62, reach: 0.55, twist: 32 },
       { f: 12, yaw: 30, pitch: -55, reach: 0.55, twist: 25 },
       { f: 16, yaw: 2, pitch: 10, reach: 0.7, twist: 0 },
       { f: 20, yaw: -25, pitch: 72, reach: 0.6, twist: -15 },
+      { f: 26, yaw: -30, pitch: 88, reach: 0.58, twist: -22 },
       { f: 48, yaw: -10, pitch: 40, reach: 0.42 },
     ],
   },
@@ -196,10 +213,12 @@ export const moves: Record<string, Move> = {
     charge: { holdAt: 22, max: 50, damageMult: 1.7, lungeMult: 1.3 },
     keys: [
       { f: 0, yaw: -10, pitch: 40, reach: 0.42 },
+      { f: 16, yaw: -6, pitch: 160, reach: 0.55, twist: -14 },
       { f: 22, yaw: -4, pitch: 150, reach: 0.55, twist: -10 },
       { f: 26, yaw: -2, pitch: 140, reach: 0.55, twist: -8 },
       { f: 30, yaw: 0, pitch: 55, reach: 0.75, twist: 0 },
       { f: 34, yaw: 2, pitch: -55, reach: 0.72, twist: 4 },
+      { f: 42, yaw: 3, pitch: -70, reach: 0.7, twist: 8 },
       { f: 68, yaw: -10, pitch: 40, reach: 0.42 },
     ],
   },

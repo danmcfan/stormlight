@@ -63,6 +63,12 @@ interface FlashMat { mat: THREE.MeshStandardMaterial; emissive: THREE.Color; int
 export class HumanoidModel {
   readonly root = new THREE.Group();
   private body = new THREE.Group();
+  /**
+   * The hips: legs, belt, fauld and tassets. They turn under the torso (swinging with the stride,
+   * leading an attack's twist) while the torso and the weapon, which hang from `body`, stay where
+   * the combat pose puts them, so the visible blade never leaves its hit segment.
+   */
+  private pelvis = new THREE.Group();
   private torso = new THREE.Group();
   private legL!: Limb; private legR!: Limb;
   private armL!: Limb; private armR!: Limb;
@@ -89,6 +95,13 @@ export class HumanoidModel {
   /** Tassets that swing with their thigh, hinged at the belt. */
   private tassetL: THREE.Object3D | null = null;
   private tassetR: THREE.Object3D | null = null;
+  /** Pauldrons ride the torso but follow part of the upper arm's swing. */
+  private pauldronL: THREE.Object3D | null = null;
+  private pauldronR: THREE.Object3D | null = null;
+  /** 0..1: how far into an attack's stance the legs are (eased). */
+  private attackBlend = 0;
+  /** 0..1: running (for the off hand's swing). */
+  private runAmt = 0;
   onFootfall: ((speed: number) => void) | null = null;
 
   /**
@@ -104,6 +117,7 @@ export class HumanoidModel {
     this.root.add(this.body);
     this.root.scale.setScalar(scale);
     this.torso.position.y = WAIST_Y;
+    this.body.add(this.pelvis);
     this.body.add(this.torso);
     this.body.add(this.weapon);
     if (kind === 'plate') this.buildPlate(variant); else this.buildParshendi(variant);
@@ -148,7 +162,7 @@ export class HumanoidModel {
     this.legR = this.limb(0.47, 0.46, w, mat, joint, footL.clone());
     this.legL.upper.position.set(0.17, HIP_Y, 0);
     this.legR.upper.position.set(-0.17, HIP_Y, 0);
-    this.body.add(this.legL.upper, this.legR.upper);
+    this.pelvis.add(this.legL.upper, this.legR.upper);
   }
 
   private addArms(mat: THREE.Material, joint: THREE.Material, hand: THREE.Material, w: number): void {
@@ -220,21 +234,22 @@ export class HumanoidModel {
     for (const [s, side, leg, arm] of [[1, 'l', this.legL, this.armL], [-1, 'r', this.legR, this.armR]] as const) {
       leg.upper.position.set(s * LEG_X, HIP_Y, 0);
       arm.upper.position.set(s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
-      this.body.add(leg.upper);
+      this.pelvis.add(leg.upper);
       this.torso.add(arm.upper);
       piece(`thigh_${side}`, leg.upper);
-      const tasset = piece(`tasset_${side}`, this.body, s * TASSET_X, TASSET_Y, 0);
+      const tasset = piece(`tasset_${side}`, this.pelvis, s * TASSET_X, TASSET_Y, 0);
       if (s > 0) this.tassetL = tasset; else this.tassetR = tasset;
       piece(`shin_${side}`, leg.lower);
       piece(`boot_${side}`, leg.lower, 0, -SHIN);
-      piece(`pauldron_${side}`, this.torso, s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
+      const pauldron = piece(`pauldron_${side}`, this.torso, s * SHOULDER.x, SHOULDER.y, SHOULDER.z);
+      if (s > 0) this.pauldronL = pauldron; else this.pauldronR = pauldron;
       piece(`upperarm_${side}`, arm.upper);
       piece(`forearm_${side}`, arm.lower);
       piece(`gauntlet_${side}`, arm.lower, 0, -LOWER_ARM);
     }
-    piece('belt', this.body, 0, WAIST_Y);
-    this.fauldFront = piece('fauld_front', this.body, 0, FAULD_Y, FAULD_FRONT_Z);
-    this.fauldBack = piece('fauld_back', this.body, 0, FAULD_Y, FAULD_BACK_Z);
+    piece('belt', this.pelvis, 0, WAIST_Y);
+    this.fauldFront = piece('fauld_front', this.pelvis, 0, FAULD_Y, FAULD_FRONT_Z);
+    this.fauldBack = piece('fauld_back', this.pelvis, 0, FAULD_Y, FAULD_BACK_Z);
     for (const name of ['abdomen', 'breastplate', 'gorget']) piece(name, this.torso);
     const helm = new THREE.Group();
     helm.position.y = HELM_Y;
@@ -256,7 +271,7 @@ export class HumanoidModel {
     const glow = this.mat('#d8f2ff', { emissive: new THREE.Color('#9fdcff'), emissiveIntensity: 2.2, flatShading: false });
 
     this.addLegs(plate, dark, dark, 0.25);
-    this.body.add(this.box(0.56, 0.22, 0.36, dark, 0, 1.03, 0));
+    this.pelvis.add(this.box(0.56, 0.22, 0.36, dark, 0, 1.03, 0));
     const t = this.torso;
     t.add(this.box(0.62, 0.36, 0.38, plate, 0, 0.2));
     t.add(this.box(0.78, 0.4, 0.46, plate, 0, 0.52));
@@ -315,7 +330,7 @@ export class HumanoidModel {
     const wood = this.mat('#4a3424', { roughness: 0.9 });
 
     this.addLegs(skinB, shell, skinA, 0.22);
-    this.body.add(this.box(0.5, 0.2, 0.32, skinA, 0, 1.03));
+    this.pelvis.add(this.box(0.5, 0.2, 0.32, skinA, 0, 1.03));
     const t = this.torso;
     t.add(this.box(0.5, 0.35, 0.3, skinB, 0, 0.2));
     t.add(this.box(0.66, 0.42, 0.36, skinA, 0, 0.5));
@@ -346,6 +361,8 @@ export class HumanoidModel {
     this.deathT = 0;
     this.body.rotation.set(0, 0, 0);
     this.body.position.set(0, 0, 0);
+    this.pelvis.rotation.set(0, 0, 0);
+    this.attackBlend = 0;
   }
 
   update(dt: number, a: AnimState, pose: BladePose): void {
@@ -354,14 +371,19 @@ export class HumanoidModel {
     if (a.combat === 'dead') { this.updateDeath(dt); this.placeWeapon(dt, pose, a.active); this.solveArms(); return; }
 
     const speed = a.grounded ? a.speed : 0;
-    const run = clamp(speed / a.jogSpeed, 0, 1);
-    const sprint = clamp((speed - a.jogSpeed) / Math.max(0.01, a.sprintSpeed - a.jogSpeed), 0, 1);
+    this.attackBlend = damp(this.attackBlend, a.combat === 'attack' ? 1 : 0, 9, dt);
+    // An attack's lunge moves the root fast (the heavy thrust covers 2.6 m in 8 frames); left to
+    // the run cycle that reads as a sprint and the legs tuck into a hop. The attack stance owns
+    // the legs instead, so the run fades out as it comes in.
+    const run = clamp(speed / a.jogSpeed, 0, 1) * (1 - this.attackBlend);
+    const sprint = clamp((speed - a.jogSpeed) / Math.max(0.01, a.sprintSpeed - a.jogSpeed), 0, 1) * (1 - this.attackBlend);
     const stride = 0.85 + run * 0.35 + sprint * 0.55;
     const prev = this.phase;
     this.phase += (speed * dt * Math.PI) / stride;
     if (Math.floor(prev / Math.PI) !== Math.floor(this.phase / Math.PI) && speed > 0.5) this.onFootfall?.(speed);
 
     const p = this.phase;
+    this.runAmt = run;
     const legAmp = run * 0.5 + sprint * 0.35;
     this.legL.upper.rotation.x = -Math.sin(p) * legAmp;
     this.legR.upper.rotation.x = Math.sin(p) * legAmp;
@@ -372,6 +394,12 @@ export class HumanoidModel {
     const crouch = (1 - run) * (a.combat === 'block' ? 0.18 : 0.1);
     this.legL.upper.rotation.x -= crouch; this.legR.upper.rotation.x -= crouch;
     this.legL.lower.rotation.x += crouch * 2; this.legR.lower.rotation.x += crouch * 2;
+    // Attack stance: a Shardbearer swings from the legs. The lead (left) foot steps forward, the
+    // rear leg braces bent, and the body drops into the active frames.
+    const at = this.attackBlend;
+    const drive = at * (a.active ? 1 : 0.6);
+    this.legL.upper.rotation.x -= 0.3 * at; this.legL.lower.rotation.x += 0.2 * at;
+    this.legR.upper.rotation.x += 0.24 * at; this.legR.lower.rotation.x += 0.36 * at;
     // Fauld plates ride up on whichever thigh strides into them (the idle
     // crouch alone leaves them hanging).
     const l = this.legL.upper.rotation.x + crouch, r = this.legR.upper.rotation.x + crouch;
@@ -381,9 +409,10 @@ export class HumanoidModel {
     if (this.tassetL) this.tassetL.rotation.x = Math.min(0, l) * 0.6 + Math.max(0, l) * 0.3;
     if (this.tassetR) this.tassetR.rotation.x = Math.min(0, r) * 0.6 + Math.max(0, r) * 0.3;
 
-    const bob = Math.abs(Math.sin(p)) * (0.03 + sprint * 0.05) * run;
+    // A heavy footfall: the body drops harder at each step than a light runner's.
+    const bob = Math.pow(Math.abs(Math.sin(p)), 0.7) * (0.045 + sprint * 0.05) * run;
     const breathe = Math.sin(this.time * 1.6) * 0.008 * (1 - run);
-    this.body.position.y = -bob + breathe - crouch * 0.18;
+    this.body.position.y = -bob + breathe - crouch * 0.18 - 0.06 * drive;
 
     let targetLean = clamp(a.forwardAccel * 0.012, -0.18, 0.22) + run * 0.06 + sprint * 0.2;
     if (a.combat === 'attack') targetLean = a.active ? 0.22 : 0.08;
@@ -396,8 +425,22 @@ export class HumanoidModel {
     this.body.rotation.z = this.bank;
 
     this.placeWeapon(dt, pose, a.active);
-    this.torso.rotation.y = this.twist + Math.sin(p) * 0.1 * run;
+    // Hips swing with the striding leg while the shoulders counter-turn, and lead an attack's
+    // twist. The torso (and so the blade's shoulder pivot) keeps exactly the pose's twist.
+    this.pelvis.rotation.y = -Math.sin(p) * 0.16 * run + this.twist * 0.4 * at;
+    this.torso.rotation.y = this.twist + Math.sin(p) * 0.14 * run;
     this.solveArms();
+    this.followPauldron(this.pauldronL, this.armL);
+    this.followPauldron(this.pauldronR, this.armR);
+  }
+
+  /**
+   * The pauldron hangs from the torso, but a raised arm would pass up through it: let it take
+   * part of the upper arm's rotation, as a strapped pauldron rides up on the shoulder.
+   */
+  private followPauldron(p: THREE.Object3D | null, limb: Limb): void {
+    if (!p) return;
+    p.quaternion.identity().slerp(limb.upper.quaternion, PAULDRON_FOLLOW);
   }
 
   private updateFlash(dt: number): void {
@@ -466,7 +509,9 @@ export class HumanoidModel {
     this.ik(this.armR, _target, _pole.set(-1, -1.1, -0.7));
     // Left hand lower on the hilt when two-handed, otherwise out for balance.
     this.weapon.localToWorld(_t2.set(0, -0.2, 0));
-    this.body.localToWorld(_t3.set(0.5, 1.15, 0.2));
+    // (When it's free, the off hand swings opposite its leg in the run.)
+    const sw = Math.sin(this.phase) * this.runAmt;
+    this.body.localToWorld(_t3.set(0.5, 1.15 + Math.abs(sw) * 0.04, 0.2 - sw * 0.3));
     _target.lerpVectors(_t3, _t2, this.twoHanded);
     this.ik(this.armL, _target, _pole.set(1, -1.1, -0.7));
   }
@@ -502,6 +547,8 @@ export class HumanoidModel {
 }
 
 const FLASH = new THREE.Color('#dff4ff');
+/** Share of the upper arm's rotation the pauldron follows. */
+const PAULDRON_FOLLOW = 0.3;
 /** Grip's clearance from the helm centre (helm radius + half the gauntlet). */
 const HELM_CLEAR = 0.4;
 const _head = new THREE.Vector3(), _off = new THREE.Vector3();
