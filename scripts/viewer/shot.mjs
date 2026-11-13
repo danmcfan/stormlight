@@ -23,7 +23,7 @@ const target = arg('target', null);
 const piece = arg('piece', null);
 const wait = Number(arg('wait', 1500));
 const [w, h] = arg('size', '1400x900').split('x').map(Number);
-const url = arg('url', 'http://localhost:5178/');
+const url = arg('url', 'http://localhost:5178/model.html');
 const tag = arg('tag', model.replace(/\.glb$/, ''));
 
 await mkdir(out, { recursive: true });

@@ -9,8 +9,8 @@
  * source re-bundles on the next request, so a reload picks up changes too.
  */
 import { watch } from 'node:fs';
-import { readdir } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { readdir, stat } from 'node:fs/promises';
+import { basename, extname, join, normalize } from 'node:path';
 
 const HERE = import.meta.dir;
 const ROOT = join(HERE, '..', '..');
@@ -63,7 +63,7 @@ async function bundle(): Promise<string> {
 let cache: { at: number; code: string } | null = null;
 
 async function viewerCode(): Promise<string> {
-  const files = [join(HERE, 'main.ts'), join(HERE, 'index.html')];
+  const files = [join(HERE, 'main.ts')];
   let newest = 0;
   for (const f of files) {
     const s = await Bun.file(f).stat();
@@ -73,6 +73,64 @@ async function viewerCode(): Promise<string> {
     cache = { at: newest, code: await bundle() };
   }
   return cache.code;
+}
+
+// --- The gallery ------------------------------------------------------------------
+// Roots whose art/renders are browsed: this checkout, plus any sibling worktree a
+// subagent is building in, so their in-progress renders show up as they land.
+const RENDER_ROOTS = [ROOT, ...(process.env.VIEWER_WORKTREES ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)];
+
+type Shot = { url: string; name: string; mtime: number };
+
+/**
+ * Every PNG/JPG under a root's art/renders, with a URL the page can fetch.
+ *
+ * Hidden directories (`.tmp` scratch passes) and the look-dev/look bookkeeping folders are
+ * skipped: they are not this pass's art. A worktree root only shows renders written after it
+ * was created (git copies the whole existing history into a new worktree, so without this
+ * filter every agent's gallery would repeat the main checkout's files).
+ */
+async function listShots(): Promise<Record<string, Shot[]>> {
+  const SKIP = /(^|[\\/])\.|look-dev|helm-rebuild/;
+  const out: Record<string, Shot[]> = {};
+  for (const root of RENDER_ROOTS) {
+    const isWorktree = root !== ROOT;
+    const base = join(root, 'art', 'renders');
+    // A worktree's own renders are newer than its creation; copies share that timestamp.
+    const since = isWorktree ? ((await stat(root).catch(() => ({ mtimeMs: 0 }))).mtimeMs + 90_000) : 0;
+    const prefix = isWorktree ? `${basename(root)}/` : '';
+    const walk = async (dir: string, rel: string) => {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const e of entries) {
+        const full = join(dir, e.name);
+        const childRel = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          if (SKIP.test(childRel)) continue;
+          await walk(full, childRel);
+        } else if (/\.(png|jpe?g)$/i.test(e.name)) {
+          const st = await Bun.file(full).stat();
+          if (!st || st.mtimeMs < since) continue;
+          const group = `${prefix}${rel || 'root'}`;
+          (out[group] ??= []).push({
+            url: `/renders/${encodeURIComponent(childRel)}${prefix ? `?root=${encodeURIComponent(basename(root))}` : ''}`,
+            name: e.name,
+            mtime: st.mtimeMs,
+          });
+        }
+      }
+    };
+    await walk(base, '');
+  }
+  for (const group of Object.keys(out)) out[group].sort((a, b) => b.mtime - a.mtime);
+  return out;
 }
 
 const server = Bun.serve({
@@ -116,6 +174,38 @@ const server = Bun.serve({
       return Response.json(files);
     }
 
+    if (path === '/renders.json') {
+      return Response.json(await listShots());
+    }
+
+    if (path === '/scores') {
+      // The latest comparison scores, for the index page's table.
+      for (const root of RENDER_ROOTS) {
+        const f = Bun.file(join(root, 'art', 'renders', 'compare', 'scores.json'));
+        if (await f.exists()) {
+          return new Response(f, {
+            headers: { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' },
+          });
+        }
+      }
+      return new Response('{}', { status: 404, headers: { 'Content-Type': TYPES['.json'] } });
+    }
+
+    if (path.startsWith('/renders/')) {
+      // /renders/<rel>?root=<worktree> — serve a render from a browsed root.
+      const rel = decodeURIComponent(path.slice('/renders/'.length));
+      const rootName = url.searchParams.get('root');
+      const root = rootName ? RENDER_ROOTS.find((r) => basename(r) === rootName) : ROOT;
+      const base = join(root ?? ROOT, 'art', 'renders');
+      const file = join(base, rel);
+      if (!file.startsWith(base)) return new Response('no', { status: 403 });
+      const f = Bun.file(file);
+      if (!(await f.exists())) return new Response('not found', { status: 404 });
+      return new Response(f, {
+        headers: { 'Content-Type': TYPES[extname(file)] ?? 'image/png', 'Cache-Control': 'no-store' },
+      });
+    }
+
     if (path === '/main.js') {
       return new Response(await viewerCode(), {
         headers: { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store' },
@@ -156,4 +246,26 @@ watch(MODELS, (_event, filename) => {
   );
 });
 
+// --- Watch the renders, so the gallery fills in as the builds land -------------------
+for (const root of RENDER_ROOTS) {
+  const base = join(root, 'art', 'renders');
+  try {
+    watch(base, { recursive: true }, (_event, filename) => {
+      if (!filename || !/\.(png|jpe?g)$/i.test(filename)) return;
+      const key = `${root}:${filename}`;
+      clearTimeout(pending.get(key));
+      pending.set(
+        key,
+        setTimeout(() => {
+          pending.delete(key);
+          broadcast('render', filename);
+        }, 400),
+      );
+    });
+  } catch {
+    // A root without art/renders (or a platform without recursive watch) just isn't live.
+  }
+}
+
 console.log(`[viewer] http://localhost:${server.port}/  (watching ${MODELS})`);
+console.log(`[viewer] gallery: http://localhost:${server.port}/gallery.html  (${RENDER_ROOTS.length} root(s))`);

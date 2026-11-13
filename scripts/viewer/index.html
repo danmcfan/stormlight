@@ -3,106 +3,118 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Stormlight — model viewer</title>
+    <title>Stormlight — art pass index</title>
     <style>
       :root {
         color-scheme: light;
         --ink: #1d232b;
         --muted: #5c6672;
-        --line: #c2c9d1;
-        --paper: #f2f4f6;
+        --line: #c8cfd7;
+        --paper: #f4f6f8;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; height: 100%; }
+      html, body { margin: 0; min-height: 100%; }
       body {
-        font: 13px/1.4 ui-sans-serif, -apple-system, system-ui, sans-serif;
+        font: 14px/1.5 ui-sans-serif, -apple-system, system-ui, sans-serif;
         color: var(--ink);
         background: var(--paper);
-        display: flex;
-        flex-direction: column;
+        padding: 26px;
       }
-      header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--line);
+      .wrap { max-width: 1100px; margin: 0 auto; }
+      h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.2px; }
+      .lede { color: var(--muted); margin-bottom: 22px; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+      a.card {
+        display: block;
         background: #fff;
-        flex: 0 0 auto;
-      }
-      header h1 {
-        font-size: 13px;
-        font-weight: 600;
-        margin: 0;
-        letter-spacing: 0.2px;
-        white-space: nowrap;
-      }
-      header .sub { color: var(--muted); }
-      #status {
-        margin-left: auto;
-        color: var(--muted);
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      select, button {
-        font: inherit;
-        color: inherit;
         border: 1px solid var(--line);
-        background: #fff;
-        border-radius: 5px;
-        padding: 3px 7px;
+        border-radius: 10px;
+        padding: 16px 18px;
+        text-decoration: none;
+        color: inherit;
       }
-      button { cursor: pointer; }
-      button:hover, select:hover { border-color: #96a0ab; }
-      main { flex: 1 1 auto; display: flex; min-height: 0; }
-      #app { flex: 1 1 auto; position: relative; min-width: 0; }
-      #app canvas { display: block; }
-      #panel {
-        flex: 0 0 232px;
-        border-left: 1px solid var(--line);
-        background: #fff;
-        overflow: auto;
-        padding: 4px;
-      }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr 26px 62px;
-        gap: 4px;
-        width: 100%;
-        padding: 3px 6px;
-        border: 0;
-        background: none;
-        border-radius: 4px;
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-        cursor: pointer;
-      }
-      .row span:first-child { text-align: left; overflow: hidden; text-overflow: ellipsis; }
-      .row.head, .row.head:hover { color: var(--muted); cursor: default; background: none; }
-      .row.head span:last-child { text-align: right; }
-      .row:not(.head):hover { background: #eef2f7; }
-      .row.on { background: #dbe7f7; font-weight: 600; }
-      .lil-gui { --width: 220px; z-index: 10; }
-      @media (max-width: 720px) {
-        #panel { display: none; }
-        header .sub { display: none; }
-      }
+      a.card:hover { border-color: #96a0ab; }
+      a.card h2 { font-size: 15px; margin: 0 0 6px; }
+      a.card p { margin: 0; color: var(--muted); font-size: 13px; }
+      a.card .go { color: #2f6fc8; font-size: 12px; margin-top: 10px; display: inline-block; }
+      h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted);
+           margin: 30px 0 10px; }
+      table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line);
+              border-radius: 10px; overflow: hidden; font-variant-numeric: tabular-nums; }
+      th, td { text-align: right; padding: 7px 12px; border-bottom: 1px solid #eef1f4; }
+      th { font-weight: 600; font-size: 12px; color: var(--muted); text-transform: uppercase;
+           letter-spacing: 0.5px; }
+      th:first-child, td:first-child { text-align: left; }
+      tr:last-child td { border-bottom: 0; }
+      .good { color: #1c7a4a; }
+      .weak { color: #c8452f; }
+      .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+      code { background: #e9edf1; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
     </style>
   </head>
   <body>
-    <header>
-      <h1>Stormlight model viewer</h1>
-      <span class="sub">glTF pieces, game materials, live reload</span>
-      <select id="model"></select>
-      <button id="reset" title="Reset the camera and show every piece">frame all</button>
-      <span id="status"></span>
-    </header>
-    <main>
-      <div id="app"></div>
-      <div id="panel"></div>
-    </main>
-    <script type="module" src="./main.js"></script>
+    <div class="wrap">
+      <h1>Stormlight art pass</h1>
+      <p class="lede">
+        Everything the modelling pass produces, in one place. This page and both viewers are
+        served by <code>bun run view</code> and update as renders and models land.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="/gallery.html">
+          <h2>Before / after gallery</h2>
+          <p>Every render in <code>art/renders</code>, paired by view: the baseline against the
+             current state, with the profile and detail passes and the earlier checkpoints.</p>
+          <span class="go">open the gallery →</span>
+        </a>
+        <a class="card" href="/">
+          <h2>3D model viewer</h2>
+          <p>The GLBs themselves, shaded with the game's materials and light. Isolate a piece,
+             spin it, toggle wireframe. Reloads when a build writes the model.</p>
+          <span class="go">open the viewer →</span>
+        </a>
+      </div>
+
+      <h3>Current scores<!-- filled in from the latest scores.json --></h3>
+      <table id="scores">
+        <thead>
+          <tr><th>view</th><th>silhouette IoU</th><th>lines F</th><th>trim F</th></tr>
+        </thead>
+        <tbody><tr><td colspan="4">loading…</td></tr></tbody>
+      </table>
+      <p class="note" id="scores-note">
+        IoU is silhouette overlap; lines F and trim F score the interior line work and the
+        enamel trim (1.0 is exact). From <code>art/renders/compare/scores.json</code>.
+      </p>
+    </div>
+
+    <script type="module">
+      // The scores file is written by compare_reference.py; show it so the numbers live
+      // beside the pictures rather than in a terminal scrollback.
+      const fmt = (v) => (v === null || v === undefined ? '—' : v.toFixed(3));
+      const cls = (v, weak) => (v === null || v === undefined ? '' : v >= weak ? 'good' : 'weak');
+
+      fetch('/scores', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((s) => {
+          const body = document.querySelector('#scores tbody');
+          if (!s) {
+            body.innerHTML = '<tr><td colspan="4">no scores yet — run compare_reference.py</td></tr>';
+            return;
+          }
+          body.innerHTML = Object.entries(s)
+            .map(([view, v]) => `<tr>
+              <td>${view}</td>
+              <td class="${cls(v.iou, 0.95)}">${fmt(v.iou)}</td>
+              <td class="${cls(v.lines_f, 0.8)}">${fmt(v.lines_f)}</td>
+              <td class="${cls(v.trim_f, 0.8)}">${fmt(v.trim_f)}</td>
+            </tr>`)
+            .join('');
+        })
+        .catch(() => {
+          document.querySelector('#scores tbody').innerHTML =
+            '<tr><td colspan="4">scores unavailable</td></tr>';
+        });
+    </script>
   </body>
 </html>

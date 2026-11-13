@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stormlight — art pass</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1d232b;
+        --muted: #5c6672;
+        --line: #c8cfd7;
+        --paper: #f4f6f8;
+        --card: #fff;
+        --red: #c8452f;
+        --blue: #2f6fc8;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        font: 13px/1.45 ui-sans-serif, -apple-system, system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      h1 { font-size: 14px; font-weight: 650; margin: 0; letter-spacing: 0.2px; }
+      .sub { color: var(--muted); }
+      nav { display: flex; gap: 4px; flex-wrap: wrap; }
+      nav a {
+        color: var(--ink);
+        text-decoration: none;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+      }
+      nav a:hover { background: #eef2f7; border-color: var(--line); }
+      nav a.on { background: var(--ink); color: #fff; }
+      #status { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+      main { padding: 16px; max-width: 1800px; margin: 0 auto; }
+      section { margin-bottom: 34px; scroll-margin-top: 62px; }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--muted);
+        margin: 0 0 10px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      h2 .count { text-transform: none; letter-spacing: 0; font-weight: 400; opacity: 0.75; }
+
+      .pair {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .pair-head {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 7px 11px;
+        border-bottom: 1px solid var(--line);
+        background: #fbfcfd;
+      }
+      .pair-head .title { font-weight: 600; }
+      .pair-head .note { color: var(--muted); margin-left: auto; }
+      .pair-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); align-items: start; }
+      .pair-body.single { grid-template-columns: 1fr; }
+      figure { margin: 0; background: #fff; display: flex; flex-direction: column; }
+      /* Both sides get the same height, so a small historical render and a large current one
+         compare without the pair looking lopsided. */
+      .pair-body figure img {
+        width: 100%;
+        height: 460px;
+        object-fit: contain;
+      }
+      figure figcaption {
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        border-bottom: 1px solid #eef1f4;
+      }
+      figure figcaption b { color: var(--ink); font-weight: 600; }
+      .tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; padding: 1px 6px; border-radius: 999px; }
+      .tag.before { background: #fdecea; color: var(--red); }
+      .tag.after { background: #eaf1fb; color: var(--blue); }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #eceff2;
+        cursor: zoom-in;
+      }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+      .tile { background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+      .tile img { display: block; width: 100%; height: auto; cursor: zoom-in; background: #eceff2; }
+      .tile figcaption { border-bottom: 0; border-top: 1px solid #eef1f4; }
+
+      /* Supporting passes and earlier checkpoints: small, in a row, out of the way. */
+      .strip {
+        display: flex;
+        gap: 8px;
+        padding: 8px 10px;
+        overflow-x: auto;
+        border-top: 1px solid #eef1f4;
+        background: #fafbfc;
+        align-items: flex-start;
+      }
+      .strip-label {
+        flex: 0 0 auto;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+        padding-top: 4px;
+        min-width: 62px;
+      }
+      .strip figure {
+        flex: 0 0 150px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .strip figure figcaption {
+        font-size: 10px;
+        padding: 3px 5px;
+        border-bottom: 0;
+        border-top: 1px solid #eef1f4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .strip figure figcaption b { font-weight: 500; }
+      .strip figure img { max-height: 120px; object-fit: contain; }
+
+      #zoom {
+        position: fixed;
+        inset: 0;
+        background: rgba(16, 20, 26, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 24px;
+      }
+      #zoom.on { display: flex; }
+      #zoom img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      #zoom .hint { position: absolute; bottom: 14px; color: #cfd6de; font-size: 12px; }
+      @media (max-width: 760px) {
+        .pair-body { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Stormlight art pass</h1>
+      <span class="sub">before / after renders &amp; comparisons</span>
+      <nav id="nav"></nav>
+      <span id="status">loading…</span>
+    </header>
+
+    <main id="main"></main>
+
+    <div id="zoom"><img alt="" /><span class="hint">click or Esc to close</span></div>
+
+    <script type="module">
+      // Renders are grouped by directory. Within a group, `before-NAME` pairs with
+      // `after-NAME` (also `NAME-before` / `NAME-after`); everything else is shown as a
+      // plain tile, so iterative tags like `plate-front-iter3` stay as history.
+      const main = document.getElementById('main');
+      const nav = document.getElementById('nav');
+      const statusEl = document.getElementById('status');
+
+      const isBefore = (n) => /(^|[-_])before([-_.]|$)/i.test(n);
+      /**
+       * A current render, i.e. the "after". Three spellings count:
+       *   `after-front`      explicit
+       *   `front-iter4`      an iteration checkpoint (the canonical set is untagged)
+       *   `helm-front`       the untagged canonical render compare_reference writes
+       * The last is the important one: the scorer's canonical output is `plate-front.png`,
+       * and its historical checkpoints are `plate-front-iter3.png`, so an untagged stem is
+       * the newest state and an `-iterN`/`-before` one is history.
+       */
+      const iterOf = (n) => {
+        const m = n.match(/[-_]iter(\d+)/i);
+        return m ? Number(m[1]) : null;
+      };
+      /** What was drawn, minus the before/after, iteration and derivative markers. */
+      const stem = (n) => n.replace(/\.(png|jpe?g)$/i, '')
+        .replace(/^(before|after)[-_]/i, '')
+        .replace(/[-_](before|after)$/i, '')
+        .replace(/[-_]iter\d+$/i, '')
+        .replace(/[-_](detail|profile)$/i, '');
+      const pretty = (s) => s.replace(/[-_]/g, ' ');
+      const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      let ALL = {};
+
+      function zoom(src, alt) {
+        const z = document.getElementById('zoom');
+        const img = z.querySelector('img');
+        img.src = src;
+        img.alt = alt;
+        z.classList.add('on');
+      }
+      document.getElementById('zoom').onclick = () => document.getElementById('zoom').classList.remove('on');
+      addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') document.getElementById('zoom').classList.remove('on');
+      });
+
+      function shotEl(shot, kind) {
+        const el = document.createElement('figure');
+        const tag = kind === 'before' || kind === 'after'
+          ? `<span class="tag ${kind}">${kind}</span>` : '';
+        const label = kind === 'before' || kind === 'after' ? pretty(stem(shot.name)) : pretty(shot.name);
+        el.innerHTML = `<figcaption>${tag}<b>${label}</b></figcaption>
+          <img src="${shot.url}" loading="lazy" alt="${shot.name}">`;
+        el.querySelector('img').onclick = () => zoom(shot.url, shot.name);
+        return el;
+      }
+
+      /**
+       * For each stem, the versions on disk: the current render (canonical, untagged), the
+       * baseline (`-before`), and any `-iterN` history — plus the `-detail` / `-profile`
+       * derivatives of each, which belong to that version rather than to the gallery.
+       */
+      function organise(shots) {
+        const byStem = new Map();
+        for (const s of shots) {
+          const k = stem(s.name);
+          if (!byStem.has(k)) byStem.set(k, { key: k, versions: [], extra: [] });
+          const g = byStem.get(k);
+          if (/(^|[-_])(detail|profile)([-_.]|$)/i.test(s.name)) g.extra.push(s);
+          else g.versions.push(s);
+        }
+
+        const rank = (n) => {
+          if (isBefore(n)) return -1e9;                  // the baseline, always first
+          const it = iterOf(n);
+          return it === null ? 1e9 : it;                 // untagged = newest
+        };
+
+        const pairs = [];
+        const loose = [];
+        for (const g of byStem.values()) {
+          const v = g.versions.sort((a, b) => rank(a.name) - rank(b.name));
+          const before = v.filter((s) => isBefore(s.name)).at(-1);
+          const after = v.filter((s) => !isBefore(s.name)).at(-1);
+          if (before || after) {
+            pairs.push({ key: g.key, before, after, history: v, extra: g.extra });
+          } else {
+            loose.push(...g.extra);
+          }
+        }
+        pairs.sort((a, b) => a.key.localeCompare(b.key));
+        return { pairs, loose };
+      }
+
+      function render() {
+        const names = Object.keys(ALL).sort();
+        nav.innerHTML = names.map((n) => `<a href="#g-${slug(n)}">${n}</a>`).join('');
+        main.innerHTML = '';
+        let total = 0;
+
+        for (const name of names) {
+          const shots = ALL[name];
+          total += shots.length;
+          const { pairs, loose } = organise(shots);
+
+          const sec = document.createElement('section');
+          sec.id = `g-${slug(name)}`;
+          sec.innerHTML = `<h2>${name} <span class="count">${shots.length} image${shots.length === 1 ? '' : 's'}</span></h2>`;
+
+          for (const p of pairs) {
+            const box = document.createElement('div');
+            box.className = 'pair';
+            const hasBoth = p.before && p.after;
+            const note = hasBoth ? 'before → after' : p.before ? 'before only' : 'current';
+            box.innerHTML = `<div class="pair-head">
+                <span class="title">${pretty(p.key)}</span>
+                <span class="note">${note}</span>
+              </div>`;
+            const body = document.createElement('div');
+            body.className = `pair-body${hasBoth ? '' : ' single'}`;
+            if (p.before) body.appendChild(shotEl(p.before, 'before'));
+            if (p.after) body.appendChild(shotEl(p.after, 'after'));
+            box.appendChild(body);
+
+            // The supporting passes for the current render (the detail and profile plates),
+            // and the earlier checkpoints, so the history is visible but not in the way.
+            const derivs = p.extra.filter((s) => !isBefore(s.name));
+            if (derivs.length) {
+              const strip = document.createElement('div');
+              strip.className = 'strip';
+              strip.innerHTML = '<span class="strip-label">supporting</span>';
+              for (const s of derivs.sort((a, b) => a.name.localeCompare(b.name))) {
+                strip.appendChild(shotEl(s, 'loose'));
+              }
+              box.appendChild(strip);
+            }
+            const history = p.history.filter((s) => s !== p.after && !isBefore(s.name));
+            if (history.length) {
+              const strip = document.createElement('div');
+              strip.className = 'strip';
+              strip.innerHTML = '<span class="strip-label">earlier</span>';
+              for (const s of history.sort((a, b) => (iterOf(a.name) ?? 0) - (iterOf(b.name) ?? 0))) {
+                strip.appendChild(shotEl(s, 'loose'));
+              }
+              box.appendChild(strip);
+            }
+            sec.appendChild(box);
+          }
+
+          if (loose.length) {
+            const g = document.createElement('div');
+            g.className = 'grid';
+            for (const s of loose) {
+              const el = shotEl(s, 'loose');
+              el.classList.add('tile');
+              g.appendChild(el);
+            }
+            sec.appendChild(g);
+          }
+          main.appendChild(sec);
+        }
+        statusEl.textContent = `${total} images`;
+      }
+
+      async function load() {
+        try {
+          const r = await fetch('/renders.json', { cache: 'no-store' });
+          ALL = await r.json();
+          render();
+        } catch (e) {
+          statusEl.textContent = `failed: ${e.message}`;
+        }
+      }
+      load();
+
+      // Live: the server pushes when a render is written.
+      let pending = null;
+      new EventSource('/events').addEventListener('render', () => {
+        clearTimeout(pending);
+        pending = setTimeout(load, 500);
+      });
+
+      // Highlight the section in view.
+      addEventListener('scroll', () => {
+        const secs = [...document.querySelectorAll('section')];
+        const at = secs.find((s) => s.getBoundingClientRect().top > 70) ?? secs.at(-1);
+        for (const a of nav.querySelectorAll('a')) a.classList.toggle('on', a.hash === `#${at?.id}`);
+      }, { passive: true });
+    </script>
+  </body>
+</html>
