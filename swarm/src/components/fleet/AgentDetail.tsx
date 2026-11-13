@@ -96,7 +96,7 @@ function Body(props: { agent: Agent; snapshot: SwarmSnapshot; now: number }) {
         Open full chat
       </a>
       <DrawerDescription>
-        {a().kind === 'main' ? 'Main agent' : `Subagent${round() ? `, round ${round()!.index}` : ''}`} ·{' '}
+        {a().kind === 'main' ? 'Main agent' : `Subagent${round() ? `, batch ${round()!.index}` : ''}`} ·{' '}
         <span class="mono">{shortModel(a().model)}</span>
       </DrawerDescription>
 

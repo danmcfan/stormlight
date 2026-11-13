@@ -8,7 +8,7 @@
  * Selectors start with `html` so they win over component CSS loaded later.
  */
 
-html {
+html:root {
   --rule: rgba(150, 185, 235, 0.13);
   --rule-strong: rgba(170, 200, 245, 0.26);
   --card: #070b17;
@@ -390,4 +390,38 @@ html .app-main {
   html .tok {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* ---- one typeface: Inter everywhere, the display face only for the wordmark ---- */
+
+html:root {
+  --label: var(--num);
+  --display: var(--num);
+}
+html .brand-name {
+  font-family: 'Cinzel Decorative', 'Marcellus SC', serif;
+}
+html .lbl,
+html .ptitle,
+html .agents thead th {
+  letter-spacing: 0.06em;
+}
+
+/* ---- gems only where they mean something (status), not inside every control ---- */
+
+html .gem-btn.nav .sock,
+html .seg [data-slot='segmented-control-item'] .sock,
+html .lead-actions .gem-btn .sock,
+html .chat-open .sock {
+  display: none;
+}
+html .side-links .gem-btn {
+  padding-left: 14px;
+}
+
+html .batch-hint {
+  flex-basis: 100%;
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 13px;
 }

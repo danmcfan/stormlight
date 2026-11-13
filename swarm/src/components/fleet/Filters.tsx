@@ -49,9 +49,10 @@ export function RoundSelector(props: {
 
   return (
     <div class="rounds">
+      <p class="batch-hint">A batch is the agents the lead launched together, in one message. A later batch usually waits on what an earlier one found.</p>
       <SegmentedControl
         class="seg"
-        aria-label="Round"
+        aria-label="Batch"
         value={props.value}
         onValueChange={(v) => v && props.onChange(v)}
       >
@@ -70,7 +71,7 @@ export function RoundSelector(props: {
             <SegmentedControlItem value={String(r().index)}>
               <Socket />
               <span class="round-text">
-                <span class="round-name">Round {r().index}</span>
+                <span class="round-name">Batch {r().index}</span>
                 <span class="round-stats">
                   {r().agents} agents · {formatCost(r().costUsd)} · {formatDuration(r().durationMs)}
                 </span>

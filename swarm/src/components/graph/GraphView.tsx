@@ -427,7 +427,7 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
         </Show>
 
         <div class="graph-toolbar">
-          <SegmentedControl class="seg compact" aria-label="Round" value={round()} onValueChange={(v) => v && setRound(v)}>
+          <SegmentedControl class="seg compact" aria-label="Batch" value={round()} onValueChange={(v) => v && setRound(v)}>
             <SegmentedControlIndicator />
             <SegmentedControlItem value="all">
               <Socket />
@@ -437,7 +437,7 @@ export default function GraphView(props: { snapshot: SwarmSnapshot | undefined; 
               {(i) => (
                 <SegmentedControlItem value={String(i)}>
                   <Socket />
-                  Round {i}
+                  Batch {i}
                 </SegmentedControlItem>
               )}
             </For>

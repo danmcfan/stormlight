@@ -68,6 +68,7 @@ function FleetBody(props: { snapshot: SwarmSnapshot }) {
   const [openId, setOpenId] = createSignal<string | null>(null)
 
   const running = () => props.snapshot.agents.filter((a) => a.status === 'running').length
+  const hasQueue = () => (props.snapshot.queue?.jobs ?? []).some((j) => j.state === 'queued' || j.state === 'running')
   const glow = () => (running() > 0 ? 1 : 0.35)
 
   const rows = createMemo(() => buildRows(props.snapshot, filters(), sort(), desc(), now()))
@@ -87,16 +88,20 @@ function FleetBody(props: { snapshot: SwarmSnapshot }) {
 
   return (
     <>
-      <SphereFrame joined glow={glow()} live={running() > 0} aria-label="Totals">
+      <Show when={props.snapshot.plan || hasQueue()}>
+        <SphereFrame glow={glow()} live={running() > 0}>
+          <div class="ops">
+            <Show when={props.snapshot.plan}>
+              <PlanUsageSummary snapshot={props.snapshot} />
+            </Show>
+            <Show when={hasQueue()}>
+              <QueuePanel snapshot={props.snapshot} />
+            </Show>
+          </div>
+        </SphereFrame>
+      </Show>
+      <SphereFrame glow={glow()} live={running() > 0} aria-label="Totals">
         <Totals snapshot={props.snapshot} />
-      </SphereFrame>
-      <SphereFrame glow={glow()} live={running() > 0}>
-        <div class="ops">
-          <Show when={props.snapshot.plan}>
-            <PlanUsageSummary snapshot={props.snapshot} />
-          </Show>
-          <QueuePanel snapshot={props.snapshot} />
-        </div>
       </SphereFrame>
       <SphereFrame glow={glow()} live={running() > 0}>
         <section aria-labelledby="fleet-title">

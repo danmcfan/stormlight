@@ -19,7 +19,7 @@ const COLS: Col[] = [
   { key: 'label', label: 'Agent' },
   { key: 'kind', label: 'Kind', hideSm: true, hideMd: true },
   { key: 'model', label: 'Model', hideSm: true },
-  { key: 'round', label: 'Round', num: true },
+  { key: 'round', label: 'Batch', num: true },
   { key: 'started', label: 'Started', hideSm: true, hideMd: true },
   { key: 'duration', label: 'Time', num: true },
   { key: 'turns', label: 'Turns', num: true, hideSm: true },
@@ -39,7 +39,7 @@ const CARD_SORTS: { key: SortKey; label: string }[] = [
   { key: 'output', label: 'Out' },
   { key: 'turns', label: 'Turns' },
   { key: 'label', label: 'Agent' },
-  { key: 'round', label: 'Round' },
+  { key: 'round', label: 'Batch' },
 ]
 
 export function AgentTable(props: {
