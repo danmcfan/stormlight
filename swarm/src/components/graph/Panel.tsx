@@ -14,6 +14,7 @@ import {
   shortModel,
   totalTokens,
 } from './model'
+import { AgentPlanCell } from '../plan/AgentPlanCell'
 
 interface PanelProps {
   snapshot: SwarmSnapshot
@@ -59,6 +60,14 @@ function AgentDetails(props: { agent: Agent; snapshot: SwarmSnapshot; now: numbe
       <dl class="gp-stats">
         <Stat label="Tokens" value={fmtTokens(totalTokens(a().usage))} />
         <Stat label="Est. cost" value={fmtCost(a().costUsd)} />
+        <Show when={a().plan}>
+          <div class="gp-stat">
+            <dt>Plan (est.)</dt>
+            <dd>
+              <AgentPlanCell agent={a()} />
+            </dd>
+          </div>
+        </Show>
         <Stat label="Turns" value={String(a().turns)} />
         <Stat label="Output" value={fmtTokens(a().usage.output)} />
         <Stat label="Cache read" value={fmtTokens(a().usage.cacheRead)} />

@@ -1,3 +1,4 @@
+import { AgentPlanCell } from '../plan/AgentPlanCell'
 import { For, Show } from 'solid-js'
 import {
   Drawer,
@@ -95,6 +96,12 @@ function Body(props: { agent: Agent; snapshot: SwarmSnapshot; now: number }) {
             {a().turns} turns
           </span>
         </div>
+
+        <Show when={a().plan}>
+          <p class="detail-plan">
+            Plan share (est.): <AgentPlanCell agent={a()} />
+          </p>
+        </Show>
 
         <Show when={a().description}>
           <section>

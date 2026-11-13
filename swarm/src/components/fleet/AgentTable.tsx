@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js'
 import { formatCost, formatDuration, formatRelative, formatTokens, shortModel } from './format'
 import { agentDuration, type Row, type SortKey } from './rows'
 import { StatusDot } from './StatusDot'
+import { AgentPlanCell } from '../plan/AgentPlanCell'
 
 interface Col {
   key: SortKey | null
@@ -23,6 +24,7 @@ const COLS: Col[] = [
   { key: 'output', label: 'Out', num: true },
   { key: 'cacheRead', label: 'Cache read', num: true, hideSm: true },
   { key: 'cost', label: 'Est. cost', num: true },
+  { key: null, label: 'Plan 5h / 7d', hideSm: true },
   { key: null, label: 'Activity' },
 ]
 
@@ -109,6 +111,9 @@ export function AgentTable(props: {
                   <td class="num">{formatTokens(a().usage.output)}</td>
                   <td class="num hide-sm">{formatTokens(a().usage.cacheRead)}</td>
                   <td class="num">{formatCost(a().costUsd)}</td>
+                  <td class="hide-sm">
+                    <AgentPlanCell agent={a()} />
+                  </td>
                   <td class="cell-activity" title={a().currentActivity}>
                     {a().currentActivity ?? ''}
                   </td>
