@@ -10,6 +10,7 @@ pass. Scripts are in `package.json`.
 | When your task… | Read first |
 |---|---|
 | changes how anything **looks** (terrain, props, characters, materials, light, effects) | `docs/look-brief.md`, then `docs/rendering.md` for the renderer and its look values |
+| runs **more than one improvement round** on the look or a model | `docs/art-rounds.md`: the brief, the ledger in `art/rounds/`, the fresh-context judge, the caps |
 | **generates images** (concept art, references, textures) | `docs/art.md` |
 | builds or changes a **3D model** | `docs/3d-pipeline.md` |
 | changes **gameplay** (controls, combat, horde mode) | `README.md` for how it plays; every feel number is in `src/config.ts` |

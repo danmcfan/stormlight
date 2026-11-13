@@ -143,7 +143,8 @@ game should support them by URL (`?view=<name>`) and freeze time with
 
 1. Build a complete first version. Check it in the headless browser. Fix every
    error.
-2. Run **up to 3 improvement rounds** (the user's cap for now). In each round: take screenshots of at
+2. Run **up to 3 improvement rounds** (the user's cap for now), as described
+   in `docs/art-rounds.md` (brief, ledger, judge, stop). In each round: take screenshots of at
    least three fixed views and states. Read them. Judge them as a **harsh art
    director who compares the picture with the concept art and the best painted
    games and films of this kind**. Name the three weakest things. Fix them.
