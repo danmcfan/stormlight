@@ -462,8 +462,8 @@ def th_near(loft, t, x, z):
 
 
 def build_pauldron(s):
-    """Pauldron (front/side/back references, plate-pauldron sheet): an upright dome whose outer face
-    drops nearly straight over the arm, a rim trim band 2 cm above its lower edge (x +-0.73 at
+    """Pauldron (front/side/back references, plate-pauldron sheet): a swollen upright dome whose outer
+    face drops nearly straight over the arm and whose crown leans in toward the neck, a rim trim band 2 cm above its lower edge (x +-0.73 at
     h 1.80 in the front view), two lames below it wrapping the outside of the arm with trim along
     their lower edges (out to x 0.71 at h 1.70 and 0.70 at 1.62), an arched flange (the "horn") along
     its inner edge, and round bosses where it meets the chest and back. The lames stop at x 0.70
@@ -473,16 +473,20 @@ def build_pauldron(s):
     M = Frame(np.diag([s, 1.0, 1.0]))
     mx = lambda v: np.array([s * v[0], v[1], v[2]])   # noqa: E731
     cx, cz = 0.095, -0.07
-    # The dome is 0.48 m deep at its widest (the reference's side view) and narrows above h 1.85:
-    # 0.70 m across at 1.88 and 0.695 at 1.93 in the front view, which is what these rx give.
+    # The drawings' pauldron is a swollen upright egg, not a tapering cap. Front view: the outer
+    # face holds x ~0.70 up to h 1.93, then rounds over to a crown at ~2.12 that leans in toward the
+    # neck (x 0.60 at 2.07, 0.52 at 2.11). Side view: the back face stands at z -0.36 from 1.72 to
+    # 1.95 and rounds over to a crown set behind the body axis. So the sections stay full higher
+    # up, the crown is raised, and its centre drifts in (cx) and back (cz) as it rises.
     dome = Loft([
-        dict(y=0.055, rx=0.228, rf=0.242, rb=0.25, cx=cx, cz=cz, p=2.3),
-        dict(y=0.095, rx=0.238, rf=0.248, rb=0.256, cx=cx, cz=cz, p=2.3),
-        dict(y=0.18, rx=0.208, rf=0.2, rb=0.208, cx=cx, cz=cz, p=2.25),
-        dict(y=0.26, rx=0.156, rf=0.158, rb=0.166, cx=cx, cz=cz, p=2.15),
-        dict(y=0.32, rx=0.098, rf=0.108, rb=0.114, cx=cx, cz=cz),
-        dict(y=0.352, rx=0.05, rf=0.058, rb=0.062, cx=cx, cz=cz),
-        dict(y=0.362, rx=0.01, rf=0.01, rb=0.01, cx=cx, cz=cz),
+        dict(y=0.055, rx=0.205, rf=0.242, rb=0.29, cx=cx, cz=cz, p=2.3),
+        dict(y=0.095, rx=0.214, rf=0.246, rb=0.292, cx=cx, cz=cz, p=2.3),
+        dict(y=0.18, rx=0.19, rf=0.232, rb=0.286, cx=0.092, cz=-0.074, p=2.4),
+        dict(y=0.26, rx=0.165, rf=0.222, rb=0.254, cx=0.085, cz=-0.084, p=2.35),
+        dict(y=0.32, rx=0.138, rf=0.205, rb=0.226, cx=0.07, cz=-0.096, p=2.25),
+        dict(y=0.37, rx=0.1, rf=0.17, rb=0.19, cx=0.052, cz=-0.11, p=2.15),
+        dict(y=0.405, rx=0.045, rf=0.11, rb=0.14, cx=0.035, cz=-0.125),
+        dict(y=0.425, rx=0.01, rf=0.02, rb=0.03, cx=0.03, cz=-0.13),
     ], M).mesh(p, "plate", seg=26, sub=2)
     # The dome's trim is one continuous outline, as the front reference draws it: up the inner edge
     # (x 0.34 from h 1.97 down to 1.88), out along the rim to x 0.44 at h 1.73, then sweeping out and
@@ -505,9 +509,11 @@ def build_pauldron(s):
     # edge flared and trimmed. Over the *outside* of the arm the reference's lames are a straight
     # wall in the front view (x 0.70-0.73, nearly vertical); their lower edges dip in the side view
     # and hook up at the front and back, so `edge` is a t that is greatest over the outside.
-    for y0, y1, k in ((-0.03, 0.07, 0.0), (-0.105, -0.005, 0.012)):
-        lame = Loft([dict(y=y1, rx=0.2 - k, rf=0.228 - k, rb=0.235 - k, cx=cx + 0.005, cz=cz, p=2.2),
-                     dict(y=y0, rx=0.205 - k, rf=0.236 - k, rb=0.243 - k, cx=cx + 0.005, cz=cz, p=2.2)], M)
+    # The upper lame is pulled in to the front view's x 0.71 at h 1.70; the lower one keeps its width,
+    # because the arm below it fills the drawing's outline out to x 0.78 at h 1.62.
+    for y0, y1, k, w in ((-0.03, 0.07, 0.0, 0.182), (-0.105, -0.005, 0.012, 0.2)):
+        lame = Loft([dict(y=y1, rx=w - k, rf=0.228 - k, rb=0.235 - k, cx=cx + 0.005, cz=cz, p=2.2),
+                     dict(y=y0, rx=w + 0.005 - k, rf=0.236 - k, rb=0.243 - k, cx=cx + 0.005, cz=cz, p=2.2)], M)
         # Side view: the lame's lower edge sits at h 1.72 / 1.62 from the outer face round to the
         # front, and rides up to 1.78 / 1.68 where the next lame tucks under at the front and back.
         edge = lambda v: 0.34 + 0.52 * math.sin(math.pi * v) ** 0.55          # noqa: E731
@@ -522,11 +528,14 @@ def build_pauldron(s):
     arc = [(-0.09 + 0.225 * math.cos(a), 0.27 + 0.25 * math.sin(a)) for a in np.linspace(deg(8), deg(172), 15)]
     base = [(-0.3, 0.15), (-0.09, 0.17), (0.12, 0.15)]
     outline = arc + base
+    # Set in toward the neck so the broad face the front view sees spans x 0.36-0.40 at its tip,
+    # not further out over the dome.
+    FIN_X = -0.065
     lean = rot_z(s * deg(4))
-    yaw = rot_y(deg(22))         # front end swung out: the front view sees a broad fin
+    yaw = rot_y(deg(13))        # front end swung out: the front view sees a broad fin
 
     def fl(z, y, x=0.0):
-        return lean @ mx(yaw @ np.array((-0.04 + x + 1.2 * (z - cz) ** 2, y, z - cz)) + np.array((0, 0, cz)))
+        return lean @ mx(yaw @ np.array((FIN_X + x + 1.2 * (z - cz) ** 2, y, z - cz)) + np.array((0, 0, cz)))
     thick = 0.032
     n = len(outline)
     verts = [fl(z, y, thick / 2) for z, y in outline] + [fl(z, y, -thick / 2) for z, y in outline]
@@ -539,7 +548,8 @@ def build_pauldron(s):
     # line at x 0.32-0.37 running h 1.68 down to 1.56 on the inner side of the arm).
     path(p, "trim", dome, [(t_at(dome, 0.3), deg(150)), (t_at(dome, 0.22), deg(132)), (t_at(dome, 0.13), deg(118))],
          r=TRIM_R, n=10)
-    for z, nz in ((0.235, 1.0), (-0.355, -1.0)):
+    # The back rondel sits inside the side view's outline (the drawing shows none behind the dome).
+    for z, nz in ((0.235, 1.0), (-0.3, -1.0)):
         c = mx((-0.065, 0.1, z))
         nrm = mx((-0.35, 0.05, nz))
         disc(p, "plate", c, nrm, 0.09, 0.04, seg=16, rondel=True)
