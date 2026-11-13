@@ -427,16 +427,16 @@ class Region:
         nrm = self.h.normal(*self.loop[i])
         t1, t2 = unit(b - a), unit(c - b)
         t = unit(t1 + t2)
-        # the loop is counter-clockwise seen from outside, so the inside is to the left: n x t
+        # the loop is counter-clockwise in (-phi, y): walking along it, the inside is t x n
         k = 1.0 / max(0.5, math.sqrt(max(0.0, (1 + t1 @ t2) / 2)))
-        return unit(np.cross(nrm, t)), k
+        return unit(np.cross(t, nrm)), k
 
     def offset_pt(self, i, d, ends=None):
         """The loop vertex moved d into the region along the surface: (y, phi)."""
         if ends is not None:      # at a band's end: square to the band, not the mitre of the loop corner
             a, b = self.P(self.loop[ends[0]]), self.P(self.loop[ends[1]])
             nrm = self.h.normal(*self.loop[i])
-            v, k = unit(np.cross(nrm, unit(b - a))), 1.0
+            v, k = unit(np.cross(unit(b - a), nrm)), 1.0
         else:
             v, k = self.inward(i)
         q = self.P(self.loop[i]) + v * d * k
@@ -526,7 +526,7 @@ class Region:
         for k in range(n - 1):
             i = idx[k] % self.n
             nrm = self.h.normal(*self.loop[i])
-            out = np.cross(unit(A[k + 1] - A[k]), nrm)     # counter-clockwise loop: outside is t x n
+            out = np.cross(nrm, unit(A[k + 1] - A[k]))     # the outside is n x t
             piece.put(V, [(k, k + 1, n + k + 1, n + k)], mat, out)
 
 
@@ -756,7 +756,7 @@ def make_helm(enemy_crest=False):
         lp = front + under + rear
         if sgn < 0:
             lp = mirror(lp)
-        ch = Region(B, lp, CHEEK_T).build(p, grid=(deg(14), 0.035, 0.012))
+        ch = Region(B, lp, CHEEK_T).build(p, grid=(deg(10), 0.025, 0.01))
         ch.wall(p, base=-0.001, span=(len(front) - 1, len(lp) - 1))
         regions.append(ch)
 
@@ -790,7 +790,7 @@ def make_helm(enemy_crest=False):
     rim = V[-NC:]
 
     # --- Crown ridge: a raised strip from the nape over the crown to the visor's apex, trim on both edges ---
-    y_nape, y_end = 0.128, apex_y - 0.004
+    y_nape, y_end = 0.128, apex_y - 0.02
     us = np.linspace(-1, 1, 81)
     cen = []
     for u in us:
@@ -831,7 +831,8 @@ def make_helm(enemy_crest=False):
                [0.190, 0.200, 0.200, 0.200, 0.200, 0.196, 0.19],
                [-0.100, -0.100, -0.099, -0.095, -0.074, -0.056, -0.045],
                [0.04] * 7, [1.05] * 7, [2.0] * 7)
-    hull_grid(p, pad, [0.065, 0.037, 0.028, 0.014, -0.055], 16, "plate_dark", cap="bottom")
+    hull_grid(p, pad, [0.065, 0.037, 0.028, 0.014, -0.055], 16, "plate_dark", cap="bottom",
+              ref=lambda c: np.array([c[0], 0.05, c[2] - 0.04]) if c[1] > -0.0549 else np.array([0.0, -1.0, 0.0]))
     # The helm's underside, from its lower edge in to the padding.
     inner = [pad.point(min(helm_bottom(TAU * j / NC) + 0.016, 0.09), TAU * j / NC) for j in range(NC)]
     p.strip(rim, inner, "plate_dark", (0, -1, 0), closed=True)
