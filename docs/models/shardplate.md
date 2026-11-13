@@ -17,7 +17,7 @@ sheets in `art/source/plate-*` show the same pieces close up.
 | Vambrace | 1.12–1.45, x ±0.48 … ±0.85 (≈0.37 wide, widest at the top); trim bands 1.38–1.42 and 1.11–1.15, the lower one shared with the gauntlet cuff; a stepped trim line down the outside (x 0.58 at h 1.36, jogging out to 0.65 at 1.26) | – |
 | Gauntlet | cuff 1.08–1.12; hand 1.08 → fingertips 0.72, widest 0.18 across the knuckles at h 0.94 and gathering to a 3 cm tip; thumb on the inside down to 0.86; four fingers of three plates, the tips curling in under the palm; dark leather palm | – |
 | Tasset | hangs from the belt 1.22 → outer bottom corner (±0.50, 0.87), x ±0.20 … ±0.51; shield shape with a trim border | back: pointed upper inner corner, 1.33 → 0.84 |
-| Fauld | four rows of pointed leaves, x ±0.18, rows from 1.20, 1.08, 0.96, 0.84; centre leaf to 0.58; leaves ≈0.07 × 0.20 | side: leaves hang to 0.62 front and back, splayed out |
+| Fauld | four rows of pointed leaves, x ±0.18, rows from 1.20, 1.08, 0.96, 0.84; centre leaf to 0.58; leaves ≈0.07 × 0.20 | side: leaves hang to 0.62 front and back, splayed out; the front skirt's faces fill z +0.26…+0.37 and the back ones z −0.20…−0.31 over h 0.62–1.20 (a band ≈0.09 m deep), which is the side profile's depth there |
 | Knee cop | 0.52–0.82, x ±0.18 … ±0.46; trim arcs on its top and bottom edges | back: dark under-layer behind the knee 0.60–0.70 |
 | Greave | 0.22–0.52, x ±0.18 … ±0.42, narrowing to ±0.20 … ±0.40 at the ankle | z −0.13 … +0.20 |
 | Sabaton | 0–0.20, x ±0.16 … ±0.58; toe cap ≈0.12 tall; heel plate with rivets, dark under-layer at the ankle | toe at z ≈ −0.45 (the toes point out) |

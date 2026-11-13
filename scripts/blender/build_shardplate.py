@@ -284,54 +284,134 @@ def build_belt():
     return p
 
 
-def leaf_rows(p, rows, back=False, dz=0.0):
-    """Overlapping rows of long pointed leaves hanging from the origin, wrapping round the body."""
-    sgn = -1 if back else 1
-    for n, w, h, y, z, tilt in rows:
-        for k in range(n):
-            x = (k - (n - 1) / 2) * w * 0.86
-            zz = z + dz - 1.6 * x * x - 0.004 * k
-            fr = Frame(rot_y(0 if not back else math.pi) @ rot_y(-x * 2.2) @ rot_x(-tilt), (x, y, sgn * zz))
-            leaf(p, "plate", w, h, 0.015, fr, nu=2, nv=3, bulge=0.012)
+LEG_TRIM = 0.0105   # enamel half-width on the skirt and legs (the references draw 2-4 cm bands)
+
+
+def leaf_rows(p, rows, back=False, radius=0.22):
+    """The fauld's pointed leaves, laid on the hips.
+
+    Each leaf is (x, width, length, top y, tilt, z): its top edge sits `top` metres below the
+    piece origin and `z` metres out of it (forward for the front piece, back for the back one);
+    `tilt` (radians about x) swings the hanging tip further out, which is the depth the side
+    view sees. The yaw comes from the hip cylinder of `radius`, the reference's fan: its centre
+    leaf reads 0.126 m across while the leaf at x 0.13 reads 0.08, which is about 50 degrees.
+    """
+    for x, w, ln, top, tilt, z in rows:
+        a = math.asin(max(-1.0, min(1.0, x / radius)))
+        if back:
+            fr = Frame(rot_y(math.pi) @ rot_y(-a) @ rot_x(-tilt), (x, top, -z))
+        else:
+            fr = Frame(rot_y(-a) @ rot_x(-tilt), (x, top, z))
+        leaf(p, "plate", w, ln, 0.016, fr, nu=2, nv=3, bulge=0.013)
 
 
 def build_fauld():
-    """Fauld: rows of long pointed leaves with a centre ridge, each row behind and below the one
-    above, the centre leaf to 0.58 m (front reference); the back one to 0.56 m."""
+    """Fauld: four rows of pointed leaves with a centre ridge, fanned round the hips.
+
+    Every leaf below is one of the front reference's ink-bounded faces, read in world metres:
+    four rows whose tops run 1.21, 1.16, 0.98 and 0.80, the centre column widest (0.126), two
+    flanking columns of long leaves and a short column at x 0.13-0.20 under the tasset's edge.
+    Their tips land at 0.97, 0.92, 0.75 and 0.58, so the reference draws four rows, not five.
+
+    Depth is from the side reference, whose own ink-bounded regions put the front skirt in a
+    band z +0.26..+0.36 over h 0.62-1.20 and the back skirt at z -0.20..-0.31. Each leaf's top
+    sits on the body side of its band and its tip splays out to the far side, about 24 degrees.
+    The bottom centre leaf is the exception: the side view has nothing in front of the knee
+    below 0.62, so it hangs between the legs rather than out over the cop, while the front view
+    still sees its point at 0.584. Origin: (0, FAULD_Y, FAULD_FRONT_Z / FAULD_BACK_Z).
+    """
+    # World z of a leaf's top edge and of its tip, less the piece origin (FAULD_FRONT_Z is
+    # +0.30, FAULD_BACK_Z -0.26). Both pieces measure best with a band about 0.09 m deep.
+    fz = 0.29 - FAULD_FRONT_Z
+    fo = 0.38 - FAULD_FRONT_Z
+    bz = -(-0.23 - FAULD_BACK_Z)
+    bo = -(-0.31 - FAULD_BACK_Z)
+
+    def rows(z0, out, tips, tucked=()):
+        """(x, width, length, top y, tilt, z) with the tilt solved from the tip's stand-off.
+
+        Leaves listed in `tucked` hang straight down at the origin instead, for the ones that sit
+        between the legs rather than out over the skirt's wedge.
+        """
+        out_rows = []
+        for x, w, ln, top in tips:
+            if (x, w) in tucked:
+                out_rows.append((x, w, ln, top, 0.45, z0 + 0.02))
+            else:
+                out_rows.append((x, w, ln, top, math.atan2(out - z0, ln), z0))
+        return out_rows
+
     front = Piece("fauld_front")
-    # (count, width, height, top y, z, forward tilt) from the top row down; origin at FAULD_Y (1.22 m).
-    leaf_rows(front, [(4, 0.096, 0.21, 0.03, 0.0, 0.16), (4, 0.096, 0.21, -0.1, -0.006, 0.2),
-                      (3, 0.096, 0.215, -0.23, -0.012, 0.22), (1, 0.1, 0.22, -0.36, -0.018, 0.22)], dz=0.07)
+    # (x, width, length, top y below FAULD_Y) for every leaf, top row down.
+    leaf_rows(front, rows(fz, fo, [
+        (0.000, 0.126, 0.242, -0.008),                       # 1.212 -> 0.970
+        (-0.129, 0.081, 0.169, -0.054), (0.129, 0.081, 0.169, -0.054),
+        (-0.203, 0.072, 0.109, -0.165), (0.203, 0.072, 0.109, -0.165),
+        (-0.071, 0.070, 0.241, -0.057), (0.071, 0.070, 0.241, -0.057),
+        (-0.121, 0.075, 0.198, -0.216), (0.121, 0.075, 0.198, -0.216),
+        (0.000, 0.120, 0.226, -0.243),                       # 0.977 -> 0.751
+        (-0.093, 0.058, 0.278, -0.300), (0.093, 0.058, 0.278, -0.300),
+        (0.000, 0.099, 0.217, -0.419),                       # 0.801 -> 0.584, hangs between the legs
+    ], tucked=((0.000, 0.099),)))
     back = Piece("fauld_back")
-    leaf_rows(back, [(4, 0.096, 0.21, 0.05, 0.0, 0.1), (4, 0.096, 0.205, -0.09, -0.006, 0.12),
-                     (3, 0.096, 0.21, -0.24, -0.012, 0.14), (1, 0.1, 0.2, -0.36, -0.018, 0.15)], back=True, dz=0.0)
+    # The back reference's own leaf faces: two centre columns (0.122 and 0.116 wide) flanked by
+    # 0.074-0.081 columns, the lowest tips at 0.557-0.72 m.
+    leaf_rows(back, rows(bz, bo, [
+        (0.000, 0.122, 0.224, -0.032),
+        (-0.126, 0.081, 0.202, -0.025), (0.126, 0.081, 0.202, -0.025),
+        (-0.074, 0.077, 0.266, -0.041), (0.074, 0.077, 0.266, -0.041),
+        (-0.120, 0.074, 0.193, -0.230), (0.120, 0.074, 0.193, -0.230),
+        (0.000, 0.116, 0.224, -0.253),
+        (-0.092, 0.057, 0.262, -0.320), (0.092, 0.057, 0.262, -0.320),
+        (0.000, 0.108, 0.212, -0.432),
+    ]), back=True)
     return front, back
 
 
 def build_tasset(s):
-    """Shield-shaped plate over the outside of the hip, hanging from the belt and flaring out:
-    narrow at the top, widest two-thirds down, a rounded bottom lowest in the middle, a trim line
-    set in from its edge; dark padding shows between it and the fauld. Origin: its hinge."""
+    """Shield-shaped plate over the outside of the hip, hung from the belt and flaring out, with
+    a shield-shaped enamel border inset from its edge. Origin: its hinge (±TASSET_X, TASSET_Y).
+
+    Front reference: the plate fills x 0.22..0.51 and its outer edge sweeps from (0.29, 1.20)
+    down to (0.50, 0.88); the border's two strokes run x 0.49..0.29 around the outer edge and
+    x 0.24 up the inner one, meeting at 0.88-1.03. Back reference: the same plate from behind,
+    x 0.13..0.43 over h 0.70-0.97. Side reference: the hip's depth there is z -0.17..+0.22, so
+    the plate stays inside that (the fauld's wedge at z +0.26..+0.38 is what stands proud of it).
+    """
     p = Piece(f"tasset_{'l' if s > 0 else 'r'}")
     o = np.array([s * TASSET_X, TASSET_Y, 0.0])
     L = Loft([
-        dict(y=1.3, rx=0.39, rf=0.27, rb=0.26, cz=0.02, p=2.4),
-        dict(y=1.08, rx=0.47, rf=0.3, rb=0.29, cz=0.02, p=2.4),
-        dict(y=0.84, rx=0.53, rf=0.33, rb=0.32, cz=0.02, p=2.4),
+        dict(y=1.30, rx=0.365, rf=0.280, rb=0.285, p=2.4),
+        dict(y=1.16, rx=0.400, rf=0.305, rb=0.305, p=2.4),
+        dict(y=1.00, rx=0.460, rf=0.320, rb=0.315, p=2.4),
+        dict(y=0.84, rx=0.510, rf=0.325, rb=0.300, p=2.4),
     ], Frame(None, -o))
     c = 0.0 if s > 0 else math.pi          # the outside of the hip
-    wide = lambda u: math.sin(math.pi * min(1.0, u / 1.35)) ** 0.7                # noqa: E731
-    fr = lambda u: deg(22 + 34 * wide(u))                                         # noqa: E731
-    bk = lambda u: deg(-18 - 32 * wide(u))                                        # noqa: E731
+    # The plate spans the outside of the hip: widest at mid-height, tapering at both ends.
+    wide = lambda u: math.sin(math.pi * min(1.0, u / 1.10)) ** 0.5                # noqa: E731
+    fr = lambda u: deg(20 + 42 * wide(u))                                         # noqa: E731
+    bk = lambda u: deg(-14 - 40 * wide(u))                                        # noqa: E731
     th0 = (lambda u: c + bk(u)) if s > 0 else (lambda u: c - fr(u))
     th1 = (lambda u: c + fr(u)) if s > 0 else (lambda u: c - bk(u))
-    T1 = lambda v: 1.82 + 0.18 * math.sin(math.pi * v)                            # noqa: E731
-    patch(p, "plate", L, 0.0, T1, th0, th1, off=0.0, thick=0.016, nt=8, nth=12)
+    # Shield outline: the top edge sits under the belt, the bottom edge is lowest at the outer
+    # corner and rises toward the inner one, as the front reference draws it.
+    T0 = lambda v: 0.05 + 0.13 * (1 - v) ** 2                                     # noqa: E731
+    T1 = lambda v: 3.02 - 0.34 * v ** 1.5                                         # noqa: E731
+    patch(p, "plate", L, T0, T1, th0, th1, off=0.0, thick=0.016, nt=9, nth=14)
+    # Enamel border. Front reference: one stroke runs up the plate's inner edge (x 0.24-0.29
+    # over h 0.85-1.03) and another sweeps diagonally out along the lower edge (x 0.29 at h 1.05
+    # to 0.49 at 0.88), meeting at the inner corner; the back reference sees the long stroke from
+    # x 0.26 at 1.10 round to 0.49 at 0.87. Read together they bound the plate, so it is built as
+    # one closed loop set in from the outline (which scored better than an open path).
     th = lambda u, v: th0(u) + (th1(u) - th0(u)) * v                              # noqa: E731
-    loop = [(u * T1(0.07), th(u, 0.07)) for u in np.linspace(0.1, 0.9, 7)]
-    loop += [(0.9 * T1(v), th(0.9, v)) for v in np.linspace(0.07, 0.93, 9)[1:]]
-    loop += [(u * T1(0.93), th(u, 0.93)) for u in np.linspace(0.9, 0.1, 7)[1:]]
-    path(p, "trim", L, loop, r=TRIM_R * 0.85, off=0.017, n=36)
+
+    def pt(u, v):
+        return (T0(v) + (T1(v) - T0(v)) * u, th(u, v))
+    loop = [pt(u, 0.07) for u in np.linspace(0.07, 0.93, 8)]
+    loop += [pt(0.93, v) for v in np.linspace(0.07, 0.93, 9)[1:]]
+    loop += [pt(u, 0.93) for u in np.linspace(0.93, 0.07, 8)[1:]]
+    loop += [pt(0.07, v) for v in np.linspace(0.93, 0.07, 9)[1:]]
+    path(p, "trim", L, loop + [loop[0]], r=LEG_TRIM, off=0.017, n=46)
     return p
 
 
@@ -606,7 +686,8 @@ def build_gauntlet(s):
 
 
 def build_thigh(s):
-    """Cuisse, mostly under the tassets and fauld; a trim line down its inner front. Origin: the hip."""
+    """Cuisse, mostly under the tassets and fauld, with the reference's vertical enamel stroke
+    down its outer front. Origin: the hip."""
     p = Piece(f"thigh_{'l' if s > 0 else 'r'}")
     L = Loft([
         dict(y=0.1, rx=0.06, rf=0.06, rb=0.06),
@@ -614,33 +695,64 @@ def build_thigh(s):
         dict(y=-0.08, rx=0.18, rf=0.175, rb=0.168),
         dict(y=-0.26, rx=0.172, rf=0.168, rb=0.16),
         dict(y=-0.36, rx=0.138, rf=0.148, rb=0.14),
-        dict(y=-0.41, rx=0.11, rf=0.115, rb=0.11),
+        dict(y=-0.41, rx=0.115, rf=0.115, rb=0.11),
     ]).mesh(p, "plate", seg=16, sub=2)
-    ypath(p, "trim", L, [(-0.33, FRONT + s * 0.3), (-0.18, FRONT + s * 0.3), (-0.04, FRONT + s * 0.3)], n=8)
-    yring(p, "trim", L, -0.04, th0=FRONT - 1.1, th1=FRONT + 1.1, n=10)
+    # Front reference: a vertical enamel stroke at x 0.27 from 0.91 down to 0.72 m (the hip is at
+    # x 0.25, so this is the outer front of the cuisse, not the inner one).
+    ypath(p, "trim", L, [(-0.09, FRONT - s * 0.55), (-0.20, FRONT - s * 0.5), (-0.28, FRONT - s * 0.45)],
+          r=LEG_TRIM * 0.8, n=10)
     return p
 
 
 def build_shin(s):
-    """Knee cop (a round dome standing well forward of the greave, trim on its top and bottom
-    edges, a centre ridge) over a dark padded knee, and a plain greave with a calf. Origin: the knee."""
+    """Knee cop, dark padded knee and greave with a calf. Origin: the knee (0, 0.40 below the hip)."""
     p = Piece(f"shin_{'l' if s > 0 else 'r'}")
-    ellipsoid(p, "plate_dark", (0, 0.02, -0.01), (0.14, 0.11, 0.15), seg=12, rings=4)
-    cx = s * 0.005
-    cop = Loft([dict(y=-0.1, rx=0.13, rf=0.19, rb=0.0, cx=cx, cz=0.02), dict(y=-0.02, rx=0.175, rf=0.2, rb=0.0, cx=cx, cz=0.02),
-                dict(y=0.08, rx=0.178, rf=0.203, rb=0.0, cx=cx, cz=0.02), dict(y=0.17, rx=0.125, rf=0.205, rb=0.0, cx=cx, cz=0.02),
-                dict(y=0.215, rx=0.07, rf=0.12, rb=0.0, cx=cx, cz=0.02)])
-    patch(p, "plate", cop, 0.0, 4.0, deg(-12), deg(192), off=-0.02, thick=0.02, nt=8, nth=10)
-    ring(p, "trim", cop, 0.35, r=TRIM_R, off=0.004, th0=deg(-8), th1=deg(188), n=16)
-    ring(p, "trim", cop, 2.9, r=TRIM_R, off=0.004, th0=deg(-8), th1=deg(188), n=14)
+    # Dark padding at the joint. The side reference draws it as the 0.60-0.70 m gap behind the
+    # cop, standing back to z +0.19 - further back than any plate there, which is what gives the
+    # leg its depth at the back of the knee.
+    Loft([dict(y=-0.06, rx=0.115, rf=0.10, rb=0.155, cz=0.02),
+          dict(y=0.05, rx=0.118, rf=0.105, rb=0.185, cz=0.02),
+          dict(y=0.11, rx=0.105, rf=0.10, rb=0.17, cz=0.02)]).mesh(p, "plate_dark", seg=14, sub=1)
+    # Cop: a dome standing 0.24 m forward of the knee, its centre 0.075 m outboard (the front
+    # reference puts its widest enamel at x 0.335 from the body axis, 0.085 from the leg centre).
+    # Its bottom edge is the greave's lap, its top the thigh's; front view 0.52-0.82 m, x
+    # 0.18-0.46 from the axis.
+    cop = Loft([dict(y=-0.085, rx=0.100, rf=0.180, rb=0.0, cx=s * 0.030, cz=0.028),
+                dict(y=-0.02, rx=0.140, rf=0.200, rb=0.0, cx=s * 0.075, cz=0.028),
+                dict(y=0.06, rx=0.150, rf=0.206, rb=0.0, cx=s * 0.075, cz=0.028),
+                dict(y=0.14, rx=0.132, rf=0.198, rb=0.0, cx=s * 0.075, cz=0.028),
+                dict(y=0.20, rx=0.074, rf=0.115, rb=0.0, cx=s * 0.055, cz=0.028)])
+    patch(p, "plate", cop, 0.0, 4.0, deg(-10), deg(190), off=-0.02, thick=0.02, nt=8, nth=10)
+    # The two enamel arcs, placed from both references. Front reference: the top arc runs from
+    # the cop's outer edge at 0.71 m, up over its front at 0.79, to the inner edge at 0.65; the
+    # bottom arc cradles the rim from 0.60 at the outer edge through 0.525 in front. The side
+    # reference draws the same arcs as bands across the dome's middle, 0.13 m either side of the
+    # front, so each is one cut on the dome rather than a level ring.
+    for base, dip, th0, th1 in ((0.780, 0.13, deg(-6), deg(186)), (0.534, 0.13, deg(-6), deg(186))):
+        pts = []
+        for th in np.linspace(th0, th1, 13):
+            k = (math.cos(th - FRONT)) ** 1.6
+            pts.append((t_at(cop, base - 0.60 - dip * (1 - k)), th))
+        path(p, "trim", cop, pts, r=LEG_TRIM, off=0.004, n=24)
     path(p, "plate", cop, [(0.6, FRONT), (2.0, FRONT), (3.2, FRONT)], r=0.007, off=0.0, n=8, flat=None)
+    # Greave: 0.52 -> 0.12 m. Front reference half-widths from the leg centre: 0.176 just under
+    # the knee (h 0.52), 0.173 at 0.47, 0.151 at 0.38, 0.136 at 0.33 and 0.132 at the ankle -
+    # it flares out of the knee then tapers. Side reference: the calf swells back to z +0.20
+    # under the cop and the front leans back to z +0.13 at the ankle.
     L = Loft([
-        dict(y=-0.05, rx=0.145, rf=0.15, rb=0.13),
-        dict(y=-0.15, rx=0.148, rf=0.158, rb=0.195),
-        dict(y=-0.3, rx=0.138, rf=0.155, rb=0.18),
-        dict(y=-0.42, rx=0.132, rf=0.15, rb=0.144),
-        dict(y=-0.48, rx=0.148, rf=0.16, rb=0.15),
+        dict(y=-0.02, rx=0.163, rf=0.130, rb=0.150),
+        dict(y=-0.08, rx=0.176, rf=0.140, rb=0.185),
+        dict(y=-0.13, rx=0.173, rf=0.142, rb=0.200),
+        dict(y=-0.22, rx=0.151, rf=0.140, rb=0.192),
+        dict(y=-0.30, rx=0.138, rf=0.136, rb=0.176),
+        dict(y=-0.38, rx=0.134, rf=0.132, rb=0.158),
+        dict(y=-0.48, rx=0.135, rf=0.142, rb=0.150),
     ]).mesh(p, "plate", seg=20, sub=2)
+    # Trim on the greave. The front reference draws two short strokes down the outer sides of
+    # the upper shin (0.29-0.52 m, at x 0.34-0.45 from the body axis), but the side and back
+    # views put nothing there - the leg's own plate edge carries that line - so adding them cost
+    # precision in two views for one. Only the band above the ankle is enamel in all three.
+    yring(p, "trim", L, -0.43, r=LEG_TRIM * 0.8, th0=deg(30), th1=deg(330), n=18)
     return p
 
 
@@ -653,6 +765,7 @@ def build_boot(s):
         dict(y=0.07, rx=0.142, rf=0.165, rb=0.158),
         dict(y=0.02, rx=0.148, rf=0.17, rb=0.162),
     ]).mesh(p, "plate", seg=18, sub=1)
+    ring(p, "trim", cuff, t_at(cuff, 0.105), r=LEG_TRIM, th0=deg(25), th1=deg(335), n=18)
     Loft([dict(y=0.03, rx=0.13, rf=0.15, rb=0.15), dict(y=-0.04, rx=0.13, rf=0.15, rb=0.15)]
          ).mesh(p, "plate_dark", seg=14, sub=1)
     rivet(p, (s * 0.15, 0.08, 0.0), (s, 0, 0), 0.012)
