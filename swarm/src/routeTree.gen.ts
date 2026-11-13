@@ -16,6 +16,7 @@ import { Route as LeadRouteImport } from './routes/lead'
 import { Route as ApiLeadRouteImport } from './routes/api/lead'
 import { Route as ApiSwarmRouteImport } from './routes/api/swarm'
 import { Route as ApiTranscriptRouteImport } from './routes/api/transcript'
+import { Route as ApiUsageRouteImport } from './routes/api/usage'
 import { Route as ApiLeadUploadRouteImport } from './routes/api/lead.upload'
 import { Route as ApiSwarmStreamRouteImport } from './routes/api/swarm.stream'
 import { Route as ApiTranscriptImageRouteImport } from './routes/api/transcript.image'
@@ -55,6 +56,11 @@ const ApiTranscriptRoute = ApiTranscriptRouteImport.update({
   path: '/api/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUsageRoute = ApiUsageRouteImport.update({
+  id: '/api/usage',
+  path: '/api/usage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLeadUploadRoute = ApiLeadUploadRouteImport.update({
   id: '/upload',
   path: '/upload',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
   '/api/transcript': typeof ApiTranscriptRouteWithChildren
+  '/api/usage': typeof ApiUsageRoute
   '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
   '/api/transcript/image': typeof ApiTranscriptImageRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
   '/api/transcript': typeof ApiTranscriptRouteWithChildren
+  '/api/usage': typeof ApiUsageRoute
   '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
   '/api/transcript/image': typeof ApiTranscriptImageRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/api/lead': typeof ApiLeadRouteWithChildren
   '/api/swarm': typeof ApiSwarmRouteWithChildren
   '/api/transcript': typeof ApiTranscriptRouteWithChildren
+  '/api/usage': typeof ApiUsageRoute
   '/api/lead/upload': typeof ApiLeadUploadRoute
   '/api/swarm/stream': typeof ApiSwarmStreamRoute
   '/api/transcript/image': typeof ApiTranscriptImageRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/api/lead'
     | '/api/swarm'
     | '/api/transcript'
+    | '/api/usage'
     | '/api/lead/upload'
     | '/api/swarm/stream'
     | '/api/transcript/image'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/api/lead'
     | '/api/swarm'
     | '/api/transcript'
+    | '/api/usage'
     | '/api/lead/upload'
     | '/api/swarm/stream'
     | '/api/transcript/image'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/api/lead'
     | '/api/swarm'
     | '/api/transcript'
+    | '/api/usage'
     | '/api/lead/upload'
     | '/api/swarm/stream'
     | '/api/transcript/image'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   ApiLeadRoute: typeof ApiLeadRouteWithChildren
   ApiSwarmRoute: typeof ApiSwarmRouteWithChildren
   ApiTranscriptRoute: typeof ApiTranscriptRouteWithChildren
+  ApiUsageRoute: typeof ApiUsageRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -206,6 +219,13 @@ declare module '@tanstack/solid-router' {
       path: '/api/transcript'
       fullPath: '/api/transcript'
       preLoaderRoute: typeof ApiTranscriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/usage': {
+      id: '/api/usage'
+      path: '/api/usage'
+      fullPath: '/api/usage'
+      preLoaderRoute: typeof ApiUsageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/lead/upload': {
@@ -275,6 +295,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiLeadRoute: ApiLeadRouteWithChildren,
   ApiSwarmRoute: ApiSwarmRouteWithChildren,
   ApiTranscriptRoute: ApiTranscriptRouteWithChildren,
+  ApiUsageRoute: ApiUsageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

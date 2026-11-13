@@ -5,6 +5,7 @@ import { useSwarm } from '../lib/useSwarm'
 import { Gem, Socket } from './frame/Gem'
 import { SphereFrame } from './frame/SphereFrame'
 import { QueueBadge } from './queue/QueueBadge'
+import { UsagePill } from './plan/UsagePill'
 import './nav/nav.css'
 
 type Swarm = ReturnType<typeof useSwarm>
@@ -54,6 +55,7 @@ function NavContent(props: { swarm: Swarm; onNavigate?: () => void }) {
         </Link>
       </nav>
       <div class="side-status">
+        <UsagePill />
         <Live swarm={props.swarm} />
         <QueueBadge snapshot={props.swarm.snapshot()} />
       </div>
@@ -84,7 +86,10 @@ export default function Header() {
           </svg>
         </button>
         <Brand />
-        <Live swarm={swarm} />
+        <span class="topbar-end">
+          <UsagePill compact />
+          <Live swarm={swarm} />
+        </span>
       </header>
 
       <Drawer side="left" open={open()} onOpenChange={setOpen}>

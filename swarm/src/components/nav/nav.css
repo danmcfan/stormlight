@@ -178,3 +178,17 @@
     padding-top: 22px;
   }
 }
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.topbar-end .live {
+  margin-left: 0;
+}
+@media (max-width: 26rem) {
+  .topbar .live-text {
+    display: none;
+  }
+}

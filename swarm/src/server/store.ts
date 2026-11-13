@@ -24,6 +24,7 @@ import { AgentAcc, buildSnapshot, splitLines, type AgentMeta, type SessionInput 
 import { scanComponents } from './components'
 import { PlanReader, applyPlan } from './plan'
 import { QueueReader, applyQueue } from './queue'
+import { isProbeProject } from './planProbe'
 
 const POLL_MS = 1000
 const DISCOVER_MS = 3000
@@ -205,7 +206,7 @@ export class SwarmStore {
       }
     }
     for (const proj of safeReaddir(this.root)) {
-      if (!proj.isDirectory()) continue
+      if (!proj.isDirectory() || isProbeProject(proj.name)) continue
       const pdir = join(this.root, proj.name)
       for (const e of safeReaddir(pdir)) {
         const p = join(pdir, e.name)

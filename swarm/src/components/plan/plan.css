@@ -94,3 +94,67 @@
 .plan-summary p {
   margin: 0;
 }
+
+/* compact usage readout (sidebar, top bar) */
+.usage-pill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.usage-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: rgba(120, 160, 255, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+.usage-k {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.usage-win[data-level='warn'] {
+  color: var(--warn);
+}
+.usage-win[data-level='bad'] {
+  color: var(--bad);
+}
+.usage-pill[data-compact] .usage-readout {
+  min-height: 32px;
+  gap: 8px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.usage-refresh {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-2);
+  font-size: 16px;
+  cursor: pointer;
+}
+.usage-refresh:hover {
+  color: var(--ink);
+}
+.usage-readout:focus-visible,
+.usage-refresh:focus-visible {
+  outline: 2px solid var(--ui-ring);
+  outline-offset: 2px;
+}
+.usage-note {
+  flex-basis: 100%;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}

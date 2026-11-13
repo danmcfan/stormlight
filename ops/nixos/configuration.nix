@@ -265,7 +265,7 @@ in
       wants = [ "network-online.target" "tailscaled.service" "user@1000.service" ];
       wantedBy = [ "multi-user.target" ];
       unitConfig.ConditionPathExists = "/home/agent/stormlight/swarm/node_modules/.bin/vite";
-      path = with pkgs; [ nodejs_22 claude-code git git-lfs gh ripgrep bash coreutils findutils gnugrep gnused jq config.systemd.package ];
+      path = with pkgs; [ nodejs_22 claude-code git git-lfs gh ripgrep bash coreutils findutils gnugrep gnused jq util-linux config.systemd.package ];
       environment = {
         HOME = "/home/agent";
         SWARM_TRANSCRIPTS_DIR = "/home/agent/.claude/projects";
@@ -318,6 +318,16 @@ in
         Restart = "always";
         RestartSec = 3;
       };
+    };
+
+    # ---- plan usage ------------------------------------------------------------
+    # Claude Code reports the plan's 5-hour/7-day windows only to the status
+    # line of interactive sessions. agent's ~/.claude/settings.json points
+    # statusLine at this script, which appends readings for the dashboard; the
+    # dashboard runs a tiny interactive probe to take one (see server/planProbe.ts).
+    environment.etc."swarm/plan-statusline.sh" = {
+      source = ./plan-statusline.sh;
+      mode = "0755";
     };
 
     # ---- tools for the agents -----------------------------------------------

@@ -26,6 +26,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { maxConcurrent } from './queue'
+import { probePlanUsage } from './planProbe'
 
 export interface LeadImage {
   id: string
@@ -438,6 +439,7 @@ export class Lead {
     this.running = null
     this.child = null
     this.save()
+    probePlanUsage(true)
     this.next()
   }
 
