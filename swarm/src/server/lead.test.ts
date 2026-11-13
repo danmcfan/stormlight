@@ -10,6 +10,7 @@ import {
   isValidUploadId,
   Lead,
   loadUpload,
+  parseResult,
   saveUpload,
   type LeadImage,
 } from './lead'
@@ -175,5 +176,23 @@ describe('Lead model changes', () => {
     const reloaded = new Lead()
     expect(reloaded.getState().model).toBe('haiku')
     expect(reloaded.getState().subagentModel).toBe('opus')
+  })
+})
+
+describe('parseResult', () => {
+  it('takes the result text from claude JSON output', () => {
+    expect(parseResult('{"result":"done","is_error":false}', '', true)).toEqual({ ok: true, reply: 'done' })
+  })
+  it('marks is_error runs as failed but keeps their text', () => {
+    expect(parseResult('{"result":"boom","is_error":true}', '', true)).toEqual({ ok: false, reply: 'boom' })
+  })
+  it('trusts a JSON result even when the unit reports failure', () => {
+    expect(parseResult('{"result":"fine"}', '', false)).toEqual({ ok: true, reply: 'fine' })
+  })
+  it('falls back to stderr when there is no output', () => {
+    expect(parseResult('', 'Not logged in', true)).toEqual({ ok: false, reply: 'Not logged in' })
+  })
+  it('passes through non-JSON output as the reply', () => {
+    expect(parseResult('plain text', '', true)).toEqual({ ok: true, reply: 'plain text' })
   })
 })

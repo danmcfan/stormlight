@@ -133,6 +133,11 @@ in
       isNormalUser = true;
       description = "Claude Code + agents + dashboard";
       openssh.authorizedKeys.keys = cfg.authorizedKeys;
+      uid = 1000;
+      # Keep agent's systemd user manager running without a login: each lead
+      # run is a transient user unit (systemd-run --user), so it survives
+      # dashboard restarts.
+      linger = true;
     };
 
     # CI only (over Tailscale SSH, which needs no key). Sudo rights below.
@@ -244,15 +249,20 @@ in
     # logged in once as that user.
     systemd.services.swarm-dev = lib.mkIf cfg.swarmDev.enable {
       description = "Swarm dashboard, dev mode (tailnet-only, hot reload, lead agent)";
-      after = [ "network-online.target" "tailscaled.service" ];
-      wants = [ "network-online.target" "tailscaled.service" ];
+      after = [ "network-online.target" "tailscaled.service" "user@1000.service" ];
+      wants = [ "network-online.target" "tailscaled.service" "user@1000.service" ];
       wantedBy = [ "multi-user.target" ];
       unitConfig.ConditionPathExists = "/home/agent/stormlight/swarm/node_modules/.bin/vite";
-      path = with pkgs; [ nodejs_22 claude-code git git-lfs gh ripgrep bash coreutils findutils gnugrep gnused jq ];
+      path = with pkgs; [ nodejs_22 claude-code git git-lfs gh ripgrep bash coreutils findutils gnugrep gnused jq config.systemd.package ];
       environment = {
         HOME = "/home/agent";
         SWARM_TRANSCRIPTS_DIR = "/home/agent/.claude/projects";
         SWARM_LEAD_CWD = "/home/agent/stormlight";
+        # Run each lead prompt as its own user unit, outside this service's
+        # cgroup, so restarting the dashboard never kills the lead.
+        SWARM_LEAD_DETACH = "systemd";
+        XDG_RUNTIME_DIR = "/run/user/1000";
+        DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
       };
       serviceConfig = {
         User = "agent";

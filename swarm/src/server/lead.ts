@@ -20,7 +20,7 @@
 //                                (default ~/.claude/swarm/lead.json)
 //   SWARM_LEAD_UPLOAD_DIR       where attached images are stored
 //                                (default ~/.claude/swarm/uploads)
-import { spawn, type ChildProcess } from 'node:child_process'
+import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -44,6 +44,10 @@ export interface LeadRun {
   reply?: string
   /** The model this run actually used. */
   model?: string
+  /** Detached runs only: the systemd user unit and its output files. */
+  unit?: string
+  out?: string
+  err?: string
 }
 
 export interface LeadWaiting {
@@ -218,6 +222,66 @@ interface PersistedState {
   started: boolean
   model?: string
   subagentModel?: string
+  /** The run in flight, so a server restart can pick it up again. */
+  running?: LeadRun | null
+  waiting?: LeadWaiting[]
+  history?: LeadRun[]
+}
+
+/** Where a detached run writes its prompt, output and errors. */
+function runDir(): string {
+  return join(dirname(stateFile()), 'runs')
+}
+
+/**
+ * How runs are launched.
+ *
+ * - `systemd` (set on the agent box): each run is its own transient systemd
+ *   *user* unit (`systemd-run --user`), outside the dashboard's cgroup, so
+ *   restarting or stopping the dashboard never kills the lead or its
+ *   subagents. Output goes to files; the server polls the unit and reads them.
+ * - `direct` (default, local dev and tests): a child process of the server.
+ */
+function launchMode(): 'systemd' | 'direct' {
+  return process.env.SWARM_LEAD_DETACH === 'systemd' ? 'systemd' : 'direct'
+}
+
+const POLL_MS = 2000
+
+function run(cmd: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    execFile(cmd, args, { timeout: 15_000 }, (err, stdout, stderr) => {
+      const code = err ? (typeof (err as any).code === 'number' ? (err as any).code : 1) : 0
+      resolve({ code, stdout: String(stdout), stderr: String(stderr) })
+    })
+  })
+}
+
+function readTail(path: string | undefined, max: number): string {
+  if (!path) return ''
+  try {
+    const s = readFileSync(path, 'utf8')
+    return s.length > max ? s.slice(-max) : s
+  } catch {
+    return ''
+  }
+}
+
+/** Turns claude's `--output-format json` output (or its absence) into ok + reply. */
+export function parseResult(out: string, err: string, exitOk: boolean): { ok: boolean; reply: string } {
+  let ok = exitOk
+  let reply = ''
+  try {
+    const j = JSON.parse(out)
+    reply = typeof j.result === 'string' ? j.result : ''
+    if (j.is_error) ok = false
+    else if (!exitOk && reply) ok = true
+  } catch {
+    reply = out.trim()
+    if (!reply) ok = false
+  }
+  if (!ok && !reply) reply = err.trim() || 'claude exited without a reply'
+  return { ok, reply: reply || '(no reply)' }
 }
 
 export class Lead {
@@ -227,6 +291,8 @@ export class Lead {
   private child: ChildProcess | null = null
   private waiting: LeadWaiting[] = []
   private history: LeadRun[] = []
+  private poll: ReturnType<typeof setInterval> | null = null
+  private polling = false
 
   model: string
   subagentModel: string
@@ -246,8 +312,19 @@ export class Lead {
       }
       if (isAllowedModel(j.model, allowed)) this.model = j.model
       if (isAllowedModel(j.subagentModel, allowed)) this.subagentModel = j.subagentModel
+      if (Array.isArray(j.history)) this.history = j.history.slice(0, KEEP_HISTORY)
+      if (Array.isArray(j.waiting)) this.waiting = j.waiting
+      if (j.running && typeof j.running.startedAt === 'number') this.running = j.running
     } catch {
       /* first run */
+    }
+    // A run that was in flight when the server stopped: a detached unit may
+    // still be working, so watch it; a direct child died with the server.
+    if (this.running) {
+      if (this.running.unit && launchMode() === 'systemd') this.watch(this.running)
+      else this.finish(this.running, false, 'Interrupted: the dashboard restarted while this was running.')
+    } else {
+      this.next()
     }
   }
 
@@ -299,6 +376,7 @@ export class Lead {
       })
     }
     this.waiting.push({ prompt: p, images })
+    this.save()
     this.next()
     return this.getState()
   }
@@ -314,7 +392,10 @@ export class Lead {
   /** Stop the running prompt and drop the waiting ones. */
   stop(): LeadState {
     this.waiting = []
-    this.child?.kill('SIGTERM')
+    this.save()
+    const r = this.running
+    if (r?.unit) void run('systemctl', ['--user', 'stop', r.unit])
+    else this.child?.kill('SIGTERM')
     return this.getState()
   }
 
@@ -326,11 +407,51 @@ export class Lead {
         started: this.started,
         model: this.model,
         subagentModel: this.subagentModel,
+        running: this.running,
+        waiting: this.waiting,
+        history: this.history,
       }
       writeFileSync(stateFile(), JSON.stringify(data))
     } catch {
-      /* the lead still works; it just forgets its session on restart */
+      /* the lead still works; it just forgets its state on restart */
     }
+  }
+
+  private finish(r: LeadRun, ok: boolean, reply: string) {
+    if (this.running !== r) return
+    if (this.poll) clearInterval(this.poll)
+    this.poll = null
+    r.endedAt = Date.now()
+    r.ok = ok
+    r.reply = trim(reply, MAX_REPLY)
+    delete r.unit
+    delete r.out
+    delete r.err
+    this.history = [r, ...this.history].slice(0, KEEP_HISTORY)
+    this.running = null
+    this.child = null
+    this.save()
+    this.next()
+  }
+
+  /** Polls a detached run's unit; when it is gone, reads its output and finishes. */
+  private watch(r: LeadRun) {
+    if (this.poll) clearInterval(this.poll)
+    const check = async () => {
+      if (this.polling || this.running !== r || !r.unit) return
+      this.polling = true
+      try {
+        const { stdout } = await run('systemctl', ['--user', 'is-active', r.unit])
+        const st = stdout.trim()
+        if (st === 'active' || st === 'activating' || st === 'reloading' || st === 'deactivating') return
+        const { ok, reply } = parseResult(readTail(r.out, 400_000), readTail(r.err, 20_000), st !== 'failed')
+        this.finish(r, ok, reply)
+      } finally {
+        this.polling = false
+      }
+    }
+    this.poll = setInterval(check, POLL_MS)
+    void check()
   }
 
   private next() {
@@ -343,7 +464,6 @@ export class Lead {
     const spawnPrompt = augmentPrompt(prompt, images)
     const args = [
       '-p',
-      spawnPrompt,
       '--output-format',
       'json',
       '--model',
@@ -354,42 +474,66 @@ export class Lead {
       systemPrompt(this.subagentModel, maxConcurrent()),
       ...(this.started ? ['--resume', this.sessionId] : ['--session-id', this.sessionId]),
     ]
-    const run: LeadRun = { prompt, images, startedAt: Date.now(), model: this.model }
-    this.running = run
+    const r: LeadRun = { prompt, images, startedAt: Date.now(), model: this.model }
+    this.running = r
     this.started = true
     this.save()
+    if (launchMode() === 'systemd') this.launchDetached(r, args, spawnPrompt)
+    else this.launchDirect(r, args, spawnPrompt)
+  }
 
+  /** `systemd-run --user`: survives dashboard restarts. The prompt goes in on stdin from a file. */
+  private launchDetached(r: LeadRun, args: string[], prompt: string) {
+    const dir = runDir()
+    const base = join(dir, String(r.startedAt))
+    try {
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(`${base}.prompt`, prompt)
+    } catch (e) {
+      this.finish(r, false, `Could not write the prompt file: ${(e as Error).message}`)
+      return
+    }
+    r.unit = `swarm-lead-${r.startedAt}`
+    r.out = `${base}.json`
+    r.err = `${base}.err`
+    this.save()
+    const keepEnv = ['PATH', 'HOME', 'LANG', 'SWARM_TRANSCRIPTS_DIR']
+      .filter((k) => process.env[k])
+      .map((k) => `--setenv=${k}=${process.env[k]}`)
+    const sdArgs = [
+      '--user',
+      `--unit=${r.unit}`,
+      '--collect',
+      '--quiet',
+      '--expand-environment=no',
+      `--working-directory=${this.cwd}`,
+      ...keepEnv,
+      `--property=StandardInput=file:${base}.prompt`,
+      `--property=StandardOutput=truncate:${r.out}`,
+      `--property=StandardError=truncate:${r.err}`,
+      '--',
+      'claude',
+      ...args,
+    ]
+    void run('systemd-run', sdArgs).then(({ code, stderr }) => {
+      if (code !== 0) this.finish(r, false, `Could not start the lead (systemd-run): ${stderr.trim() || `exit ${code}`}`)
+      else this.watch(r)
+    })
+  }
+
+  /** A child of the server: simplest, but dies when the server does. */
+  private launchDirect(r: LeadRun, args: string[], prompt: string) {
     let out = ''
     let err = ''
-    const child = spawn('claude', args, { cwd: this.cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn('claude', args, { cwd: this.cwd, env: process.env, stdio: ['pipe', 'pipe', 'pipe'] })
     this.child = child
-    child.stdout.on('data', (b) => (out = (out + b).slice(-200_000)))
+    child.stdin.end(prompt)
+    child.stdout.on('data', (b) => (out = (out + b).slice(-400_000)))
     child.stderr.on('data', (b) => (err = (err + b).slice(-20_000)))
-
-    const finish = (ok: boolean, reply: string) => {
-      if (this.running !== run) return
-      run.endedAt = Date.now()
-      run.ok = ok
-      run.reply = trim(reply, MAX_REPLY)
-      this.history = [run, ...this.history].slice(0, KEEP_HISTORY)
-      this.running = null
-      this.child = null
-      this.next()
-    }
-    child.on('error', (e) => finish(false, `Could not start claude: ${e.message}`))
+    child.on('error', (e) => this.finish(r, false, `Could not start claude: ${e.message}`))
     child.on('close', (code, signal) => {
-      let reply = ''
-      let ok = code === 0
-      try {
-        const j = JSON.parse(out)
-        reply = typeof j.result === 'string' ? j.result : ''
-        if (j.is_error) ok = false
-      } catch {
-        reply = out
-      }
-      if (signal) reply = `Stopped (${signal}). ${reply}`
-      if (!ok && !reply) reply = err || `claude exited with code ${code}`
-      finish(ok, reply || '(no reply)')
+      const { ok, reply } = parseResult(out, err, code === 0)
+      this.finish(r, ok && !signal, signal ? `Stopped (${signal}). ${reply}` : reply)
     })
   }
 }
