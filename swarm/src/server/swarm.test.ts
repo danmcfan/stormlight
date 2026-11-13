@@ -262,6 +262,29 @@ describe('resumed subagents', () => {
   })
 })
 
+describe('second completion of a resumed agent (real shapes)', () => {
+  const note = (id: string, tool: string) =>
+    `<task-notification>\n<task-id>${id}</task-id>\n<tool-use-id>${tool}</tool-use-id>\n<status>completed</status>\n</task-notification>`
+  it('the newest notification wins even though it carries a different tool-use id', () => {
+    const main = new AgentAcc('s1', null)
+    main.ingestLine(asst({ msgId: 'p1', at: 0, tools: [spawn('tuSpawn', 'one')] }))
+    const enq = (at: number, tool: string) =>
+      main.ingestLine(JSON.stringify({ type: 'queue-operation', operation: 'enqueue', timestamp: iso(at), content: note('aaa', tool) }))
+    const sub = new AgentAcc('s1', 'aaa')
+    sub.meta = { toolUseId: 'tuSpawn' }
+    sub.ingestLine(asst({ msgId: 'a1', at: 10 }))
+    enq(11, 'tuSpawn')
+    // Resumed through SendMessage: more work, a handback, then a second notification.
+    sub.ingestLine(asst({ msgId: 'a2', at: 100, tools: [{ id: 'q', name: 'Bash', input: { command: 'ls' } }] }))
+    sub.ingestLine(asst({ msgId: 'a3', at: 150, tools: [{ id: 'h', name: 'SubagentHandback', input: { message: 'x' } }] }))
+    sub.ingestLine(JSON.stringify({ type: 'user', timestamp: iso(150.2), message: { content: [{ type: 'tool_result', tool_use_id: 'h', content: 'ok' }] } }))
+    enq(150.3, 'tuSendMessage')
+    const a = buildSnapshot([{ id: 's1', main, subs: [sub], components: [] }], T0 + 400_000).agents.find((x) => x.id === 'aaa')!
+    expect(a.status).toBe('done')
+    expect(a.endedAt).toBe(T0 + 150_300)
+  })
+})
+
 describe('store (incremental reading)', () => {
   it('reads appended bytes only and handles a partial last line', () => {
     const root = mkdtempSync(join(tmpdir(), 'swarm-root-'))

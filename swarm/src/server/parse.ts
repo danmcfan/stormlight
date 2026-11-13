@@ -422,7 +422,12 @@ export function buildSnapshot(sessions: SessionInput[], now: number): SwarmSnaps
         // Completion is reported to the spawner: by tool_use id, or by agent id.
         const sources = parentAcc ? [parentAcc] : all
         for (const p of sources) {
-          completion = (toolUseId ? p.completions.get(toolUseId) : undefined) ?? (a.agentId ? p.completions.get(a.agentId) : undefined) ?? completion
+          // A resumed agent notifies again under the same task id but a different
+          // tool-use id (the resuming call's), so take the newest of all matches.
+          for (const key of [toolUseId, a.agentId]) {
+            const c = key ? p.completions.get(key) : undefined
+            if (c && (!completion || c.at > completion.at)) completion = c
+          }
         }
       }
       const age = now - a.lastActivityAt
