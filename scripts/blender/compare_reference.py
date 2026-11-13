@@ -446,7 +446,7 @@ def main():
             "profile": rows,
         }
         print(f"{name:12s} IoU {iou:.3f}  lines F {scores[name]['lines_f']}  trim F {scores[name]['trim_f']}"
-              f"  -> {out.relative_to(ROOT)}")
+              f"  -> {out.relative_to(ROOT) if out.is_relative_to(ROOT) else out}")
         for w in worst[:6]:
             print("     ", w["text"])
     json.dump(scores, open(scores_path, "w"), indent=1)
