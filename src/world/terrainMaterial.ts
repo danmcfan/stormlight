@@ -87,12 +87,12 @@ const COLOR = /* glsl */`#include <color_fragment>
   cliff *= 0.35 + 1.3 * det;
   cliff *= vTShade;
   // Block joints: short vertical cracks, staggered from one stratum to the next.
-  float ju = along / 2.6 + tHash(k * 3.71) * 17.0 + (tNoise(vec2(h * 1.3, k)) - 0.5) * 0.25;
+  float ju = along / 3.4 + tHash(k * 3.71) * 17.0 + (tNoise(vec2(h * 1.3, k)) - 0.5) * 0.25;
   float jc = floor(ju);
   float jd = abs(fract(ju) - 0.5);
   float jw = 0.045 + 0.6 * fwidth(ju);
-  float joint = step(0.45, tHash(jc * 1.91 + k * 7.3)) * (1.0 - smoothstep(jw * 0.5, jw, jd)) * smoothstep(0.03, 0.12, f) * smoothstep(0.03, 0.12, 1.0 - f);
-  cliff *= 1.0 - 0.6 * joint;
+  float joint = step(0.72, tHash(jc * 1.91 + k * 7.3)) * (1.0 - smoothstep(jw * 0.5, jw, jd)) * smoothstep(0.03, 0.12, f) * smoothstep(0.03, 0.12, 1.0 - f);
+  cliff *= 1.0 - 0.45 * joint;
   // Each stratum is lit along its upper edge and darker underneath.
   cliff *= 0.84 + 0.26 * smoothstep(0.0, 1.0, f);
   // Far off, a painter simplifies: the bands soften toward one warm rock colour.
