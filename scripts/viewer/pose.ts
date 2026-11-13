@@ -75,7 +75,8 @@ export function poseShardplate(
     const shx = s * S.SHOULDER.x;
     const shy = W + S.SHOULDER.y;
     // Arms: shoulder -> elbow -> wrist, each rotated by the accumulated angle.
-    put(`pauldron_${side}`, shx, shy, 0, s * a);
+    // The pauldron rides on the torso (humanoid.ts), so the arm's abduction doesn't turn it.
+    put(`pauldron_${side}`, shx, shy, 0);
     put(`upperarm_${side}`, shx, shy, 0, s * a);
     const ex = shx + s * Math.sin(a) * S.UPPER_ARM;
     const ey = shy - Math.cos(a) * S.UPPER_ARM;
