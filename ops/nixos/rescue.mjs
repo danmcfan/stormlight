@@ -236,7 +236,7 @@ const ACTIONS = {
     return r.stdout.trim().split('\n')[0]
   },
   restart: async () => {
-    const r = await run('sudo', ['-n', 'systemctl', 'restart', 'swarm-dev'])
+    const r = await run('sudo', ['-n', '/run/current-system/sw/bin/systemctl', 'restart', 'swarm-dev'])
     if (r.code !== 0) throw new Error(r.stderr.trim() || 'restart failed')
     return 'Dashboard restarted. Give it a few seconds.'
   },
