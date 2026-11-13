@@ -1,0 +1,18 @@
+{
+  "projectName": "swarm",
+  "mode": "file-router",
+  "bundler": "vite",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "npm",
+  "git": false,
+  "install": true,
+  "intent": true,
+  "addOnOptions": {},
+  "projectPreset": "default",
+  "routerOnly": false,
+  "includeExamples": true,
+  "version": 1,
+  "framework": "solid",
+  "chosenAddOns": []
+}
