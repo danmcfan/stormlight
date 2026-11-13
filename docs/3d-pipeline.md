@@ -54,6 +54,12 @@ Blender itself to inspect or hand-edit it.
    sprint, the enemy Shardbearer, the game camera) to `art/renders/ingame/`,
    gridded into `sheet.png`. About 20 s.
 
+   For a fast look at a single piece while iterating, `bun run view` opens the
+   model viewer (`scripts/viewer/`, see its README): it shades the GLB with the
+   game's materials and light, lists the pieces with triangle counts, isolates
+   one on click, and reloads when the build rewrites the file. `node
+   scripts/viewer/shot.mjs --piece helm` captures that view to a PNG.
+
 ## Conventions
 
 - **Units:** metres. **Axes:** Blender is Z-up; glTF export converts to Y-up
@@ -98,7 +104,7 @@ Blender itself to inspect or hand-edit it.
 | Model | Script | Reference | Notes |
 |---|---|---|---|
 | `shardblade.glb` | `build_shardblade.py` | `art/source/shardblade-side/nb21-v1` | Traced outline (shrunk by the bevel width so the finished silhouette matches), chamfered edges, two-hand grip, glowing sapphire, diamond boss at the hooks, etched fuller with abstract glyph strokes. 2.5 m overall. Side IoU 0.955 (was 0.897) |
-| `shardplate.glb` | `build_shardplate.py` (helpers in `plate_geom.py`) | `art/source/shardplate-front` (primary), `shardplate-side-back`, `shardplate-helm` (`nb21-v1`); part sheets `art/source/plate-*` | 24 rigid pieces, sized from the target table in `docs/models/shardplate.md`; trim paths placed from reference coordinates (`proj` / `ref_path`). Helm: round crown with a flush rib edged in trim that frames the faceplate to a V chin, S-curve cheek trim and rivets, faceted faceplate with a ridge, a dark eye slit (straight top, V bottom) with a thin glowing line. Wide flared collar open in a V over the dark padding. Barrel chest with a faceted sapphire, the reference's chest arc, abdomen and back trims. Belt with a V front, shield tassets, five rows of long ridged fauld leaves. Pauldrons: upright domes, arched flange (the "horn"), flat rondels, two curved lames. Vambraces, high elbow cop and disc, gauntlets with knuckles, three-plate fingers and a thumb closed round the grip (`GRIP_Y`, the game's `PLATE_HAND`). Knee cops with trim, greaves with a calf, sabatons with instep lames, rivets, toe cap, heel cup. Enemy-only `helm_crest`. ~24.9k triangles. IoU front 0.905, side 0.900, back 0.905, helm 0.965 / 0.966 (round 1: 0.876 / 0.888 / 0.884, 0.922 / 0.911) |
+| `shardplate.glb` | `build_shardplate.py` (helpers in `plate_geom.py`; helm and collar in `helm_collar.py`) | `art/source/shardplate-front` (primary), `shardplate-side-back`, `shardplate-helm` and `plate-helm-34` (helm, collar) (`nb21-v1`); part sheets `art/source/plate-*` | 24 rigid pieces, sized from the target table in `docs/models/shardplate.md`; trim paths placed from reference coordinates (`proj` / `ref_path`). Helm: a hull built through the helm sheet's front and side silhouettes, with the visor (prow, slit cut through, glow line), cheek plates, neck-guard lame, crown ridge and rivets lying on it as layers. Collar: a hull through the body references' silhouettes, rim and inset trim bands as bands of that one surface, open in a V at the front over the dark padding. Barrel chest with a faceted sapphire, the reference's chest arc, abdomen and back trims. Belt with a V front, shield tassets, five rows of long ridged fauld leaves. Pauldrons: upright domes, arched flange (the "horn"), flat rondels, two curved lames. Vambraces, high elbow cop and disc, gauntlets with knuckles, three-plate fingers and a thumb closed round the grip (`GRIP_Y`, the game's `PLATE_HAND`). Knee cops with trim, greaves with a calf, sabatons with instep lames, rivets, toe cap, heel cup. Enemy-only `helm_crest`. ~24.6k triangles. IoU front 0.902, side 0.893, back 0.887; helm 0.982 / 0.979 (round 1: 0.876 / 0.888 / 0.884, 0.922 / 0.911) |
 
 Per-model reference data (target sizes measured off the references) lives in
 `docs/models/`: read `docs/models/shardplate.md` before changing the Plate.
