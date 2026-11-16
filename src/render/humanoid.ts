@@ -209,8 +209,8 @@ export class HumanoidModel {
     };
     // Painted wear (platePaint.ts): worn edges brighten toward polished steel (bronze on the
     // enemy), orange plateau dust sits in the seams.
-    // The generated Plate (?plate=tripo) carries its paint in one textured material: a copy per
-    // fighter for the hit flash, tinted toward bronze on the enemy.
+    // The generated Plate (?plate=tripo) is one skinned mesh carrying its paint in one textured
+    // material: a copy per fighter for the hit flash, tinted toward bronze on the enemy.
     let tripo: THREE.MeshStandardMaterial | undefined;
     const tripoFor = (src: THREE.MeshStandardMaterial) => {
       if (!tripo) {
@@ -221,8 +221,7 @@ export class HumanoidModel {
         // Its paint is darker than the scripted Plate's slate; lift it to match.
         tripo.color.setScalar(1.8);
         if (enemy) tripo.color.multiply(new THREE.Color('#d9b08a'));
-        // Cutting the shell into pieces leaves open edges at the joints: draw the inside dark
-        // rather than seeing through it.
+        // Where a joint stretches the shell thin, show its inside rather than seeing through it.
         tripo.side = THREE.DoubleSide;
         this.mats.push({ mat: tripo, emissive: tripo.emissive.clone(), intensity: tripo.emissiveIntensity });
       }
@@ -230,6 +229,7 @@ export class HumanoidModel {
     };
     const mask = model.userData.paintMask as THREE.Texture | undefined;
     if (mask) paintPlate(mats.plate, mask, enemy ? { worn: '#b89a6e', dust: '#7c4a2a' } : { worn: '#c9d1d8', dust: '#8f6a4c' });
+    const nodes: Record<string, THREE.Object3D> = {};
     const piece = (name: string, parent: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Object3D => {
       const src = model.getObjectByName(name);
       if (!src) throw new Error(`shardplate.glb has no piece "${name}"`);
@@ -243,6 +243,7 @@ export class HumanoidModel {
         if (name === 'glow') m.userData.noShadow = true;
       });
       parent.add(o);
+      nodes[name] = o;
       return o;
     };
 
@@ -275,7 +276,35 @@ export class HumanoidModel {
     this.torso.add(helm);
     piece('helm', helm);
     if (enemy) piece('helm_crest', helm);
+    const skin = model.getObjectByName('tripo_body') as THREE.SkinnedMesh | undefined;
+    if (skin?.isSkinnedMesh) this.bindPlateSkin(skin, tripoFor(skin.material as THREE.MeshStandardMaterial), nodes);
     return mats.plate_dark;
+  }
+
+  /**
+   * Skin the generated Plate to the pieces' animated nodes, so it moves exactly as the rigid
+   * pieces would but bends over the joints instead of splitting. Its vertices are in body space
+   * in the reference pose (build_tripo_plate.py); `refFrames` gives each bone's joint position and
+   * roll about +Z in that pose, and the inverse of that frame is the bone's bind inverse.
+   */
+  private bindPlateSkin(src: THREE.SkinnedMesh, mat: THREE.Material, nodes: Record<string, THREE.Object3D>): void {
+    const frames = JSON.parse(src.userData.refFrames as string) as Record<string, [number, number, number, number]>;
+    const bones: THREE.Object3D[] = [];
+    const inverses: THREE.Matrix4[] = [];
+    for (const b of src.skeleton.bones) {
+      const name = b.name.replace(/^b_/, '');
+      const node = nodes[name];
+      const frame = frames[name];
+      if (!node || !frame) throw new Error(`plate skin: no node or frame for bone "${b.name}"`);
+      const [x, y, z, roll] = frame;
+      bones.push(node);
+      inverses.push(new THREE.Matrix4().makeRotationZ(roll).setPosition(x, y, z).invert());
+    }
+    const mesh = new THREE.SkinnedMesh(src.geometry, mat);
+    mesh.frustumCulled = false; // its bounds move with the bones
+    this.root.add(mesh);
+    // Attached bind with an identity bind matrix: world = sum(weight * node world * inverse) * vertex.
+    mesh.bind(new THREE.Skeleton(bones as THREE.Bone[], inverses), new THREE.Matrix4());
   }
 
   private buildPlate(variant: number): void {

@@ -16,6 +16,7 @@ skinning. Pieces with nothing of their own (gorget, abdomen, helm_crest) are emp
   .venv-blender/bin/python scripts/blender/build_tripo_plate.py [--tris 40000] [--tex 2048] [--no-bake]
 """
 import argparse
+import json
 import math
 import sys
 
@@ -34,6 +35,7 @@ ap.add_argument("--src", default="art/source/shardbearer-tripo/tripo-h31-v2/shar
 ap.add_argument("--tris", type=int, default=40000)
 ap.add_argument("--tex", type=int, default=2048)
 ap.add_argument("--no-bake", action="store_true")
+ap.add_argument("--blend", type=int, default=3, help="joint blend width, in edge rings")
 args = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 
 OUT = ROOT / "public/models/shardplate-tripo.glb"
@@ -225,62 +227,122 @@ if not args.no_bake:
     print("baked normal map")
 bpy.data.objects.remove(hi)
 
-# --- Cut into pieces ----------------------------------------------------------------------
+# --- Skin weights: one bone per region, blended over a few centimetres at each joint -------
 me = lo.data
-cent = np.array([(p.center.x, p.center.z, -p.center.y) for p in me.polygons])
-labels = classify(cent)
-pieces = []
-for name in sorted(set(labels)):
-    o = lo.copy()
-    o.data = me.copy()
-    o.name = o.data.name = name
-    bpy.context.collection.objects.link(o)
-    bm = bmesh.new()
-    bm.from_mesh(o.data)
-    bm.faces.ensure_lookup_table()
-    bmesh.ops.delete(bm, geom=[f for f, lab in zip(bm.faces, labels) if lab != name], context="FACES")
-    bm.to_mesh(o.data)
-    bm.free()
-    pos, roll = JOINTS[name]
-    posed = Matrix.Translation(game_to_blender(pos)) @ Matrix.Rotation(-roll, 4, "Y")
-    o.data.transform(posed.inverted())
-    pieces.append(o)
-    print(f"  {name:12s} {len(o.data.polygons):6d} faces")
-missing = sorted(set(JOINTS) - set(labels))
-bpy.data.objects.remove(lo)
-for name in list(EMPTY) + missing:
-    e = bpy.data.objects.new(name, None)
+# The glTF import splits vertices along every UV seam; weld them so the surface is connected
+# (UVs are per face corner in Blender, so the seams survive).
+bm = bmesh.new()
+bm.from_mesh(me)
+nb = len(bm.verts)
+bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+print(f"welded {nb} -> {len(bm.verts)} vertices")
+bm.to_mesh(me)
+bm.free()
+nv = len(me.vertices)
+co = np.empty(nv * 3)
+me.vertices.foreach_get("co", co)
+co = co.reshape(-1, 3)
+vpos = np.stack([co[:, 0], co[:, 2], -co[:, 1]], axis=1)   # -> game space
+labels = classify(vpos)
+bones = sorted(set(labels))
+idx = {b: i for i, b in enumerate(bones)}
+lab = np.array([idx[x] for x in labels])
+ev = np.empty(len(me.edges) * 2, dtype=np.int64)
+me.edges.foreach_get("vertices", ev)
+ev = ev.reshape(-1, 2)
+
+# Small loose shells (a fauld leaf, a rivet) move as one: they take their majority bone.
+parent = np.arange(nv)
+
+
+def find(a):
+    while parent[a] != a:
+        parent[a] = parent[parent[a]]
+        a = parent[a]
+    return a
+
+
+for a, b in ev:
+    ra, rb = find(a), find(b)
+    if ra != rb:
+        parent[ra] = rb
+roots = np.array([find(v) for v in range(nv)])
+shells = 0
+for r in np.unique(roots):
+    members = np.where(roots == r)[0]
+    if len(members) < 0.04 * nv:
+        lab[members] = np.bincount(lab[members]).argmax()
+        shells += 1
+W = np.zeros((nv, len(bones)))
+W[np.arange(nv), lab] = 1.0
+# Diffuse the one-hot weights along the surface: each pass spreads a joint by about one edge.
+deg_ = np.bincount(ev.ravel(), minlength=nv).astype(float)
+for _ in range(args.blend):
+    acc = W.copy()
+    np.add.at(acc, ev[:, 0], W[ev[:, 1]])
+    np.add.at(acc, ev[:, 1], W[ev[:, 0]])
+    W = acc / (1.0 + deg_)[:, None]
+top = np.argsort(-W, axis=1)[:, :4]
+tw = np.take_along_axis(W, top, axis=1)
+tw[tw < 0.02] = 0
+tw /= tw.sum(axis=1, keepdims=True)
+print(f"weights: {len(bones)} bones, {shells} small shells made rigid, "
+      f"{(tw[:, 1] > 0.05).mean():.0%} of vertices blended")
+
+# Armature: one unparented bone per piece at its joint. The game ignores the bones' own
+# transforms: it binds the skin to its animated groups using the reference frames below.
+arm = bpy.data.objects.new("tripo_rig", bpy.data.armatures.new("tripo_rig"))
+bpy.context.collection.objects.link(arm)
+bpy.context.view_layer.objects.active = arm
+bpy.ops.object.select_all(action="DESELECT")
+arm.select_set(True)
+bpy.ops.object.mode_set(mode="EDIT")
+for b in bones:
+    eb = arm.data.edit_bones.new(f"b_{b}")
+    head = game_to_blender(JOINTS[b][0])
+    eb.head = head
+    eb.tail = head + Vector((0, 0, 0.1))
+bpy.ops.object.mode_set(mode="OBJECT")
+lo.name = lo.data.name = "tripo_body"
+for bi, b in enumerate(bones):
+    vg = lo.vertex_groups.new(name=f"b_{b}")
+    for k in range(4):
+        sel = np.where((top[:, k] == bi) & (tw[:, k] > 0))[0]
+        for v, w in zip(sel.tolist(), tw[sel, k].tolist()):
+            vg.add([v], w, "REPLACE")
+lo.parent = arm
+mod = lo.modifiers.new("rig", "ARMATURE")
+mod.object = arm
+# Each bone's frame in the reference pose the mesh is in: joint position and roll about +Z
+# (game space). The game's bone inverse is the inverse of this frame.
+lo["refFrames"] = json.dumps({b: [*map(float, JOINTS[b][0]), float(JOINTS[b][1])] for b in bones})
+pieces = [arm, lo]
+for name in sorted(set(JOINTS) | set(EMPTY)):
+    e = bpy.data.objects.new(name, None)   # the animated nodes the game parents and moves
     bpy.context.collection.objects.link(e)
     pieces.append(e)
-if missing:
-    print("no faces, exported empty:", missing)
 
 # --- Export -----------------------------------------------------------------------------
 OUT.parent.mkdir(parents=True, exist_ok=True)
 bpy.ops.object.select_all(action="DESELECT")
 for o in pieces:
     o.select_set(True)
-bpy.ops.export_scene.gltf(filepath=str(OUT), export_format="GLB", use_selection=True, export_apply=True,
+bpy.ops.export_scene.gltf(filepath=str(OUT), export_format="GLB", use_selection=True, export_apply=False,
                           export_yup=True, export_materials="EXPORT", export_image_format="JPEG",
-                          export_jpeg_quality=88)
+                          export_jpeg_quality=88, export_skins=True, export_extras=True,
+                          export_animations=False)
 print(f"exported {OUT.relative_to(ROOT)} ({OUT.stat().st_size // 1024} KB)")
 
-# --- Check: the pieces coloured by name, re-posed, front and side -------------------------
+# --- Check: each vertex coloured by its main bone, front and side -------------------------
 RENDERS.mkdir(parents=True, exist_ok=True)
-rng = np.random.default_rng(3)
-for o in pieces:
-    if o.type != "MESH":
-        continue
-    pos, roll = JOINTS[o.name]
-    o.location = game_to_blender(pos)
-    o.rotation_euler = (0, -roll, 0)
-    m = bpy.data.materials.new(f"dbg_{o.name}")
-    m.diffuse_color = (*rng.uniform(0.15, 0.95, 3), 1)
-    o.data.materials.clear()
-    o.data.materials.append(m)
+pal = np.random.default_rng(3).uniform(0.15, 0.95, (len(bones), 3))
+col = np.concatenate([(pal[top[:, 0]] * tw[:, :1] + pal[top[:, 1]] * tw[:, 1:2]), np.ones((nv, 1))], axis=1)
+ca = me.color_attributes.new("bone", "FLOAT_COLOR", "POINT")
+ca.data.foreach_set("color", col.ravel())
+lo.modifiers.remove(mod)
 s = bpy.context.scene
 s.render.engine = "BLENDER_WORKBENCH"
-s.display.shading.color_type = "MATERIAL"
+s.display.shading.color_type = "VERTEX"
 s.render.resolution_x, s.render.resolution_y = 700, 900
 cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
 s.collection.objects.link(cam)
@@ -289,6 +351,6 @@ cam.data.type = "ORTHO"
 cam.data.ortho_scale = 2.6
 for view, loc, rot in (("front", (0, -6, 1.2), (deg(90), 0, 0)), ("side", (6, 0, 1.2), (deg(90), 0, deg(90)))):
     cam.location, cam.rotation_euler = loc, rot
-    s.render.filepath = str(RENDERS / f"build-pieces-{view}.png")
+    s.render.filepath = str(RENDERS / f"build-weights-{view}.png")
     bpy.ops.render.render(write_still=True)
-print("renders: art/renders/tripo/build-pieces-{front,side}.png")
+print("renders: art/renders/tripo/build-weights-{front,side}.png")

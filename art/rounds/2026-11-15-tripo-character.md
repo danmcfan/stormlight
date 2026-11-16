@@ -7,13 +7,14 @@ References: `art/source/shardplate-front`, `shardplate-side-back` (`nb21-v1`).
 Owner files: `scripts/blender/build_tripo_plate.py`, `public/models/shardplate-tripo.glb` (new);
 `src/render/assets.ts` (the `?plate=tripo` switch) and `src/render/humanoid.ts` (`buildModelledPlate`:
 the `tripo` material only). The scripted Plate stays the default.
-Caps: one test, then check in. Paid: 2 runs, $1.20 (est.), both approved.
+Caps: one test, then check in; round 2 (skinning) asked for by the user ("Yes, skin it"). Paid: 2 runs, $1.20 (est.), both approved.
 Baseline: commit `86d3cae`, the scripted Plate.
 
 ## Decisions
 - No paid rigging or generated animation: `moves.ts` keyframes drive both the swing and the hit
   capsule, so the generated mesh is cut into the scripted Plate's pieces (same names, same joint
-  origins) and the procedural animation drives it unchanged. Rigid, no skinning.
+  origins) and the procedural animation drives it unchanged. Rigid pieces in round 1; in round
+  2, one skin bound to those same animated nodes.
 - The mesh is fitted to the scripted Plate in compare_reference's pose (arms 45, elbows -37, legs
   5), where the references, the scripted Plate and the skeleton agree; each face goes to the
   nearest posed bone capsule, with rules for the fauld (between the legs), tassets (outer thigh
@@ -47,3 +48,26 @@ Verdict against the proposal's bar (judge prefers it in game 2/3, no tearing): n
 Next, if continued (free): give the upper arm's top to the pauldron and drop small islands per
 piece; close each piece's open cut with a cap; lift the gloves; an emissive mask for the gem and
 visor. Then rejudge. | Stop: yes, the cap is one test.
+
+## Round 2: skinned to the game skeleton
+Focus: the tearing all three judges named, because the cut pieces split at every joint.
+Changed: `build_tripo_plate.py` no longer cuts. It welds the vertices the glTF import split along
+UV seams (31,640 -> 29,418), labels each vertex by nearest posed bone, makes small loose shells
+(fauld leaves, rivets) follow one bone, diffuses the weights three edge rings across each joint
+(24% of vertices blend), and exports one skinned mesh plus empty nodes named for the pieces and
+each bone's reference-pose frame (`refFrames`). `humanoid.ts` (`bindPlateSkin`) binds that skin to
+the pieces' animated nodes with each frame's inverse as the bind inverse, so the procedural
+animation, the fauld and tasset swing and the pauldron follow drive it unchanged.
+Renders: `art/renders/tripo/ingame-skinned/sheet.png` against `ingame-scripted/sheet.png`;
+weights by bone `art/renders/tripo/build-weights.png`; phone `iphone-landscape-skinned.png`.
+In game: no errors on desktop or the emulated iPhone 15 Pro landscape; touch controls visible.
+3.0 MB GLB. `npm test` 75/75.
+Judge (3 blind A/B runs, sides shuffled): overall Tripo 1/3 (was 0/3); closer to the reference
+3/3 again. Idle front, guard, enemy and game camera now mostly go to Tripo; idle side, heavy and
+sprint still go to the scripted Plate. Tripo defects 3/3: the shoulder and armpit still tear and
+shard in the big arm swings (side, heavy, sprint), where the arm turns furthest from the
+reference pose's 45 degrees; the fauld leaves stretch into shards in the sprint. 2/3: glossy
+finish with dark blotches, near-black gloves.
+Next: generate the references and the mesh arms-down (the game's rest pose), so the shoulder
+blends a small turn instead of 45 degrees; weight the fauld leaves to the fauld nodes only, no
+blend to the thighs; a matte finish and lighter gloves. | Stop: yes, check in with the user.
