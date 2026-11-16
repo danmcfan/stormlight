@@ -309,7 +309,7 @@ def leaf_rows(p, rows, back=False, radius=0.32):
         # Scales, not spikes: thick enough to read, with a centre ridge and a gothic-arch tip drawn
         # with enough rows to be a curve. (20% wider closed the columns up but cost the front view
         # 0.013 of lines F, so they keep the widths read off the reference.)
-        leaf(p, "plate", w, ln, 0.022, fr, nu=2, nv=6, bulge=0.016, ogive=True)
+        leaf(p, "plate", w, ln, 0.022, fr, nu=2, nv=6, bulge=0.012, ogive=True)
 
 
 def build_fauld():
@@ -330,9 +330,9 @@ def build_fauld():
     # World z of a leaf's top edge and of its tip, less the piece origin (FAULD_FRONT_Z is
     # +0.30, FAULD_BACK_Z -0.26). Both pieces measure best with a band about 0.09 m deep.
     fz = 0.29 - FAULD_FRONT_Z
-    fo = 0.38 - FAULD_FRONT_Z
+    fo = 0.35 - FAULD_FRONT_Z
     bz = -(-0.23 - FAULD_BACK_Z)
-    bo = -(-0.31 - FAULD_BACK_Z)
+    bo = -(-0.28 - FAULD_BACK_Z)
 
     def rows(z0, out, tips, tucked=()):
         """(x, width, length, top y, tilt, z) with the tilt solved from the tip's stand-off.
