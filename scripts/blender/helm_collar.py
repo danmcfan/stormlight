@@ -628,7 +628,8 @@ def helm_hull():
                    [2.0, 1.75, 1.5, 1.38, 1.33, 1.42, 1.48, 1.45, 1.38, 1.3, 1.23, 1.21])
     pb = np.interp(py, [160, 250], [2.0, 2.15])
     ys = np.append(fy(py), HELM_TOP - RIDGE_T)
-    rx = np.append((a[:, 1] - side_t) * MPP, 0.0)
+    flare = np.where(py < 500, 2.0, np.where(py >= 290, -2.0, 0.0))  # jaw corners out; crown slightly in
+    rx = np.append((a[:, 1] - side_t + flare) * MPP, 0.0)
     zf = np.append(sz(a[:, 2] + front_t), cz[0])
     zb = np.append(sz(a[:, 3] - back_t), cz[0])
     return Hull(ys, rx, zf, zb, np.append(cz, cz[0]), np.append(pf, 2.0), np.append(pb, 2.0))
@@ -715,7 +716,7 @@ def make_helm(enemy_crest=False):
         return q, (yb, a)
 
     # Slit (front view of the sheet): nearly straight top edge sagging to the centre, lower edge a V.
-    W1, W2 = 120 * MPP, 112 * MPP                  # half-width of the rim and of the dark opening
+    W1, W2 = 122 * MPP, 118 * MPP                  # half-width of the rim and of the dark opening
     top1 = lambda x: float(fy(355 + 21 * (1 - abs(x) / W1)))      # noqa: E731
     bot1 = lambda x: float(fy(387 + 37 * (1 - abs(x) / W1)))      # noqa: E731
     top2 = lambda x: float(fy(359 + 17 * (1 - abs(x) / W2)))      # noqa: E731
@@ -729,7 +730,7 @@ def make_helm(enemy_crest=False):
         return pts
     r0 = slit_loop(W1, top1, bot1, grow=0.006)                    # where the raised rim starts
     r1 = slit_loop(W1, top1, bot1, lift=0.0025)                   # the rim's crest = the opening's edge
-    r2 = slit_loop(W2, top2, bot2, depth=0.022)                   # the back of the recess
+    r2 = slit_loop(W2, top2, bot2, depth=0.030)                   # the back of the recess
     ridge = [(y, 0.0) for y in np.linspace(r0[NS + NS // 2][1][0] - 0.012, helm_bottom(0) + 0.012, 5)]
     brow = [(y, a) for y in np.arange(r0[NS // 2][1][0] + 0.02, apex_y - 0.03, 0.03) for a in (-0.09, 0.09)]
     visor.build(p, trims=[(0, m - 1), (m + len(bottom), 2 * m + len(bottom) - 1)], band=HELM_BAND,
@@ -742,11 +743,11 @@ def make_helm(enemy_crest=False):
     p.strip([q[0] for q in r1], [q[0] for q in r2], "plate_dark", ref=mid, closed=True)
     back = [q[0] for q in r2]
     p.put(back, [(i, i + 1, 2 * NS - 2 - i, 2 * NS - 1 - i) for i in range(NS - 1)], "plate_dark", (0, 0, 1))
-    # A thin line of Stormlight deep in the slit, well clear of the back so it cannot z-fight.
-    gx = np.linspace(-0.06, 0.06, 9)
+    # Stormlight only deep in the slot; keep it off the opening plane so the slit reads black.
     gy = lambda x: 0.5 * (top2(x) + bot2(x)) - 0.003               # noqa: E731
-    p.strip([vis(x, gy(x) + 0.0011, depth=0.0165)[0] for x in gx],
-            [vis(x, gy(x) - 0.0011, depth=0.0165)[0] for x in gx], "glow", (0, 0, 1))
+    gx = np.linspace(-0.045, 0.045, 7)
+    p.strip([vis(x, gy(x) + 0.0005, depth=0.024)[0] for x in gx],
+            [vis(x, gy(x) - 0.0005, depth=0.024)[0] for x in gx], "glow", (0, 0, 1))
 
     # --- Cheek plates: behind the visor's lower edge, back to the ear, down to the jaw ---
     kp = max((i for i in range(m) if A[i][0] < 0.15), key=lambda i: A[i][1])      # the pivot's lower corner
@@ -767,7 +768,7 @@ def make_helm(enemy_crest=False):
     a0 = B.locate(0.07, LAME_T, z=sz(LAME_TOP[0][0]))[1]
     zt, yt = sz([q[0] for q in LAME_TOP])[::-1], fy([q[1] for q in LAME_TOP])[::-1]
     zb_, yb_ = sz([q[0] for q in LAME_BOT])[::-1], fy([q[1] for q in LAME_BOT])[::-1]
-    ang = np.linspace(a0, TAU - a0, 21)
+    ang = np.linspace(a0, TAU - a0, 25)
     zs = [B.base(0.08, a)[2] for a in ang]
     lame_top = [(float(np.interp(z, zt, yt)), a) for z, a in zip(zs, ang)]
     lame_bot = [(float(np.interp(z, zb_, yb_)), a) for z, a in zip(zs, ang)]
@@ -829,13 +830,13 @@ def make_helm(enemy_crest=False):
             dome(p, "plate", B.point(y, sgn * a, off), B.normal(y, sgn * a), r)
 
     # --- Padded collar under the helm (dark): fills the gap down to the gorget ---
-    pad = Hull([-0.058, 0.008, 0.018, 0.028, 0.037, 0.06, 0.10],
-               [0.170, 0.172, 0.168, 0.155, 0.143, 0.130, 0.118],
-               [0.190, 0.200, 0.200, 0.200, 0.200, 0.196, 0.19],
-               [-0.100, -0.100, -0.099, -0.095, -0.074, -0.056, -0.045],
-               [0.04] * 7, [1.05] * 7, [2.0] * 7)
-    hull_grid(p, pad, [0.065, 0.037, 0.028, 0.014, -0.055], 16, "plate_dark", cap="bottom",
-              ref=lambda c: np.array([c[0], 0.05, c[2] - 0.04]) if c[1] > -0.0549 else np.array([0.0, -1.0, 0.0]))
+    pad = Hull([-0.072, -0.058, 0.008, 0.018, 0.028, 0.037, 0.06, 0.10],
+               [0.172, 0.170, 0.172, 0.168, 0.155, 0.143, 0.130, 0.118],
+               [0.192, 0.190, 0.200, 0.200, 0.200, 0.200, 0.196, 0.19],
+               [-0.102, -0.100, -0.100, -0.099, -0.095, -0.074, -0.056, -0.045],
+               [0.04] * 8, [1.05] * 8, [2.0] * 8)
+    hull_grid(p, pad, [0.065, 0.037, 0.028, 0.014, -0.055, -0.068], 16, "plate_dark", cap="bottom",
+              ref=lambda c: np.array([c[0], 0.05, c[2] - 0.04]) if c[1] > -0.067 else np.array([0.0, -1.0, 0.0]))
     # The helm's underside, from its lower edge in to the padding.
     inner = [pad.point(min(helm_bottom(TAU * j / NC) + 0.016, 0.09), TAU * j / NC) for j in range(NC)]
     p.strip(rim, inner, "plate_dark", (0, -1, 0), closed=True)
@@ -953,13 +954,20 @@ def make_gorget():
 
     # Dark padded neck inside the collar (shows in the V, and under the helm). It starts at the
     # raised base now, so it fills the V without poking through the breastplate.
-    pad = Hull([y_lo - 0.02, 2.00 - GORGET_Y0, 2.10 - GORGET_Y0, y_hi + 0.02],
-               [0.150, 0.150, 0.148, 0.140],
-               [0.210, 0.210, 0.205, 0.200],
-               [-0.145, -0.145, -0.140, -0.135],
-               [0.04] * 4, [1.9] * 4, [1.9] * 4)
-    hull_grid(p, pad, [y_hi + 0.02, 2.10 - GORGET_Y0, 2.00 - GORGET_Y0, y_lo - 0.02], 18,
+    pad = Hull([y_lo - 0.02, 2.00 - GORGET_Y0, 2.10 - GORGET_Y0, y_hi + 0.04, y_hi + 0.07],
+               [0.150, 0.150, 0.148, 0.142, 0.138],
+               [0.210, 0.210, 0.205, 0.198, 0.195],
+               [-0.145, -0.145, -0.140, -0.133, -0.130],
+               [0.04] * 5, [1.9] * 5, [1.9] * 5)
+    hull_grid(p, pad, [y_hi + 0.07, y_hi + 0.04, 2.10 - GORGET_Y0, 2.00 - GORGET_Y0, y_lo - 0.02], 20,
               "plate_dark", cap="bottom")
+    # Dark neck between helm and collar (plate-helm-34): fills the opening with gambeson, not empty space.
+    gap = Hull([y_hi - 0.055, y_hi - 0.015, y_hi + 0.02],
+               [0.134, 0.138, 0.140],
+               [0.198, 0.200, 0.198],
+               [-0.128, -0.130, -0.128],
+               [0.038, 0.040, 0.042], [1.35, 1.35, 1.35], [1.85, 1.85, 1.85])
+    hull_grid(p, gap, [y_hi + 0.02, y_hi - 0.015, y_hi - 0.055], 18, "plate_dark", phi0=0.0)
     return p
 
 

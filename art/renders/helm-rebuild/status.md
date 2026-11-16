@@ -1,8 +1,9 @@
-# Helm and collar rebuild: status
+# Helm and collar rebuild: status (agent 8673)
 
-- 00:17 Done so far: baseline saved (00-before: comparison sheets, close-ups, sheet.png, log.md). Measured the helm sheet: front/side silhouettes every 10 px (helm 0.31 m wide, 0.42 m tall, 0.37 m deep; prow juts 0.5 cm past the brow, slit notch 2 cm deep), traced the blue trim centrelines in both views, slit outline (0.20 m wide, top edge sags 1.5 cm, lower edge V dips 2.3 cm, 2.6-3.3 cm tall), rivets, cheek plate and neck-guard lame edges. Finding: front and side trim agree only if the helm's front is a rounded wedge in plan (superellipse exponent ~1.2-1.45, widest point 4 cm ahead of the joint), i.e. an armet with a prow visor.
-- 00:17 Wrote scripts/blender/helm_collar.py part 1: Hull (sections through the measured silhouettes), plate regions triangulated on the hull with flush trim bands, explicit face winding (the game culls back faces). Next: build_helm from the tables (skull, visor + slit, cheeks, lame, crown ridge, rivets), first build and progress render, then the collar.
-- 00:21 Hull class and helm tables in place; smoke-testing the hull, then the helm parts.
-- 00:22 First build of the new helm ran: 2077 triangles (visor with slit hole, cheeks, lame, crown ridge, rivets, dark pad). Rendering progress 001.
-- 00:24 Progress 001: shape reads right (prow, slit, lame). helm-front IoU 0.981 / lines 0.94 / trim 0.995, helm-side 0.979 / 0.83 / 0.85. Bug: plate edge offset to the wrong side of the trim line, band half hidden; fixed the sign, thinner glow line. Rebuilding.
-- 00:26 Found the real cause of the broken trim: band offset used the wrong handedness (bands were laid outside the plate edge, under the cheek). Fixed band and edge-wall direction, pad winding, ridge end tucked under the visor. Rebuilt.
+- Picked up the paused `helm_collar.py` rebuild: hull helm is live in `public/models/shardplate.glb`.
+- Baseline `before-8673`: helm-front 0.982 / 0.971 / 0.998, helm-side 0.979 / 0.902 / 0.983.
+- Pass `after3-8673`: helm-front 0.981 / 0.977 / 0.998, helm-side 0.979 / 0.899 / 0.952; helm 2185 tris, gorget 1212 tris; total ~35.0k.
+- Changes: deeper/wider visor recess, glow pushed back; crown/jaw silhouette nudge; helm pad extended; gorget inner neck + gambeson band under the helm opening (plate-helm-34).
+- Renders: `art/renders/head/pair-8673.png`, `art/renders/compare/helm-*-after3-8673.png`, `art/renders/ingame/idle-{front,side}.png`.
+- Judge (3× intersection): side view still shows a metal gap between helm lame and gorget rim (references disagree on how wide the dark neck reads; plate-helm-34 wants visible gambeson). Visor Stormlight still catches sun at gameplay angles.
+- Body plate trim unchanged (side trim F still ~0.48); next round per original brief.
