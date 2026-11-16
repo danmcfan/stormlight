@@ -17,6 +17,8 @@ fi
 
 mkdir -p ~/.config/systemd/user
 install -m 0644 "$here/claude-rc.service" ~/.config/systemd/user/claude-rc.service
+mkdir -p ~/code
+install -m 0644 "$here/home-CLAUDE.md" ~/code/CLAUDE.md
 systemctl --user daemon-reload
 systemctl --user enable --now claude-rc.service
 systemctl --user restart claude-rc.service

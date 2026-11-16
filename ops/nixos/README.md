@@ -1,7 +1,7 @@
 # Agent box on NixOS (Hostinger KVM VPS)
 
 One small box (2 vCPU, 7.8 GB) that runs Claude Code and Cursor CLI as
-`agent`, in `/home/agent/stormlight`, reachable only over Tailscale.
+`agent`, in `/home/agent/code`, reachable only over Tailscale.
 
 It has two layers:
 
@@ -88,14 +88,14 @@ keys, stateVersion, boot), `hardware-configuration.nix` (generated on the box).
 7. **Set up the agent** over the tailnet:
    ```sh
    ssh agent@agent-box
-   git clone https://github.com/danmcfan/stormlight.git ~/stormlight
-   ~/stormlight/ops/agent-home/setup.sh      # installs Claude Code + Cursor CLI
+   git clone https://github.com/danmcfan/stormlight.git ~/code/stormlight
+   ~/code/stormlight/ops/agent-home/setup.sh      # installs Claude Code + Cursor CLI
    claude                                    # log in once, then /exit
    cursor-agent login
    gh auth login
    ```
    The first `claude remote-control` asks to enable Remote Control; run it
-   once by hand in `~/stormlight` and answer `y`, then
+   once by hand in `~/code` and answer `y`, then
    `systemctl --user restart claude-rc`.
 8. **Outer firewall (optional).** hPanel > VPS > Security > Firewall. It
    needs at least one rule to activate; add UDP 41641 from anywhere

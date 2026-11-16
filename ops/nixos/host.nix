@@ -53,6 +53,9 @@
     settings.datasource_list = [ "NoCloud" "ConfigDrive" ];
     # Its helper isn't shipped in NixOS's cloud-init; avoids a "degraded" exit.
     settings.ssh.emit_keys_to_console = false;
+    # Otherwise it sets the template's "nixos" as the hostname at every boot,
+    # over networking.hostName.
+    settings.preserve_hostname = true;
   };
   networking.useNetworkd = true;
   networking.useDHCP = lib.mkForce false;
