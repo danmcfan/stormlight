@@ -16,3 +16,7 @@ art/renders/compare/scores-helm[0-9][0-9]*
 art/renders/helm-rebuild/status.md
 art/renders/helm-rebuild/progress/
 art/renders/compare/.tmp/
+
+# Raw Tripo meshes (68 MB each): kept local, since the deploy pulls every LFS file. The game
+# model built from them is public/models/shardplate-tripo.glb.
+art/source/shardbearer-tripo/**/*.glb

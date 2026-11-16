@@ -33,10 +33,16 @@ async function load(loader: GLTFLoader, file: string): Promise<THREE.Object3D> {
   return gltf.scene;
 }
 
+/**
+ * `?plate=tripo` swaps in the generated Plate under test (scripts/blender/build_tripo_plate.py):
+ * the same rigid pieces, one textured material named `tripo`.
+ */
+const plateFile = new URLSearchParams(location.search).get('plate') === 'tripo' ? 'shardplate-tripo.glb' : 'shardplate.glb';
+
 export async function loadModels(): Promise<Models> {
   const loader = new GLTFLoader();
   const [shardblade, shardplate, plainsProps, terrainDetail, plateMask] = await Promise.all([
-    load(loader, 'shardblade.glb'), load(loader, 'shardplate.glb'), load(loader, 'plains-props.glb'),
+    load(loader, 'shardblade.glb'), load(loader, plateFile), load(loader, 'plains-props.glb'),
     new THREE.TextureLoader().loadAsync(textureUrl('terrain-detail.jpg')),
     new THREE.TextureLoader().loadAsync(url('shardplate-mask.jpg')),
   ]);

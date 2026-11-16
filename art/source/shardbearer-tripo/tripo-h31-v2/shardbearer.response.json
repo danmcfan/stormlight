@@ -1,0 +1,31 @@
+{
+ "model_mesh": {
+  "url": "https://v3b.fal.media/files/b/0ab2aa0d/jO8qonRqVp-t8AIZ7iWPH_model.glb",
+  "content_type": "model/gltf-binary",
+  "file_name": "model.glb",
+  "file_size": 67029736
+ },
+ "model_urls": {
+  "glb": {
+   "url": "https://v3b.fal.media/files/b/0ab2aa0d/jO8qonRqVp-t8AIZ7iWPH_model.glb",
+   "content_type": "model/gltf-binary",
+   "file_name": "model.glb",
+   "file_size": 67029736
+  },
+  "fbx": null,
+  "base_model": null,
+  "pbr_model": {
+   "url": "https://v3b.fal.media/files/b/0ab2aa0d/jO8qonRqVp-t8AIZ7iWPH_model.glb",
+   "content_type": "model/gltf-binary",
+   "file_name": "model.glb",
+   "file_size": 67029736
+  }
+ },
+ "rendered_image": {
+  "url": "https://v3b.fal.media/files/b/0ab2aa0e/pU1cf5Du_l61XvYuGIR1M_preview.png",
+  "content_type": "image/png",
+  "file_name": "preview.png",
+  "file_size": 160180
+ },
+ "task_id": "54facbff-47ff-432a-a3b1-048b7a621e78"
+}

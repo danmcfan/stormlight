@@ -142,6 +142,10 @@ other.
   `PAULDRON_VARIANT=trellis|hybrid`) found the same, even fitted to the same box and carrying the
   scripted trim: lower scores in front and back, and a blind judge ranked the scripted piece
   first 3/3 (`art/rounds/2026-11-13-pauldron.md`).
+- **Whole-character image-to-3D** (`tripo3d/h3.1/multiview-to-3d` on FAL, `scripts/gen/fal_run.py
+  --image-arg image_urls`): slot order is [front, left, back, right], and the **left slot takes the
+  view where the figure faces image-left** (its right side showing). Swapped, Tripo builds a second
+  front on the back. See `art/source/LOG.md` (`shardbearer-tripo`).
 - **Plate paint mask:** `build_shardplate.py` UV-unwraps the plate faces of every piece into
   one atlas and bakes `public/models/shardplate-mask.jpg` (`plate_bake.py`: R occlusion, G
   worn edges, B dust cavities), which the game paints with per-fighter colours

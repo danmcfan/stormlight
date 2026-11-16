@@ -3,12 +3,13 @@
  * In-game screenshots of the Shardplate characters for art review.
  *
  * Usage (from the repo root):
- *   node scripts/ingame_shots.cjs [--out art/renders/ingame] [--only idle-front,guard]
+ *   node scripts/ingame_shots.cjs [--out art/renders/ingame] [--only idle-front,guard] [--query plate=tripo]
  *
  *   --out   output directory (default art/renders/ingame, relative to the cwd)
  *   --only  comma-separated shot names to take (default: all). Names:
  *           idle-front idle-side idle-34 guard light-1 light-2 light-3 heavy
  *           sprint enemy-34 game-cam
+ *   --query URL query string for the game (e.g. plate=tripo, the generated Plate)
  *
  * Writes one PNG per shot (<name>.png, 640x720) plus sheet.png, a labelled
  * contact sheet of every shot taken, and prints the files written.
@@ -59,7 +60,7 @@ const ALL_SHOTS = [
 ];
 
 function parseArgs(argv) {
-  const out = { out: path.join(ROOT, 'art/renders/ingame'), only: null };
+  const out = { out: path.join(ROOT, 'art/renders/ingame'), only: null, query: '' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const val = () => { const v = argv[++i]; if (v === undefined) throw new Error(`${a} needs a value`); return v; };
@@ -67,6 +68,7 @@ function parseArgs(argv) {
     else if (a.startsWith('--out=')) out.out = path.resolve(process.cwd(), a.slice(6));
     else if (a === '--only') out.only = val().split(',').map((s) => s.trim()).filter(Boolean);
     else if (a.startsWith('--only=')) out.only = a.slice(7).split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--query') out.query = val();
     else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0]); process.exit(0); }
     else throw new Error(`unknown argument: ${a}`);
   }
@@ -385,7 +387,7 @@ async function main() {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.setDefaultTimeout(300000);
 
-    await page.goto(vite.url, { waitUntil: 'domcontentloaded' });
+    await page.goto(args.query ? `${vite.url}?${args.query}` : vite.url, { waitUntil: 'domcontentloaded' });
     try {
       await page.waitForFunction(() => window.game && window.game.player, null, { timeout: 180000, polling: 500 });
     } catch (e) {

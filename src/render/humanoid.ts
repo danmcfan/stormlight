@@ -209,6 +209,25 @@ export class HumanoidModel {
     };
     // Painted wear (platePaint.ts): worn edges brighten toward polished steel (bronze on the
     // enemy), orange plateau dust sits in the seams.
+    // The generated Plate (?plate=tripo) carries its paint in one textured material: a copy per
+    // fighter for the hit flash, tinted toward bronze on the enemy.
+    let tripo: THREE.MeshStandardMaterial | undefined;
+    const tripoFor = (src: THREE.MeshStandardMaterial) => {
+      if (!tripo) {
+        tripo = src.clone();
+        // Its metalness map reads as mirror steel, which goes near-black with no environment to
+        // reflect; scale it to the scripted Plate's satin 0.35.
+        tripo.metalness = 0.35;
+        // Its paint is darker than the scripted Plate's slate; lift it to match.
+        tripo.color.setScalar(1.8);
+        if (enemy) tripo.color.multiply(new THREE.Color('#d9b08a'));
+        // Cutting the shell into pieces leaves open edges at the joints: draw the inside dark
+        // rather than seeing through it.
+        tripo.side = THREE.DoubleSide;
+        this.mats.push({ mat: tripo, emissive: tripo.emissive.clone(), intensity: tripo.emissiveIntensity });
+      }
+      return tripo;
+    };
     const mask = model.userData.paintMask as THREE.Texture | undefined;
     if (mask) paintPlate(mats.plate, mask, enemy ? { worn: '#b89a6e', dust: '#7c4a2a' } : { worn: '#c9d1d8', dust: '#8f6a4c' });
     const piece = (name: string, parent: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Object3D => {
@@ -220,7 +239,7 @@ export class HumanoidModel {
         const m = c as THREE.Mesh;
         if (!m.isMesh) return;
         const name = (m.material as THREE.Material).name;
-        m.material = mats[name] ?? mats.plate;
+        m.material = name === 'tripo' ? tripoFor(m.material as THREE.MeshStandardMaterial) : mats[name] ?? mats.plate;
         if (name === 'glow') m.userData.noShadow = true;
       });
       parent.add(o);
