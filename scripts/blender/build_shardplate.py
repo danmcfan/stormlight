@@ -277,6 +277,10 @@ def build_belt():
     # 1.20 m from z -0.15 to +0.14), so a gap at the sides would lose that line.
     path(p, "trim", L, [(top(th) - 0.055, th) for th in ths], r=TRIM_R, off=0.021, n=len(ths))
     path(p, "trim", L, [(bot(th) + 0.03, th) for th in ths], r=TRIM_R, off=0.021, n=len(ths))
+    # Side view: lower belt band runs level across the flank near h 1.20 m (trim_lines.py).
+    flank_bot = [(-0.336, 1.204), (-0.299, 1.178), (-0.250, 1.200), (-0.202, 1.228), (-0.152, 1.252),
+                 (-0.108, 1.272)]
+    ref_path(p, "trim", L, flank_bot, "left", CHEST_O, r=TRIM_R, off=0.021, mirror=True, n=18)
     # The inner arch over the codpiece: the reference's second belt band, running from
     # (+-0.20, 1.160) up to peak at (+-0.19, 1.245) and back down across the centre at (0, 1.175).
     for pts in ([(0.20, 1.160), (0.192, 1.212), (0.190, 1.245), (0.150, 1.228),
@@ -416,21 +420,21 @@ def build_tasset(s):
     L = Loft([
         dict(y=1.30, rx=0.365, rf=0.280, rb=0.285, p=2.4),
         dict(y=1.16, rx=0.400, rf=0.305, rb=0.305, p=2.4),
-        dict(y=1.00, rx=0.460, rf=0.320, rb=0.315, p=2.4),
-        dict(y=0.84, rx=0.510, rf=0.325, rb=0.300, p=2.4),
+        dict(y=1.00, rx=0.460, rf=0.338, rb=0.325, p=2.25),
+        dict(y=0.84, rx=0.510, rf=0.345, rb=0.308, p=2.2),
     ], Frame(None, -o))
     c = 0.0 if s > 0 else math.pi          # the outside of the hip
     # The plate spans the outside of the hip: widest at mid-height, tapering at both ends.
     wide = lambda u: math.sin(math.pi * min(1.0, u / 1.10)) ** 0.5                # noqa: E731
-    fr = lambda u: deg(20 + 42 * wide(u))                                         # noqa: E731
-    bk = lambda u: deg(-14 - 40 * wide(u))                                        # noqa: E731
+    fr = lambda u: deg(26 + 48 * wide(u))                                         # noqa: E731
+    bk = lambda u: deg(-18 - 44 * wide(u))                                        # noqa: E731
     th0 = (lambda u: c + bk(u)) if s > 0 else (lambda u: c - fr(u))
     th1 = (lambda u: c + fr(u)) if s > 0 else (lambda u: c - bk(u))
     # Shield outline: the top edge sits under the belt, the bottom edge is lowest at the outer
     # corner and rises toward the inner one, as the front reference draws it.
     T0 = lambda v: 0.05 + 0.13 * (1 - v) ** 2                                     # noqa: E731
     T1 = lambda v: 3.02 - 0.34 * v ** 1.5                                         # noqa: E731
-    patch(p, "plate", L, T0, T1, th0, th1, off=0.0, thick=0.016, nt=9, nth=14)
+    patch(p, "plate", L, T0, T1, th0, th1, off=0.0, thick=0.022, nt=9, nth=14)
     # Enamel border. Front reference: one stroke runs up the plate's inner edge (x 0.24-0.29
     # over h 0.85-1.03) and another sweeps diagonally out along the lower edge (x 0.29 at h 1.05
     # to 0.49 at 0.88), meeting at the inner corner; the back reference sees the long stroke from
@@ -514,12 +518,12 @@ def build_pauldron(s):
     dome = Loft([
         dict(y=0.055, rx=0.205, rf=0.242, rb=0.29, cx=cx, cz=cz, p=2.3),
         dict(y=0.095, rx=0.214, rf=0.246, rb=0.292, cx=cx, cz=cz, p=2.3),
-        dict(y=0.18, rx=0.19, rf=0.232, rb=0.286, cx=0.092, cz=-0.074, p=2.4),
-        dict(y=0.26, rx=0.165, rf=0.222, rb=0.254, cx=0.085, cz=-0.084, p=2.35),
+        dict(y=0.18, rx=0.19, rf=0.238, rb=0.298, cx=0.090, cz=-0.072, p=2.35),
+        dict(y=0.26, rx=0.165, rf=0.228, rb=0.272, cx=0.084, cz=-0.090, p=2.3),
         dict(y=0.32, rx=0.138, rf=0.205, rb=0.226, cx=0.07, cz=-0.096, p=2.25),
-        dict(y=0.37, rx=0.1, rf=0.17, rb=0.19, cx=0.052, cz=-0.11, p=2.15),
-        dict(y=0.405, rx=0.045, rf=0.11, rb=0.14, cx=0.035, cz=-0.125),
-        dict(y=0.425, rx=0.01, rf=0.02, rb=0.03, cx=0.03, cz=-0.13),
+        dict(y=0.37, rx=0.1, rf=0.17, rb=0.19, cx=0.052, cz=-0.105, p=2.15),
+        dict(y=0.405, rx=0.055, rf=0.12, rb=0.15, cx=0.034, cz=-0.108),
+        dict(y=0.425, rx=0.01, rf=0.02, rb=0.03, cx=0.03, cz=-0.115),
     ], M).mesh(p, "plate", seg=26, sub=2)
     # The dome's trim: a heavy band along the fin's base, which the side view draws as an arch from
     # the front rondel up over the crown to the back and the front view as the dome's inner edge

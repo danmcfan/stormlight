@@ -1,0 +1,7 @@
+{
+  "helm-front": {"iou": 0.982, "lines_f": 0.971, "trim_f": 0.998},
+  "helm-side": {"iou": 0.979, "lines_f": 0.902, "trim_f": 0.983},
+  "plate-front": {"iou": 0.925, "lines_f": 0.823, "trim_f": 0.772},
+  "plate-side": {"iou": 0.923, "lines_f": 0.693, "trim_f": 0.502},
+  "plate-back": {"iou": 0.920, "lines_f": 0.726, "trim_f": 0.696}
+}
