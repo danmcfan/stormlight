@@ -218,6 +218,8 @@ export class HumanoidModel {
         // Its metalness map reads as mirror steel, which goes near-black with no environment to
         // reflect; scale it to the scripted Plate's satin 0.35.
         tripo.metalness = 0.35;
+        // Its roughness map reads wet and glossy; push it toward the references' satin.
+        tripo.roughness = 1.6;
         // Its paint is darker than the scripted Plate's slate; lift it to match.
         tripo.color.setScalar(1.8);
         if (enemy) tripo.color.multiply(new THREE.Color('#d9b08a'));

@@ -196,7 +196,22 @@ bsdf = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
 for n in nt.nodes:
     if n.type == "TEX_IMAGE" and n.image and n.image.size[0] > args.tex:
         n.image.scale(args.tex, args.tex)
-nmap = next((n for n in nt.nodes if n.type == "NORMAL_MAP"), None)
+# The gloves and the padding at the joints are painted near-black, which reads as holes in the
+# game's light: lift the darkest paint toward a dark leather brown, leaving the rest untouched.
+base_link = bsdf.inputs["Base Color"].links
+if base_link and base_link[0].from_node.type == "TEX_IMAGE":
+    img = base_link[0].from_node.image
+    px = np.empty(img.size[0] * img.size[1] * 4, dtype=np.float32)
+    img.pixels.foreach_get(px)
+    px = px.reshape(-1, 4)
+    lum = px[:, :3] @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    # 8-bit textures come back sRGB-encoded: these are sRGB values.
+    k = np.clip((0.2 - lum) / 0.12, 0, 1)[:, None] * 0.5   # full below 0.08, none above 0.2
+    px[:, :3] += (np.array([0.30, 0.24, 0.20], dtype=np.float32) - px[:, :3]) * k
+    img.pixels.foreach_set(px.ravel())
+    img.update()
+    print(f"lifted the darkest paint on {(k[:, 0] > 0).mean():.1%} of texels")
+nmap =next((n for n in nt.nodes if n.type == "NORMAL_MAP"), None)
 if not args.no_bake:
     baked = bpy.data.images.new("tripo_normal", args.tex, args.tex, alpha=False, float_buffer=False)
     baked.colorspace_settings.name = "Non-Color"
@@ -267,26 +282,42 @@ for a, b in ev:
     if ra != rb:
         parent[ra] = rb
 roots = np.array([find(v) for v in range(nv)])
-shells = 0
+shells = moved_leaves = 0
 for r in np.unique(roots):
     members = np.where(roots == r)[0]
     if len(members) < 0.04 * nv:
-        lab[members] = np.bincount(lab[members]).argmax()
+        best = bones[np.bincount(lab[members]).argmax()]
+        c = vpos[members].mean(axis=0)
+        # A loose leaf above the knee belongs to the skirt even where it overlaps the thigh.
+        if best.startswith("thigh_") and c[1] > 0.66:
+            best = "fauld_back" if c[2] < -0.12 else f"tasset_{best[-1]}"
+            if best not in idx:
+                best = bones[np.bincount(lab[members]).argmax()]
+            moved_leaves += 1
+        lab[members] = idx[best]
         shells += 1
-W = np.zeros((nv, len(bones)))
-W[np.arange(nv), lab] = 1.0
+Wt = np.zeros((nv, len(bones)))
+Wt[np.arange(nv), lab] = 1.0
 # Diffuse the one-hot weights along the surface: each pass spreads a joint by about one edge.
 deg_ = np.bincount(ev.ravel(), minlength=nv).astype(float)
 for _ in range(args.blend):
-    acc = W.copy()
-    np.add.at(acc, ev[:, 0], W[ev[:, 1]])
-    np.add.at(acc, ev[:, 1], W[ev[:, 0]])
-    W = acc / (1.0 + deg_)[:, None]
-top = np.argsort(-W, axis=1)[:, :4]
-tw = np.take_along_axis(W, top, axis=1)
+    acc = Wt.copy()
+    np.add.at(acc, ev[:, 0], Wt[ev[:, 1]])
+    np.add.at(acc, ev[:, 1], Wt[ev[:, 0]])
+    Wt = acc / (1.0 + deg_)[:, None]
+
+# The skirt hangs from the belt: the fauld leaves and tassets take nothing from the legs (and the
+# legs nothing from them), or a stride stretches the leaves into shards.
+skirt = [idx[b] for b in bones if b.startswith(("fauld_", "tasset_"))]
+legs = [idx[b] for b in bones if b.startswith(("thigh_", "shin_", "boot_"))]
+is_skirt = np.isin(lab, skirt)
+Wt[np.ix_(is_skirt, legs)] = 0
+Wt[np.ix_(~is_skirt & np.isin(lab, legs), skirt)] = 0
+top = np.argsort(-Wt, axis=1)[:, :4]
+tw = np.take_along_axis(Wt, top, axis=1)
 tw[tw < 0.02] = 0
 tw /= tw.sum(axis=1, keepdims=True)
-print(f"weights: {len(bones)} bones, {shells} small shells made rigid, "
+print(f"weights: {len(bones)} bones, {shells} small shells made rigid ({moved_leaves} leaves off the thighs), "
       f"{(tw[:, 1] > 0.05).mean():.0%} of vertices blended")
 
 # Armature: one unparented bone per piece at its joint. The game ignores the bones' own

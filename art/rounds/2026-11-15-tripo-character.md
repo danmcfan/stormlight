@@ -71,3 +71,27 @@ finish with dark blotches, near-black gloves.
 Next: generate the references and the mesh arms-down (the game's rest pose), so the shoulder
 blends a small turn instead of 45 degrees; weight the fauld leaves to the fauld nodes only, no
 blend to the thighs; a matte finish and lighter gloves. | Stop: yes, check in with the user.
+
+## Round 3: shoulder, skirt and finish (free fixes)
+Asked by the user ("Yes, free fixes") after the arms-down references failed: two Nano Banana
+runs ($0.083 of a $1.00 budget, `art/source/shardplate-front-down/`) kept Image 1's pose both
+times. With 1.5 m pauldrons and the shoulder joint 0.42 m out, the arms angle ~45 degrees to clear
+the plate, so the pose comes with the design. It would not have helped anyway: the game never
+rests the arms hanging (IK keeps the right hand on the grip, the left on the hilt or out).
+Changed: `build_tripo_plate.py`: the fauld and tassets take no weight from the legs and the legs
+none from them; loose leaves above the knee leave the thigh bones; the darkest paint (gloves,
+padding, the painted ink lines; 26% of texels) lifted toward dark leather. `humanoid.ts`: the
+`tripo` material's roughness x1.6.
+Tried and reverted: passing the pauldron's lower lames to the upper arm, and the pauldron
+following 55% of the arm's turn (was 30%). Both caved the pauldron in at idle, where the arm is
+far from the reference pose's 45 degrees.
+Renders: `art/renders/tripo/ingame-r3/sheet.png`; phone `iphone-landscape-r3.png`.
+In game: no errors on desktop or the emulated iPhone; touch controls visible. `npm test` 75/75.
+Judge (3 blind A/B runs, sides shuffled): overall Tripo 2/3 (round 2: 1/3, round 1: 0/3); closer
+to the reference 3/3. Tripo defects 3/3: the skirt leaves read as shards when the game's skirt
+swing fans them out (sprint, heavy, guard; the scripted skirt fans the same way and was called
+"blades"); the pauldron underside tears, worst on the enemy; still glossy. Scripted defects 3/3:
+generic, simplified suit (round helm, blob boots, plain pauldrons), plastic finish.
+Next: tune the skirt swing for the generated Plate (smaller fan, the leaves overlapping); a dark
+lining under the pauldron; a matte finish in the stylizer's terms; the gem and visor glow.
+| Stop: yes, check in with the user.
